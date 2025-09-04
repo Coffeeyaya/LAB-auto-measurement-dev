@@ -23,6 +23,7 @@ processes = {}
 def run_script(script_name):
     global processes
     full_path = os.path.join(DEFAULT_FOLDER, script_name)
+    print(full_path)
     if not os.path.exists(full_path):
         return "SCRIPT_NOT_FOUND"
     

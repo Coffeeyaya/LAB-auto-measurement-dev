@@ -1,6 +1,6 @@
 import socket
 
-SERVER_IP = "192.168.0.1"  # replace with Win10 IP
+SERVER_IP = "192.168.137.1"  # replace with Win10 IP
 PORT = 5001
 
 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
