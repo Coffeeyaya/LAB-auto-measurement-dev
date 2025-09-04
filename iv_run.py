@@ -1,8 +1,8 @@
 import time
-from iv_utils import get_window, scroll_to_bottom, change_measurement_mode, \
+from utils.iv_utils import get_window, scroll_to_bottom, change_measurement_mode, \
     run_measurement, stop_measurement, export_data, change_idvd_vg_level
 import socket
-from socket_utils import send_cmd, wait_for
+from utils.socket_utils import send_cmd, wait_for
 
 # measurement settings
 idvg_path = r'D:\kickstart\YunChen\idvg_yunChen\idvg'

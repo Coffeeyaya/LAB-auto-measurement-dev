@@ -1,9 +1,8 @@
 import socket
 import pyautogui, time
 import numpy as np
-from change_lambda_power import change_power_function
-from laser_utils import init_AOTF, get_coord
-from socket_utils import send_cmd, receive_msg
+from utils.laser_utils import init_AOTF, get_coord, change_power_function
+from utils.socket_utils import send_cmd, receive_msg
 
 
 laser_state = "OFF"

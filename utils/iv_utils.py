@@ -65,9 +65,14 @@ def scroll_to_bottom():
     for i in range(10):
         pyautogui.scroll(-500)
 
-def fill_box(content):
+def fill_box_ctrl_a(content):
     pyperclip.copy(content)
     pyautogui.hotkey('ctrl', 'a')
+    pyautogui.hotkey("ctrl", "v")
+    pyautogui.press('enter')
+
+def fill_box_no_ctrl_a(content):
+    pyperclip.copy(content)
     pyautogui.hotkey("ctrl", "v")
     pyautogui.press('enter')
 
@@ -95,7 +100,7 @@ def change_idvd_vg_level(voltage): # change vg value for idvd
     move_and_click(GATE_PANEL)
     move_and_click(DRIAN_VG_VALUE)
 
-    fill_box(voltage)
+    fill_box_ctrl_a(voltage)
     scroll_to_bottom()
 
 def run_measurement():
@@ -113,12 +118,12 @@ def export_data(folder_path, file_name):
 
     get_window(r'選擇')
     move_and_click(EIDT_PATH_POSITION)
-    fill_box(folder_path)
+    fill_box_ctrl_a(folder_path)
     move_and_click(SELECT_FOLDER_BOTTON)
 
     get_window(r'Kick')
     move_and_click(FILE_NAME_BOTTON)
-    fill_box(file_name)
+    fill_box_ctrl_a(file_name)
     move_and_click(EXPORT_SELECTED_RUN_BOTTON)
     print(f'save data to {folder_path}/{file_name}')
     
@@ -134,7 +139,7 @@ def change_measurement_mode(meas_mode_path):
     while not get_window(r'Open File'):
         time.sleep(3)
     move_and_click(PROJECT_FOLDER_BOTTON)
-    fill_box(meas_mode_path)
+    fill_box_ctrl_a(meas_mode_path)
     time.sleep(1)
     move_and_double_click(KICK_START_FILE_BOTTON)
     time.sleep(5)
