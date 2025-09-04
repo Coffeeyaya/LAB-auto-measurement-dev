@@ -1,25 +1,15 @@
 import socket
 import subprocess
 import os
+from utils.socket_utils import send_cmd, receive_msg, wait_for, create_server, accept_client
 
 HOST = "0.0.0.0"
 PORT = 5001
 
+DEFAULT_FOLDER = r"C:\Users\ASUS\Desktop\test\LAB-auto-measurement"  # adjust to your folder
 processes = {}  # {script_name: subprocess.Popen object}
 
-def start_server(host=HOST, port=PORT):
-    server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    server_socket.bind((host, port))
-    server_socket.listen(1)
-    print(f"Server listening on {host}:{port}...")
-    conn, addr = server_socket.accept()
-    print(f"Connected by {addr}")
-    return server_socket, conn
-
-DEFAULT_FOLDER = r"C:\Users\ASUS\Desktop\test\LAB-auto-measurement"  # adjust to your folder
-processes = {}
-
+# ------------------- Script Management -------------------
 def run_script(script_name):
     global processes
     full_path = os.path.join(DEFAULT_FOLDER, script_name)
@@ -49,30 +39,32 @@ def kill_script(script_name):
 
 def handle_client(conn):
     while True:
-        data = conn.recv(1024)
-        if not data:
+        try:
+            cmd = receive_msg(conn)  # <- use socket_utils
+        except ConnectionError:
+            print("Client disconnected.")
             break
-        cmd = data.decode().strip()
-        print(f"Received: {cmd}")
-
+        
         if cmd.startswith("RUN "):
             script_name = cmd[4:]
             response = run_script(script_name)
-
+        
         elif cmd.startswith("KILL "):
             script_name = cmd[5:]
             response = kill_script(script_name)
-
-        elif cmd == "quit":
+        
+        elif cmd.lower() == "quit":
             break
-
+        
         else:
             response = "UNKNOWN_COMMAND"
 
-        conn.sendall((response + "\n").encode())
-
+        send_cmd(conn, response)  # <- use socket_utils
+        
+# ------------------- Main -------------------
 def main():
-    server_socket, conn = start_server()
+    server_socket = create_server(host=HOST, port=PORT)  # wrapper
+    conn, addr = accept_client(server_socket)            # wrapper
     try:
         handle_client(conn)
     finally:

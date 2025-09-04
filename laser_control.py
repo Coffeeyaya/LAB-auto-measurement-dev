@@ -7,6 +7,23 @@ from utils.socket_utils import send_cmd, receive_msg
 
 laser_state = "OFF"
 
+# ------------------- Socket Wrapper Functions -------------------
+def create_server(host="0.0.0.0", port=5000, backlog=1):
+    """Create and return a TCP server socket."""
+    server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    server_socket.bind((host, port))
+    server_socket.listen(backlog)
+    print(f"Server listening on {host}:{port}...")
+    return server_socket
+
+def accept_client(server_socket):
+    """Accept a client connection and return (conn, addr)."""
+    conn, addr = server_socket.accept()
+    print(f"Connected by {addr}")
+    return conn, addr
+
+
 def time_dependent_wavelength(conn, grid):
     global laser_state
     laser_state = "FUNCTION"

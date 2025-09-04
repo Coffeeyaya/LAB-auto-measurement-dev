@@ -1,4 +1,20 @@
 import time
+import socket
+
+# ------------------- Socket Wrapper Functions -------------------
+def create_server(host, port, backlog=1):
+    server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    server_socket.bind((host, port))
+    server_socket.listen(backlog)
+    print(f"Server listening on {host}:{port}...")
+    return server_socket
+
+def accept_client(server_socket):
+    conn, addr = server_socket.accept()
+    print(f"Connected by {addr}")
+    return conn, addr
+
 
 def send_cmd(sock, msg: str):
     """Send a message to the socket with newline termination."""
