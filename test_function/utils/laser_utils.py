@@ -21,6 +21,10 @@ def init_AOTF():
             grid[i][fields[j]] = (col_x, row_y)
     return grid
 
+def move_and_click(coord):
+    pyautogui.moveTo(*coord)
+    time.sleep(0.1)
+    pyautogui.click(*coord)
 
 def get_coord(grid, channel, field):
     coord = grid[channel][field]

@@ -1,8 +1,8 @@
 import time
 from utils.iv_utils import get_window, scroll_to_bottom, change_measurement_mode, \
-    run_measurement, stop_measurement, export_data, change_idvd_vg_level
-import socket
-from utils.socket_utils import send_cmd, wait_for
+    run_measurement, stop_measurement, export_data, change_idvd_vg_level, filename_generator, \
+    illuminate_and_run, time_dependent_illumination_run
+from utils.socket_utils import connect_to_server
 
 # measurement settings
 idvg_path = r'D:\kickstart\YunChen\idvg_yunChen\idvg'
@@ -20,41 +20,21 @@ laser_power = '100nw'
 # Communication settings
 SERVER_IP = "192.168.151.20"   # IP of the laser computer
 PORT = 5000
-
-sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-sock.connect((SERVER_IP, PORT))
-
-def filename_generator(material, device_number, measurement_type, condition):
-    return f'{material}_{measurement_type}_{device_number}_{condition}'
-
-def illuminate_and_run():
-    send_cmd(sock, "ON")
-    wait_for(sock, "ON")
-    time.sleep(30) # ex: wait 30 s
-    run_measurement()
-
-    send_cmd(sock, "OFF")
-    wait_for(sock, "OFF")
-
-def time_dependent_illumination_run():
-    run_measurement()
-    send_cmd(sock, "FUNCTION")
-    time.sleep(30)
-    wait_for(sock, "FUNCTION_DONE")
-    time.sleep(30)
-    stop_measurement()
+sock = connect_to_server(ip=SERVER_IP, port=PORT)
 
 # start controlling KickStart App
 get_window(r'Kick')
-scroll_to_bottom()
+# scroll_to_bottom()
 
 # --- idvg ---
 change_measurement_mode(idvg_path)
-
+# dark
 run_measurement()
 filename = filename_generator(material, device_number, measurement_type='idvg', condition='dark')
 export_data(save_folder_idvg, filename)
+
 time.sleep(60)
+# light
 illuminate_and_run()
 filename = filename_generator(material, device_number, measurement_type='idvg', condition=f'light_{laser_wavelength}_{laser_power}')
 export_data(save_folder_idvg, filename)
@@ -62,15 +42,17 @@ export_data(save_folder_idvg, filename)
 
 # --- idvd ---
 change_measurement_mode(idvd_path)
-vg_values = ["-5", "-2", "0", "2", "5"]
+vg_values = ["-5", "0", "5"]
 for vg in vg_values:
     scroll_to_bottom()
     change_idvd_vg_level(vg)
-
+    # dark
     run_measurement()
     filename = filename_generator(material, device_number, measurement_type='idvd', condition=f'dark:vg={vg}')
     export_data(save_folder_idvd, filename)
+
     time.sleep(60)
+    # light
     illuminate_and_run()
     filename = filename_generator(material, device_number, measurement_type='idvd', condition=f'light_{laser_wavelength}_{laser_power}:vg={vg}')
     export_data(save_folder_idvd, filename)

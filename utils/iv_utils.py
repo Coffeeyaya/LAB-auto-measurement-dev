@@ -3,8 +3,11 @@ import pyautogui
 import pyperclip
 import re
 import time
+from socket_utils import send_cmd, wait_for
 
 SCROLL_POSITION = [1700, 500]
+SETTINGS_BOTTON = [360, 160]
+GRAPH_BOTTON = [500, 160]
 
 # for idvd
 DRAIN_PANEL = [800, 300]
@@ -27,11 +30,8 @@ EXPORT_BOTTON = [950, 990]
 PATH_BOTTON = [650, 610]
 STOP_BOTTON = [390, 1000]
 
-
-# EIDT_PATH_POSITION = [1270, 235]
 EIDT_PATH_POSITION = [777, 59]
 OTHER_POSITION = [1596, 308]
-# SELECT_FOLDER_BOTTON = [1375, 820]
 SELECT_FOLDER_BOTTON = [897, 641]
 
 FILE_NAME_BOTTON = [760, 660]
@@ -52,7 +52,7 @@ def get_window(pattern):
 
 def move_and_click(coord):
     pyautogui.moveTo(*coord)
-    time.sleep(1)
+    time.sleep(0.1)
     pyautogui.click(*coord)
 
 def move_and_double_click(coord):
@@ -97,6 +97,7 @@ def change_idvd_vg_level(voltage): # change vg value for idvd
     '''
     voltage: voltage value (str)
     '''
+    move_and_click(SETTINGS_BOTTON)
     move_and_click(GATE_PANEL)
     move_and_click(DRIAN_VG_VALUE)
 
@@ -105,7 +106,9 @@ def change_idvd_vg_level(voltage): # change vg value for idvd
 
 def run_measurement():
     move_and_click(RUN_BOTTON)
-    time.sleep(10)
+    time.sleep(1)
+    move_and_click(GRAPH_BOTTON)
+    time.sleep(10) # change this to openCV
 
 def stop_measurement():
     move_and_click(STOP_BOTTON)
@@ -115,17 +118,17 @@ def export_data(folder_path, file_name):
     move_and_click(EXPORT_BOTTON)
     move_and_click(PATH_BOTTON)
     time.sleep(1)
-
-    get_window(r'選擇')
+    while not get_window(r'選擇'):
+        time.sleep(1)
     move_and_click(EIDT_PATH_POSITION)
     fill_box_ctrl_a(folder_path)
     move_and_click(SELECT_FOLDER_BOTTON)
-
-    get_window(r'Kick')
+    while not get_window(r'Kick'):
+        time.sleep(1)
     move_and_click(FILE_NAME_BOTTON)
     fill_box_ctrl_a(file_name)
     move_and_click(EXPORT_SELECTED_RUN_BOTTON)
-    print(f'save data to {folder_path}/{file_name}')
+    print(f'STEP: export data to {folder_path}/{file_name}')
     
 CHANGE_MEAS_MODE_BOTTON = [415, 65]
 SAVE_PROJ_BOTTON = [890, 580]
@@ -134,12 +137,37 @@ KICK_START_FILE_BOTTON = [654, 143]
 
 def change_measurement_mode(meas_mode_path):
     move_and_click(CHANGE_MEAS_MODE_BOTTON)
-    time.sleep(1)
-    move_and_click(SAVE_PROJ_BOTTON)
+    time.sleep(2)
+    move_and_click(SAVE_PROJ_BOTTON) # save project window, won't show every time
     while not get_window(r'Open File'):
-        time.sleep(3)
+        time.sleep(1)
+    time.sleep(1)
     move_and_click(PROJECT_FOLDER_BOTTON)
     fill_box_ctrl_a(meas_mode_path)
     time.sleep(1)
     move_and_double_click(KICK_START_FILE_BOTTON)
     time.sleep(5)
+    while not get_window(r'Kick'):
+        time.sleep(1)
+
+def filename_generator(material, device_number, measurement_type, condition):
+    return f'{material}_{measurement_type}_{device_number}_{condition}'
+
+def illuminate_and_run(sock):
+    print('STEP: illuminate and run()')
+    send_cmd(sock, "ON")
+    wait_for(sock, "ON")
+    time.sleep(30) # ex: wait 30 s
+    run_measurement()
+
+    send_cmd(sock, "OFF")
+    wait_for(sock, "OFF")
+
+def time_dependent_illumination_run(sock):
+    print('STEP: time dependent illuminate and run()')
+    run_measurement()
+    send_cmd(sock, "FUNCTION")
+    time.sleep(30)
+    wait_for(sock, "FUNCTION_DONE")
+    time.sleep(30)
+    stop_measurement()

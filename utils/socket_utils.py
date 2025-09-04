@@ -15,6 +15,11 @@ def accept_client(server_socket):
     print(f"Connected by {addr}")
     return conn, addr
 
+def connect_to_server(ip, port):
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    sock.connect((ip, port))
+    print(f"Connected to {ip}:{port}")
+    return sock
 
 def send_cmd(sock, msg: str):
     """Send a message to the socket with newline termination."""
