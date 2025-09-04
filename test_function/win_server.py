@@ -17,7 +17,7 @@ def start_server(host=HOST, port=PORT):
     print(f"Connected by {addr}")
     return server_socket, conn
 
-DEFAULT_FOLDER = r"C:\Users\Win10User\combined"  # adjust to your folder
+DEFAULT_FOLDER = r"C:\Users\ASUS\Desktop\test\LAB-auto-measurement"  # adjust to your folder
 processes = {}
 
 def run_script(script_name):
