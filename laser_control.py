@@ -2,27 +2,10 @@ import socket
 import pyautogui, time
 import numpy as np
 from utils.laser_utils import init_AOTF, get_coord, change_power_function
-from utils.socket_utils import send_cmd, receive_msg
+from utils.socket_utils import send_cmd, receive_msg, wait_for, create_server, accept_client
 
 
 laser_state = "OFF"
-
-# ------------------- Socket Wrapper Functions -------------------
-def create_server(host="0.0.0.0", port=5000, backlog=1):
-    """Create and return a TCP server socket."""
-    server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    server_socket.bind((host, port))
-    server_socket.listen(backlog)
-    print(f"Server listening on {host}:{port}...")
-    return server_socket
-
-def accept_client(server_socket):
-    """Accept a client connection and return (conn, addr)."""
-    conn, addr = server_socket.accept()
-    print(f"Connected by {addr}")
-    return conn, addr
-
 
 def time_dependent_wavelength(conn, grid):
     global laser_state
@@ -32,12 +15,10 @@ def time_dependent_wavelength(conn, grid):
     # here, assume all power percentages are pre-setted
     channels = np.linspace(0, 7, 2, dtype=int)
     power_values = np.array(["50", "15"])
-
-    grid = init_AOTF()
-    on_coord = get_coord(grid, channel, "on")
-    change_power_function(grid, channel, power)
+    
     for channel, power in zip(channels, power_values):
-        
+        on_coord = get_coord(grid, channel, "on")
+        change_power_function(grid, channel, power)
         # turn on
         pyautogui.moveTo(*on_coord)
         time.sleep(0.2)
@@ -79,23 +60,12 @@ def time_dependent(conn, grid, channel, power):
     laser_state = "FUNCTION_DONE"
     send_cmd(conn, "FUNCTION_DONE")
 
-# measurement settings
 grid = init_AOTF()
 channel = 5
 on_coord = get_coord(grid, channel, "on")
 
-# socket settings
-HOST = "0.0.0.0"   # listen on all interfaces
-PORT = 5000        # must match client
-
-server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-server_socket.bind((HOST, PORT))
-server_socket.listen(1)
-
-print(f"Laser server listening on {HOST}:{PORT}...")
-conn, addr = server_socket.accept()
-print(f"Connected by {addr}")
+server_socket = create_server(host="0.0.0.0", port=5000)
+conn, addr = accept_client(server_socket)
 
 while True:
     try:
@@ -106,33 +76,24 @@ while True:
         break
 
     if cmd == "ON" and laser_state != "ON":
-        '''
-        use global settings for: grid, channel, on_coord
-        '''
         pyautogui.moveTo(*on_coord)
         time.sleep(0.2)
         pyautogui.click(*on_coord)
         time.sleep(0.5)
         laser_state = "ON"
-        send_cmd(conn, cmd)
+        send_cmd(conn, "ON")
 
     elif cmd == "OFF" and laser_state != "OFF":
-        '''
-        use global settings for: grid, channel, on_coord
-        '''
         pyautogui.moveTo(*on_coord)
         time.sleep(0.2)
         pyautogui.click(*on_coord)
         time.sleep(0.5)
         laser_state = "OFF"
-        send_cmd(conn, cmd)
+        send_cmd(conn, "OFF")
 
     elif cmd == "FUNCTION" and laser_state != "FUNCTION":
-        '''
-        use local settings for: grid, channel, on_coord
-        '''
-        #  time_dependent_wavelength(conn, grid) # multiple wavelength, pre-set power
-        time_dependent(conn, grid, channel=5, power="80") # typical single wavelength, single power
+        # time_dependent_wavelength(conn, grid)  # multi-channel FUNCTION
+        time_dependent(conn, grid, channel=5, power="80")  # single-channel FUNCTION
 
 conn.close()
 server_socket.close()
