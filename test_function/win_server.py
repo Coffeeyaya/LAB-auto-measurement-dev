@@ -36,10 +36,15 @@ def run_script(script_name):
 
 def kill_script(script_name):
     global processes
-    if script_name in processes and processes[script_name].poll() is None:
-        processes[script_name].terminate()
-        del processes[script_name]
-        return "SCRIPT_KILLED"
+    if script_name in processes:
+        proc = processes[script_name]
+        if proc.poll() is None:  # still running
+            subprocess.call(f"taskkill /F /T /PID {proc.pid}", shell=True)
+            del processes[script_name]
+            return "SCRIPT_KILLED"
+        else:
+            del processes[script_name]
+            return "SCRIPT_ALREADY_FINISHED"
     return "SCRIPT_NOT_RUNNING"
 
 def handle_client(conn):
