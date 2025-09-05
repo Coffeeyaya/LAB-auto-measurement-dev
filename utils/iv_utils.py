@@ -153,12 +153,13 @@ def export_data(folder_path, file_name):
     move_and_click(EIDT_PATH_POSITION)
     fill_box_ctrl_a(folder_path)
     move_and_click(SELECT_FOLDER_BOTTON)
-    while not get_window(r'Kick'):
-        time.sleep(1)
+    time.sleep(1)
     move_and_click(FILE_NAME_BOTTON)
     fill_box_ctrl_a(file_name)
     move_and_click(EXPORT_SELECTED_RUN_BOTTON)
     print(f'STEP: export data to {folder_path}/{file_name}')
+    while not get_window(r'Kick'):
+        time.sleep(1)
     
 CHANGE_MEAS_MODE_BOTTON = [415, 65]
 SAVE_PROJ_BOTTON = [890, 580]
