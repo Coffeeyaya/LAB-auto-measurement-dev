@@ -40,7 +40,7 @@ time.sleep(5)
 illuminate_and_run(sock)
 filename = filename_generator(material, device_number, measurement_type='idvg', condition=f'light_{laser_wavelength}_{laser_power}')
 export_data(CSV_FOLDER, filename)
-
+time.sleep(5)
 
 # --- idvd ---
 change_measurement_mode(idvd_path)
