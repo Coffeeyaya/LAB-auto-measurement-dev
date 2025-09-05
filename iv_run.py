@@ -11,7 +11,7 @@ time_path = r'D:\kickstart\YunChen\timeDependent_yunChen\time'
 save_folder_idvg = r'C:\Users\mmm11\OneDrive\桌面\yun-chen\KickStart\hs2\20250901\idvg'
 save_folder_idvd = r'C:\Users\mmm11\OneDrive\桌面\yun-chen\KickStart\hs2\20250901\idvd'
 save_folder_time = r'C:\Users\mmm11\OneDrive\桌面\yun-chen\KickStart\hs2\20250901\time'
-CSV_FOLDER = r'data'
+CSV_FOLDER = r'C:\Users\mmm11\OneDrive\桌面\yun-chen\KickStart\hs2\data'
 
 material = 'mw'
 device_number = '5-5'
