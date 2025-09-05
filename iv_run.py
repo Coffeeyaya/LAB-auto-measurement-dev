@@ -38,6 +38,9 @@ for i in range(1, 4):
     else:
         change_vg_range('-' + str(i), str(i))
     time.sleep(1)
+    run_measurement()
+    time.sleep(1)
+
 # run_measurement()
 
 # filename = filename_generator(material, device_number, measurement_type='idvg', condition='dark')
@@ -58,6 +61,8 @@ for i in range(1, 4):
         change_vd_range('-' + str(i), str(i))
     else:
         change_vd_range('-' + str(i), str(i))
+    time.sleep(1)
+    run_measurement()
     time.sleep(1)
 # change_vd_range("3", "-3")
 
