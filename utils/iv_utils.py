@@ -188,7 +188,7 @@ def illuminate_and_run(sock):
     print('STEP: illuminate and run()')
     send_cmd(sock, "ON")
     wait_for(sock, "ON")
-    time.sleep(30) # ex: wait 30 s
+    time.sleep(5) # ex: wait 30 s
     run_measurement()
 
     send_cmd(sock, "OFF")
@@ -198,7 +198,7 @@ def time_dependent_illumination_run(sock):
     print('STEP: time dependent illuminate and run()')
     click_RUN()
     send_cmd(sock, "FUNCTION")
-    time.sleep(30)
+    time.sleep(5)
     wait_for(sock, "FUNCTION_DONE")
-    time.sleep(30)
+    time.sleep(5)
     click_STOP()
