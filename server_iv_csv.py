@@ -1,44 +1,72 @@
-import socket, os, time
+import os
+import time
+from utils.socket_utils import send_cmd, receive_msg, create_server, accept_client
 
-CSV_FOLDER = r"C:\Users\mmm11\OneDrive\桌面\yun-chen\code\auto\LAB-auto-measurement\data"
+CSV_FOLDER = r"C:\Users\mmm11\OneDrive\桌面\yun-chen\code\auto\LAB-auto-measurement"
 HOST = "0.0.0.0"
-PORT = 5001
+PORT = 5001  # separate port for CSV transfer
+
 
 def send_file(conn, filepath):
+    """Send a single CSV file in chunks."""
+    if not os.path.exists(filepath):
+        send_cmd(conn, f"FILE_NOT_FOUND {filepath}")
+        return
+
     filesize = os.path.getsize(filepath)
     filename = os.path.basename(filepath)
-    conn.sendall(f"FILE {filename} {filesize}\n".encode())
-    ack = conn.recv(1024).decode().strip()
+
+    # Send header
+    send_cmd(conn, f"FILE {filename} {filesize}")
+    ack = receive_msg(conn)
     if ack != "READY":
         return
+
+    # Send file contents
     with open(filepath, "rb") as f:
         while chunk := f.read(4096):
             conn.sendall(chunk)
-    conn.sendall(b"FILE_DONE\n")
-    print(f"Sent {filename}")
 
-def watch_and_send(conn):
+    send_cmd(conn, "FILE_DONE")
+    print(f"[CSV SERVER] Sent {filename} ({filesize} bytes)")
+
+
+def watch_and_send_csvs(conn, folder):
+    """Continuously watch folder for new CSV files and send them."""
     known_files = set()
     while True:
-        current_files = {f for f in os.listdir(CSV_FOLDER) if f.endswith(".csv")}
-        new_files = current_files - known_files
-        for f in new_files:
-            send_file(conn, os.path.join(CSV_FOLDER, f))
-            known_files.add(f)
-        time.sleep(1)
+        try:
+            current_files = {f for f in os.listdir(folder) if f.endswith(".csv")}
+            new_files = sorted(current_files - known_files)
+            for new_file in new_files:
+                filepath = os.path.join(folder, new_file)
+                if os.path.exists(filepath) and os.path.getsize(filepath) > 0:
+                    send_file(conn, filepath)
+                    known_files.add(new_file)
+            time.sleep(1)
+        except Exception as e:
+            print(f"[CSV SERVER] Watcher error: {e}")
+            break
 
-def main():
-    server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    server.bind((HOST, PORT))
-    server.listen(1)
-    print(f"CSV server listening on {HOST}:{PORT}")
-    conn, addr = server.accept()
-    print(f"Connected by {addr}")
+
+def handle_client(conn, addr):
+    print(f"[CSV SERVER] Connected by {addr}")
     try:
-        watch_and_send(conn)
+        watch_and_send_csvs(conn, CSV_FOLDER)
+    except ConnectionError:
+        print(f"[CSV SERVER] Client {addr} disconnected")
     finally:
         conn.close()
-        server.close()
+
+
+def main():
+    server_socket = create_server(HOST, PORT)
+    conn, addr = accept_client(server_socket)
+    try:
+        handle_client(conn, addr)
+    finally:
+        server_socket.close()
+
 
 if __name__ == "__main__":
     main()
