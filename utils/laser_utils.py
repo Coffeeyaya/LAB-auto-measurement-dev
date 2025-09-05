@@ -5,9 +5,17 @@ import pyautogui
 import time
 
 def init_AOTF():
-    win = gw.getWindowsWithTitle("AOTF Controller")[0]
-    win.moveTo(0, 0)
-    win.activate()
+
+    while True:
+        try:
+            win = gw.getWindowsWithTitle("AOTF Controller")
+            win = win[0]
+            win.moveTo(0, 0)
+            win.activate()
+            break
+        except (IndexError, gw.PyGetWindowException) as e:
+            print("pygetwindow error, retrying...", e)
+            time.sleep(1)  # avoid 100% CPU
 
     x = np.array([200, 270, 320])-10
     y = np.linspace(190, 430, 8)
