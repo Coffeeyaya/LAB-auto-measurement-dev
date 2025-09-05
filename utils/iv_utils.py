@@ -104,21 +104,39 @@ def change_idvd_vg_level(voltage): # change vg value for idvd
     fill_box_ctrl_a(voltage)
     scroll_to_bottom()
 
+
+from PIL import ImageGrab
+import time
+
+def watch_pixel(x, y, tol=0):
+    """
+    Monitors the color of a pixel at (x,y).
+    Prints when the color changes beyond the tolerance.
+    
+    x, y : pixel coordinates
+    tol  : tolerance (0 = exact match)
+    """
+    prev_color = None
+
+    while True:
+        screenshot = ImageGrab.grab()
+        color = screenshot.getpixel((x, y))  # (R, G, B)
+
+        if prev_color is not None:
+            # Compare with tolerance
+            if any(abs(c1 - c2) > tol for c1, c2 in zip(color, prev_color)):
+                print(f"Color changed! {prev_color} -> {color}")
+                break
+
+        prev_color = color
+        time.sleep(0.5)  # adjust speed as needed
+
+
 def run_measurement():
     move_and_click(RUN_BOTTON)
     time.sleep(1)
     move_and_click(GRAPH_BOTTON)
-    prev_color = None
-    while True:
-        # Get color at the pixel
-        color = pyautogui.screenshot().getpixel(RUN_BOTTON)
-
-        if prev_color is not None and color != prev_color:
-            print(f"Color changed! {prev_color} -> {color}")
-            break
-
-        prev_color = color
-        time.sleep(1)  # small delay to reduce CPU usage
+    watch_pixel(*RUN_BOTTON, tol=10)
     time.sleep(1)
 
 def stop_measurement():
