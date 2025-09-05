@@ -154,9 +154,9 @@ def watch_pixel(x=RUN_BOTTON[0], y=RUN_BOTTON[1], tol=10):
         prev_color = color
         time.sleep(0.5)  # adjust speed as needed
 def click_RUN():
-    move_and_click(RUN_BOTTON)
+    move_and_double_click(RUN_BOTTON)
     time.sleep(2)
-    move_and_click(GRAPH_BOTTON)
+    move_and_double_click(GRAPH_BOTTON)
     time.sleep(1)
 
 def run_measurement(): # will detect color change, block if not change
@@ -165,7 +165,7 @@ def run_measurement(): # will detect color change, block if not change
     watch_pixel()
 
 def click_STOP():
-    move_and_click(STOP_BOTTON)
+    move_and_double_click(STOP_BOTTON)
     time.sleep(3)
 
 def export_data(folder_path, file_name):
