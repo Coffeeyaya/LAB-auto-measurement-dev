@@ -84,6 +84,8 @@ def change_vg_range(low, high):
     low: vg start (str)
     high: vg end (str)
     '''
+    move_and_click(SETTINGS_BOTTON)
+    scroll_to_bottom()
     move_and_click(GATE_PANEL)
 
     move_and_click(GATE_START)
@@ -100,6 +102,8 @@ def change_vd_range(low, high):
     low: vd start (str)
     high: vd end (str)
     '''
+    move_and_click(SETTINGS_BOTTON)
+    scroll_to_bottom()
     move_and_click(DRAIN_PANEL)
 
     move_and_click(DRAIN_START)
@@ -115,6 +119,7 @@ def change_idvd_vg_level(voltage): # change vg value for idvd
     voltage: voltage value (str)
     '''
     move_and_click(SETTINGS_BOTTON)
+    scroll_to_bottom()
     move_and_click(GATE_PANEL)
     move_and_click(DRIAN_VG_VALUE)
 

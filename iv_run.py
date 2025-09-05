@@ -31,8 +31,10 @@ get_window(r'Kick')
 # --- idvg ---
 change_measurement_mode(idvg_path)
 # dark
-run_measurement()
+
 change_vg_range("-5", "5")
+run_measurement()
+
 filename = filename_generator(material, device_number, measurement_type='idvg', condition='dark')
 export_data(CSV_FOLDER, filename)
 
