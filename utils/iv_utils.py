@@ -88,14 +88,16 @@ def change_vg_range(low, high):
     scroll_to_bottom()
     move_and_click(GATE_PANEL)
     time.sleep(1)
-    
+
     move_and_click(GATE_START)
     fill_box_ctrl_a(low)
+    time.sleep(1)
     scroll_to_bottom()
     time.sleep(3)
 
     move_and_click(GATE_STOP)
     fill_box_ctrl_a(high)
+    time.sleep(1)
     scroll_to_bottom()
 
 def change_vd_range(low, high):
@@ -111,11 +113,13 @@ def change_vd_range(low, high):
 
     move_and_click(DRAIN_START)
     fill_box_ctrl_a(low)
+    time.sleep(1)
     scroll_to_bottom()
     time.sleep(3)
 
     move_and_click(DRAIN_STOP)
     fill_box_ctrl_a(high)
+    time.sleep(1)
     scroll_to_bottom()
 
 def change_idvd_vg_level(voltage): # change vg value for idvd
