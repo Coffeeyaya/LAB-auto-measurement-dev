@@ -108,7 +108,7 @@ def change_idvd_vg_level(voltage): # change vg value for idvd
 
 
 
-def watch_pixel(x, y, tol=0):
+def watch_pixel(x=RUN_BOTTON[0], y=RUN_BOTTON[1], tol=10):
     """
     Monitors the color of a pixel at (x,y).
     Prints when the color changes beyond the tolerance.
@@ -130,16 +130,17 @@ def watch_pixel(x, y, tol=0):
 
         prev_color = color
         time.sleep(0.5)  # adjust speed as needed
-
-
-def run_measurement():
+def click_RUN():
     move_and_click(RUN_BOTTON)
     time.sleep(1)
     move_and_click(GRAPH_BOTTON)
-    watch_pixel(*RUN_BOTTON, tol=10)
     time.sleep(1)
 
-def stop_measurement():
+def run_measurement(): # will detect color change, block if not change
+    click_RUN()
+    watch_pixel()
+
+def click_STOP():
     move_and_click(STOP_BOTTON)
     time.sleep(3)
 
@@ -194,9 +195,9 @@ def illuminate_and_run(sock):
 
 def time_dependent_illumination_run(sock):
     print('STEP: time dependent illuminate and run()')
-    run_measurement()
+    click_RUN()
     send_cmd(sock, "FUNCTION")
     time.sleep(30)
     wait_for(sock, "FUNCTION_DONE")
     time.sleep(30)
-    stop_measurement()
+    click_STOP()
