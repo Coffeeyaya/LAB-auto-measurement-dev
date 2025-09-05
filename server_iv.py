@@ -9,8 +9,8 @@ HOST = "0.0.0.0"
 PORT = 5000
 
 # ------------------- MUST CONFIGURE -------------------
-DEFAULT_FOLDER = r"C:\Users\mmm11\OneDrive\桌面\yun-chen\code\auto\LAB-auto-measurement"   # folder containing your Python scripts
-CSV_FOLDER = r"C:\Users\mmm11\OneDrive\桌面\yun-chen\code\auto\LAB-auto-measurement\data"       # folder where IV scripts output CSV files
+DEFAULT_FOLDER = r"C:\Users\mmm11\OneDrive\桌面\yun-chen\code\auto\LAB-auto-measurement"
+CSV_FOLDER = r"C:\Users\mmm11\OneDrive\桌面\yun-chen\code\auto\LAB-auto-measurement\data"
 # ------------------------------------------------------
 
 processes = {}        # {script_name: subprocess.Popen}
@@ -82,11 +82,13 @@ def send_file(conn, filepath):
     filesize = os.path.getsize(filepath)
     filename = os.path.basename(filepath)
 
+    # Send file header first
     send_cmd(conn, f"FILE {filename} {filesize}")
     ack = receive_msg(conn)
     if ack != "READY":
         return
 
+    # Send the actual file
     with open(filepath, "rb") as f:
         while chunk := f.read(4096):
             conn.sendall(chunk)
@@ -96,17 +98,17 @@ def send_file(conn, filepath):
 
 
 def watch_and_send_csvs(conn, folder, known_files, stop_event):
-    """Continuously watch folder for new CSV files and send them."""
+    """Continuously watch folder for new CSV files and send them sequentially."""
     while not stop_event.is_set():
         try:
             current_files = {f for f in os.listdir(folder) if f.endswith(".csv")}
             new_files = current_files - known_files
-            for new_file in new_files:
+            for new_file in sorted(new_files):
                 filepath = os.path.join(folder, new_file)
                 if os.path.exists(filepath) and os.path.getsize(filepath) > 0:
                     send_file(conn, filepath)
                     known_files.add(new_file)
-            time.sleep(2)
+            time.sleep(1)
         except Exception as e:
             log_event(f"Watcher error: {e}")
             break
@@ -129,9 +131,10 @@ def handle_client(conn, addr):
             if cmd.startswith("RUN "):
                 script_name = cmd[4:]
                 proc, response = run_script(script_name)
+
+                # Send response BEFORE starting CSV watcher
                 send_cmd(conn, response)
 
-                # Launch CSV watcher only when a script starts
                 if proc and response == "SCRIPT_STARTED":
                     known_files = set()
                     stop_event = threading.Event()
@@ -148,22 +151,24 @@ def handle_client(conn, addr):
             elif cmd.startswith("KILL "):
                 script_name = cmd[5:]
                 response = kill_script(script_name)
+                send_cmd(conn, response)
 
             elif cmd == "STOP_ALL":
                 response = kill_all_scripts()
+                send_cmd(conn, response)
 
             elif cmd.lower() == "quit":
                 response = "QUIT"
+                send_cmd(conn, response)
                 log_event("QUIT received")
                 break
 
             else:
                 response = "UNKNOWN_COMMAND"
-
-            send_cmd(conn, response)
+                send_cmd(conn, response)
 
     finally:
-        # stop all watchers
+        # Stop all watchers
         for t, stop_event in watcher_threads:
             stop_event.set()
             t.join(timeout=2)
