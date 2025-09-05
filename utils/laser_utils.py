@@ -14,9 +14,8 @@ def init_AOTF():
             win.moveTo(0, 0)
             win.activate()
             break
-        except (IndexError, gw.PyGetWindowException) as e:
-            print("pygetwindow error, retrying...", e)
-            time.sleep(1)  # avoid 100% CPU
+        except gw.PyGetWindowException:
+            pyautogui.click(win.left, win.top)
 
     x = np.array([200, 270, 320])-10
     y = np.linspace(190, 430, 8)
