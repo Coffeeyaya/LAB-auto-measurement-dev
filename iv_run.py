@@ -37,7 +37,7 @@ export_data(CSV_FOLDER, filename)
 
 time.sleep(5)
 # light
-illuminate_and_run()
+illuminate_and_run(sock)
 filename = filename_generator(material, device_number, measurement_type='idvg', condition=f'light_{laser_wavelength}_{laser_power}')
 export_data(CSV_FOLDER, filename)
 
@@ -55,7 +55,7 @@ for vg in vg_values:
 
     time.sleep(5)
     # light
-    illuminate_and_run()
+    illuminate_and_run(sock)
     filename = filename_generator(material, device_number, measurement_type='idvd', condition=f'light_{laser_wavelength}_{laser_power}:vg={vg}')
     export_data(CSV_FOLDER, filename)
     time.sleep(5)
@@ -64,7 +64,7 @@ for vg in vg_values:
 # laser off
 change_measurement_mode(time_path)
 
-time_dependent_illumination_run()
+time_dependent_illumination_run(sock)
 filename = filename_generator(material, device_number, measurement_type='time', condition='on-off')
 export_data(CSV_FOLDER, filename)
 
