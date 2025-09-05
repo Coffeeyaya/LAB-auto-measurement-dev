@@ -29,17 +29,17 @@ get_window(r'Kick')
 # scroll_to_bottom()
 
 # --- idvg ---
-change_measurement_mode(idvg_path)
-# dark
-time.sleep(3)
-for i in range(1, 3):
-    if material in ['mw', 'wse2']:
-        change_vg_range(str(i), '-' + str(i))
-    else:
-        change_vg_range('-' + str(i), str(i))
-    time.sleep(1)
-    run_measurement()
-    time.sleep(1)
+# change_measurement_mode(idvg_path)
+# # dark
+# time.sleep(3)
+# for i in range(1, 3):
+#     if material in ['mw', 'wse2']:
+#         change_vg_range(str(i), '-' + str(i))
+#     else:
+#         change_vg_range('-' + str(i), str(i))
+#     time.sleep(1)
+#     run_measurement()
+#     time.sleep(1)
 
 # run_measurement()
 
@@ -55,7 +55,7 @@ for i in range(1, 3):
 
 # # --- idvd ---
 change_measurement_mode(idvd_path)
-# time.sleep(3)
+time.sleep(3)
 for i in range(1, 3):
     if material in ['mw', 'wse2']:
         change_vd_range('-' + str(i), str(i))
