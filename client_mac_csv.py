@@ -15,6 +15,7 @@ def receive_file(sock):
         return
     _, filename, filesize = header.split()
     filesize = int(filesize)
+    
     filepath = os.path.join(SAVE_DIR, filename)
 
     send_cmd(sock, "READY")
