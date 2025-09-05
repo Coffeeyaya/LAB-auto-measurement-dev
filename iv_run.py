@@ -11,7 +11,7 @@ time_path = r'D:\kickstart\YunChen\timeDependent_yunChen\time'
 save_folder_idvg = r'C:\Users\mmm11\OneDrive\桌面\yun-chen\KickStart\hs2\20250901\idvg'
 save_folder_idvd = r'C:\Users\mmm11\OneDrive\桌面\yun-chen\KickStart\hs2\20250901\idvd'
 save_folder_time = r'C:\Users\mmm11\OneDrive\桌面\yun-chen\KickStart\hs2\20250901\time'
-CSV_FOLDER = r''
+CSV_FOLDER = r'data'
 
 material = 'mw'
 device_number = '5-5'
@@ -19,20 +19,20 @@ laser_wavelength = '660nm'
 laser_power = '100nw'
 
 # Communication settings
-# SERVER_IP = "192.168.151.20"   # IP of the laser computer
-# PORT = 5001
-# sock = connect_to_server(ip=SERVER_IP, port=PORT)
+SERVER_IP = "192.168.151.20"   # IP of the laser computer
+PORT = 5001
+sock = connect_to_server(ip=SERVER_IP, port=PORT)
 
 # start controlling KickStart App
 get_window(r'Kick')
-# scroll_to_bottom()
+scroll_to_bottom()
 
 # --- idvg ---
 change_measurement_mode(idvg_path)
 # dark
 run_measurement()
-# filename = filename_generator(material, device_number, measurement_type='idvg', condition='dark')
-# export_data(CSV_FOLDER, filename)
+filename = filename_generator(material, device_number, measurement_type='idvg', condition='dark')
+export_data(CSV_FOLDER, filename)
 
 # time.sleep(60)
 # # light
