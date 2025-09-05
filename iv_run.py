@@ -32,7 +32,7 @@ get_window(r'Kick')
 change_measurement_mode(idvg_path)
 # dark
 time.sleep(3)
-for i in range(1, 4):
+for i in range(1, 3):
     if material in ['mw', 'wse2']:
         change_vg_range(str(i), '-' + str(i))
     else:
@@ -56,7 +56,7 @@ for i in range(1, 4):
 # # --- idvd ---
 change_measurement_mode(idvd_path)
 time.sleep(3)
-for i in range(1, 4):
+for i in range(1, 3):
     if material in ['mw', 'wse2']:
         change_vd_range('-' + str(i), str(i))
     else:

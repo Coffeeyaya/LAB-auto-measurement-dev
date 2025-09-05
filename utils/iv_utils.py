@@ -144,6 +144,7 @@ def change_idvd_vg_level(voltage): # change vg value for idvd
     move_and_click(SETTINGS_BOTTON)
     scroll_to_bottom()
     move_and_click(GATE_PANEL)
+    scroll_to_bottom()
     move_and_click(DRIAN_VG_VALUE)
 
     fill_box_ctrl_a(voltage)
