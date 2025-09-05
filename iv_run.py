@@ -32,7 +32,7 @@ get_window(r'Kick')
 change_measurement_mode(idvg_path)
 # dark
 time.sleep(3)
-change_vg_range("-5", "5")
+change_vg_range("-3", "3")
 run_measurement()
 
 filename = filename_generator(material, device_number, measurement_type='idvg', condition='dark')
@@ -47,12 +47,11 @@ time.sleep(5)
 
 # --- idvd ---
 change_measurement_mode(idvd_path)
-change_vd_range("3", "-3")
+change_vd_range("4", "-4")
 
 vg_values = ["-5", "0", "5"]
 scroll_to_bottom()
 for vg in vg_values:
-    
     change_idvd_vg_level(vg)
     # dark
     run_measurement()
