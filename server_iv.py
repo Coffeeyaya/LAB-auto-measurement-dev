@@ -9,9 +9,9 @@ PORT = 5000  # command port
 # ------------------- MUST CONFIGURE -------------------
 DEFAULT_FOLDER = r"C:\Users\mmm11\OneDrive\桌面\yun-chen\code\auto\LAB-auto-measurement\data"
 # ------------------------------------------------------
-
 processes = {}        # {script_name: subprocess.Popen}
 current_client = None
+watcher_threads = []
 
 SERVER_SCRIPT_NAME = os.path.basename(__file__)
 LOG_FILE = os.path.join(DEFAULT_FOLDER, "server_log.txt")
@@ -55,7 +55,7 @@ def kill_script(script_name):
 
     if script_name in processes:
         proc = processes[script_name]
-        if proc.poll() is None:
+        if proc.poll() is None:  # still running
             subprocess.call(["taskkill", "/F", "/T", "/PID", str(proc.pid)], shell=True)
             log_event(f"KILL {script_name} (PID={proc.pid})")
         del processes[script_name]
@@ -105,8 +105,7 @@ def handle_client(conn, addr):
             send_cmd(conn, response)
 
     finally:
-        kill_all_scripts()  # cleanup all scripts
-        print('hi')
+        kill_all_scripts()  # cleanup
         conn.close()
 
 
@@ -121,8 +120,6 @@ def main():
         handle_client(conn, addr)
     finally:
         server_socket.close()
-        print("IV command server has shut down.")
-        os._exit(0) 
 
 
 if __name__ == "__main__":
