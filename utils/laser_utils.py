@@ -10,6 +10,7 @@ def init_AOTF():
         try:
             win = gw.getWindowsWithTitle("AOTF Controller")
             win = win[0]
+            win.restore()
             win.moveTo(0, 0)
             win.activate()
             break
