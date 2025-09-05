@@ -31,7 +31,7 @@ get_window(r'Kick')
 # --- idvg ---
 change_measurement_mode(idvg_path)
 # dark
-
+time.sleep(3)
 change_vg_range("-5", "5")
 run_measurement()
 
@@ -50,8 +50,9 @@ change_measurement_mode(idvd_path)
 change_vd_range("3", "-3")
 
 vg_values = ["-5", "0", "5"]
+scroll_to_bottom()
 for vg in vg_values:
-    scroll_to_bottom()
+    
     change_idvd_vg_level(vg)
     # dark
     run_measurement()
