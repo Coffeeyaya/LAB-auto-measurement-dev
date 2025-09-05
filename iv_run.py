@@ -51,6 +51,7 @@ time.sleep(5)
 
 # --- idvd ---
 change_measurement_mode(idvd_path)
+time.sleep(3)
 change_vd_range("3", "-3")
 
 vg_values = ["-5", "0", "5"]
