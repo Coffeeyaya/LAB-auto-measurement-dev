@@ -86,14 +86,21 @@ def change_vg_range(low, high):
     '''
     move_and_click(SETTINGS_BOTTON)
     scroll_to_bottom()
+
     move_and_click(GATE_PANEL)
     time.sleep(1)
-
     move_and_click(GATE_START)
     fill_box_ctrl_a(low)
+    time.sleep(1)
+    scroll_to_bottom()
+
     time.sleep(3)
+
+    move_and_click(GATE_PANEL)
+    time.sleep(1)
+    move_and_click(GATE_STOP)
     fill_box_ctrl_a(high)
-    time.sleep(2)
+    time.sleep(1)
     scroll_to_bottom()
 
 
@@ -105,14 +112,21 @@ def change_vd_range(low, high):
     '''
     move_and_click(SETTINGS_BOTTON)
     scroll_to_bottom()
+
     move_and_click(DRAIN_PANEL)
     time.sleep(1)
-
     move_and_click(DRAIN_START)
     fill_box_ctrl_a(low)
+    time.sleep(1)
+    scroll_to_bottom()
+    
     time.sleep(3)
+
+    move_and_click(DRAIN_PANEL)
+    time.sleep(1)
+    move_and_click(DRAIN_STOP)
     fill_box_ctrl_a(high)
-    time.sleep(2)
+    time.sleep(1)
     scroll_to_bottom()
 
 def change_idvd_vg_level(voltage): # change vg value for idvd
@@ -186,7 +200,7 @@ KICK_START_FILE_BOTTON = [654, 143]
 
 def change_measurement_mode(meas_mode_path):
     move_and_click(CHANGE_MEAS_MODE_BOTTON)
-    time.sleep(2)
+    time.sleep(5)
     move_and_click(SAVE_PROJ_BOTTON) # save project window, won't show every time
     while not get_window(r'Open File'):
         time.sleep(1)
