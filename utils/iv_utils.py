@@ -70,6 +70,7 @@ def fill_box_ctrl_a(content):
     pyperclip.copy(content)
     pyautogui.hotkey('ctrl', 'a')
     pyautogui.hotkey("ctrl", "v")
+    time.sleep(0.5)
     pyautogui.press('enter')
 
 def fill_box_no_ctrl_a(content):

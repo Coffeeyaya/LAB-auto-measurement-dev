@@ -59,7 +59,9 @@ time.sleep(3)
 for i in range(1, 3):
     if material in ['mw', 'wse2']:
         change_vd_range('-' + str(i), str(i))
+        change_vd_range('-' + str(i), str(i))
     else:
+        change_vd_range('-' + str(i), str(i))
         change_vd_range('-' + str(i), str(i))
     time.sleep(1)
     run_measurement()
