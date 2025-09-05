@@ -1,8 +1,8 @@
 import time
 import os 
 from utils.iv_utils import get_window, scroll_to_bottom, change_measurement_mode, \
-    run_measurement, stop_measurement, export_data, change_idvd_vg_level, filename_generator, \
-    illuminate_and_run, time_dependent_illumination_run, watch_pixel
+    run_measurement, export_data, change_idvd_vg_level, filename_generator, \
+    illuminate_and_run, time_dependent_illumination_run
 from utils.socket_utils import connect_to_server
 
 # measurement settings
