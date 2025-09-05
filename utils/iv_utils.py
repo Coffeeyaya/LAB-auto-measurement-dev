@@ -4,6 +4,7 @@ import pyperclip
 import re
 import time
 from utils.socket_utils import send_cmd, wait_for
+from PIL import ImageGrab
 
 SCROLL_POSITION = [1700, 500]
 SETTINGS_BOTTON = [360, 160]
@@ -105,8 +106,7 @@ def change_idvd_vg_level(voltage): # change vg value for idvd
     scroll_to_bottom()
 
 
-from PIL import ImageGrab
-import time
+
 
 def watch_pixel(x, y, tol=0):
     """

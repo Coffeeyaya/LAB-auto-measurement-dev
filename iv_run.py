@@ -20,20 +20,20 @@ laser_wavelength = '660nm'
 laser_power = '100nw'
 
 # Communication settings
-SERVER_IP = "192.168.151.20"   # IP of the laser computer
-PORT = 5001
-sock = connect_to_server(ip=SERVER_IP, port=PORT)
+# SERVER_IP = "192.168.151.20"   # IP of the laser computer
+# PORT = 5001
+# sock = connect_to_server(ip=SERVER_IP, port=PORT)
 
 # start controlling KickStart App
 get_window(r'Kick')
-scroll_to_bottom()
+# scroll_to_bottom()
 
 # --- idvg ---
-change_measurement_mode(idvg_path)
+# change_measurement_mode(idvg_path)
 # dark
 run_measurement()
-filename = filename_generator(material, device_number, measurement_type='idvg', condition='dark')
-export_data(CSV_FOLDER, filename)
+# filename = filename_generator(material, device_number, measurement_type='idvg', condition='dark')
+# export_data(CSV_FOLDER, filename)
 
 # time.sleep(60)
 # # light
