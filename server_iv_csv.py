@@ -4,7 +4,7 @@ from utils.socket_utils import send_cmd, receive_msg, create_server, accept_clie
 
 CSV_FOLDER = r"C:\Users\mmm11\OneDrive\桌面\yun-chen\code\auto\LAB-auto-measurement"
 HOST = "0.0.0.0"
-PORT = 5001  # separate port for CSV transfer
+PORT = 5002  # separate port for CSV transfer
 
 
 def send_file(conn, filepath):
