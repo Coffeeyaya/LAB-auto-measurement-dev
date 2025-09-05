@@ -53,7 +53,7 @@ def get_window(pattern):
 
 def move_and_click(coord):
     pyautogui.moveTo(*coord)
-    time.sleep(0.1)
+    time.sleep(0.5)
     pyautogui.click(*coord)
 
 def move_and_double_click(coord):
@@ -132,7 +132,7 @@ def watch_pixel(x=RUN_BOTTON[0], y=RUN_BOTTON[1], tol=10):
         time.sleep(0.5)  # adjust speed as needed
 def click_RUN():
     move_and_click(RUN_BOTTON)
-    time.sleep(1)
+    time.sleep(2)
     move_and_click(GRAPH_BOTTON)
     time.sleep(1)
 
