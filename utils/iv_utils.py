@@ -14,8 +14,8 @@ GRAPH_BOTTON = [500, 160]
 DRAIN_PANEL = [800, 300]
 DRAIN_MODE = [1100, 310]
 DRAIN_DUAL_SWEEP = [1044, 350]
-DRAIN_START = [1350, 370]
-DRAIN_STOP = [1350, 430]
+DRAIN_START = [1350, 370] # same as gate start
+DRAIN_STOP = [1350, 430] # same as gate stop
 DRIAN_VG_VALUE = [1420, 360]
 
 # for idvg
@@ -78,21 +78,37 @@ def fill_box_no_ctrl_a(content):
     pyautogui.press('enter')
 
 
-# def change_vg_range(low, high):
-#     '''
-#     for idvd
-#     low: vg start (str)
-#     high: vg end (str)
-#     '''
-#     move_and_click(DRAIN_PANEL)
+def change_vg_range(low, high):
+    '''
+    for idvg
+    low: vg start (str)
+    high: vg end (str)
+    '''
+    move_and_click(GATE_PANEL)
 
-#     move_and_click(DRAIN_START)
-#     fill_box(low)
-#     scroll_to_bottom()
+    move_and_click(GATE_START)
+    fill_box_ctrl_a(low)
+    scroll_to_bottom()
 
-#     move_and_click(DRAIN_STOP)
-#     fill_box(high)
-#     scroll_to_bottom()
+    move_and_click(GATE_STOP)
+    fill_box_ctrl_a(high)
+    scroll_to_bottom()
+
+def change_vd_range(low, high):
+    '''
+    for idvd
+    low: vd start (str)
+    high: vd end (str)
+    '''
+    move_and_click(DRAIN_PANEL)
+
+    move_and_click(DRAIN_START)
+    fill_box_ctrl_a(low)
+    scroll_to_bottom()
+
+    move_and_click(DRAIN_STOP)
+    fill_box_ctrl_a(high)
+    scroll_to_bottom()
 
 def change_idvd_vg_level(voltage): # change vg value for idvd
     '''
