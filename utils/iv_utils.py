@@ -87,7 +87,7 @@ def change_vg_range(low, high):
     move_and_click(SETTINGS_BOTTON)
     scroll_to_bottom()
     move_and_click(GATE_PANEL)
-
+    time.sleep(1)
     move_and_click(GATE_START)
     fill_box_ctrl_a(low)
     scroll_to_bottom()
@@ -106,6 +106,7 @@ def change_vd_range(low, high):
     move_and_click(SETTINGS_BOTTON)
     scroll_to_bottom()
     move_and_click(DRAIN_PANEL)
+    time.sleep(1)
 
     move_and_click(DRAIN_START)
     fill_box_ctrl_a(low)
