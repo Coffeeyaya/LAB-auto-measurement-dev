@@ -7,7 +7,7 @@ HOST = "0.0.0.0"
 PORT = 5000  # command port
 
 # ------------------- MUST CONFIGURE -------------------
-DEFAULT_FOLDER = r"C:\Users\mmm11\OneDrive\桌面\yun-chen\code\auto\LAB-auto-measurement"
+DEFAULT_FOLDER = r"C:\Users\8300Elite\Desktop\auto\LAB-auto-measurement"
 # ------------------------------------------------------
 
 processes = {}        # {script_name: subprocess.Popen}
@@ -33,18 +33,18 @@ def run_script(script_name):
     full_path = os.path.join(DEFAULT_FOLDER, script_name)
 
     if script_name == SERVER_SCRIPT_NAME:
-        return None, "CANNOT_RUN_SERVER"
+        return "CANNOT_RUN_SERVER"
 
     if not os.path.exists(full_path):
-        return None, "SCRIPT_NOT_FOUND"
+        return "SCRIPT_NOT_FOUND"
 
     if script_name in processes and processes[script_name].poll() is None:
-        return processes[script_name], "SCRIPT_ALREADY_RUNNING"
+        return "SCRIPT_ALREADY_RUNNING"
 
     proc = subprocess.Popen(["python", full_path])
     processes[script_name] = proc
     log_event(f"RUN {script_name} (PID={proc.pid})")
-    return proc, "SCRIPT_STARTED"
+    return "SCRIPT_STARTED"
 
 
 def kill_script(script_name):
@@ -85,32 +85,27 @@ def handle_client(conn, addr):
 
             if cmd.startswith("RUN "):
                 script_name = cmd[4:]
-                proc, response = run_script(script_name)
-                send_cmd(conn, response)
-                # CSV server should be started separately by the user if needed
-                continue
+                response = run_script(script_name)
 
             elif cmd.startswith("KILL "):
                 script_name = cmd[5:]
                 response = kill_script(script_name)
-                send_cmd(conn, response)
 
             elif cmd == "STOP_ALL":
                 response = kill_all_scripts()
-                send_cmd(conn, response)
 
             elif cmd.lower() == "quit":
                 response = "QUIT"
-                send_cmd(conn, response)
                 log_event("QUIT received")
                 break
 
             else:
                 response = "UNKNOWN_COMMAND"
-                send_cmd(conn, response)
+
+            send_cmd(conn, response)
 
     finally:
-        kill_all_scripts()
+        kill_all_scripts()  # cleanup all scripts
         conn.close()
 
 
@@ -125,6 +120,7 @@ def main():
         handle_client(conn, addr)
     finally:
         server_socket.close()
+        print("IV command server has shut down.")
 
 
 if __name__ == "__main__":
