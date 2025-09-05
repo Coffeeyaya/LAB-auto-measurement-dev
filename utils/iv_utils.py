@@ -138,7 +138,7 @@ def click_RUN():
 
 def run_measurement(): # will detect color change, block if not change
     click_RUN()
-    time.sleep(3)
+    time.sleep(1)
     watch_pixel()
 
 def click_STOP():
