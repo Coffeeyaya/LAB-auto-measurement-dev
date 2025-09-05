@@ -20,7 +20,7 @@ laser_power = '100nw'
 
 # Communication settings
 SERVER_IP = "192.168.151.20"   # IP of the laser computer
-PORT = 5000
+PORT = 5001
 sock = connect_to_server(ip=SERVER_IP, port=PORT)
 
 # start controlling KickStart App

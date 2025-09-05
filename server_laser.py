@@ -6,8 +6,8 @@ from utils.socket_utils import send_cmd, receive_msg, create_server, accept_clie
 HOST = "0.0.0.0"
 PORT = 5000
 
-DEFAULT_FOLDER = r""  # must be set
-CSV_FOLDER = r""      # only used in IV server
+DEFAULT_FOLDER = r"C:\Users\8300Elite\Desktop\auto\LAB-auto-measurement"  # must be set
+CSV_FOLDER = r"C:\Users\8300Elite\Desktop\auto\LAB-auto-measurement\data"      # only used in IV server
 processes = {}        # {script_name: subprocess.Popen}
 current_client = None
 watcher_threads = []

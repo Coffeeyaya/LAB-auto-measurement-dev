@@ -5,7 +5,7 @@ import threading
 
 # SERVER_IP = "192.168.137.1"
 SERVER_IP = "192.168.151.20" # for server_laser(Windows 7)
-SERVER_IP = "" # for server_iv (Windows 10)
+# SERVER_IP = "" # for server_iv (Windows 10)
 PORT = 5000
 
 SAVE_DIR = "data"

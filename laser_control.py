@@ -51,7 +51,7 @@ def time_dependent(conn, grid, channel, power, num_peaks=10):
     laser_state = "FUNCTION_DONE"
     send_cmd(conn, "FUNCTION_DONE")
 
-server_socket = create_server(host="0.0.0.0", port=5000)
+server_socket = create_server(host="0.0.0.0", port=5001)
 conn, addr = accept_client(server_socket)
 
 grid = init_AOTF()
