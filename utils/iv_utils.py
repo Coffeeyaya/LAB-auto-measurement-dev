@@ -85,6 +85,7 @@ def change_vg_range(low, high):
     high: vg end (str)
     '''
     move_and_click(SETTINGS_BOTTON)
+    time.sleep(3)
     scroll_to_bottom()
 
     move_and_click(GATE_PANEL)
@@ -117,6 +118,7 @@ def change_vd_range(low, high):
     high: vd end (str)
     '''
     move_and_click(SETTINGS_BOTTON)
+    time.sleep(3)
     scroll_to_bottom()
 
     move_and_click(DRAIN_PANEL)
