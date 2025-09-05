@@ -1,38 +1,39 @@
-import socket, os
+# client_mac_iv.py
+from utils.socket_utils import send_cmd, receive_msg
+import socket
 
-SAVE_DIR = "data_iv_csv"
-SERVER_IP = "192.168.50.101"
-PORT = 5001
+SERVER_IP = "192.168.50.101"  # Replace with server_iv IP
+PORT = 5000  # command port
 
-os.makedirs(SAVE_DIR, exist_ok=True)
+def connect_to_server(ip=SERVER_IP, port=PORT):
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    sock.connect((ip, port))
+    print(f"Connected to IV server at {ip}:{port}")
+    return sock
 
-sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-sock.connect((SERVER_IP, PORT))
-print(f"Connected to CSV server at {SERVER_IP}:{PORT}")
+def main():
+    sock = connect_to_server()
 
-def receive_file():
-    header = b""
-    while b"\n" not in header:
-        header += sock.recv(1024)
-    header = header.decode().strip()
-    if not header.startswith("FILE "):
-        print("Unexpected message:", header)
-        return
-    _, filename, filesize = header.split()
-    filesize = int(filesize)
-    sock.sendall(b"READY\n")
-    path = os.path.join(SAVE_DIR, filename)
-    received = 0
-    with open(path, "wb") as f:
-        while received < filesize:
-            chunk = sock.recv(min(4096, filesize - received))
-            if not chunk:
+    try:
+        while True:
+            cmd = input("IV Command (RUN/KILL/STOP_ALL/quit): ").strip()
+            if not cmd:
+                continue
+
+            send_cmd(sock, cmd)
+
+            if cmd.lower() == "quit":
+                response = receive_msg(sock)
+                print("[IV RESPONSE]", response)
                 break
-            f.write(chunk)
-            received += len(chunk)
-    done = sock.recv(1024).decode().strip()
-    if done == "FILE_DONE":
-        print(f"Received {filename}")
 
-while True:
-    receive_file()
+            # For all other commands, wait for server response
+            response = receive_msg(sock)
+            print("[IV RESPONSE]", response)
+
+    finally:
+        sock.close()
+        print("IV client connection closed.")
+
+if __name__ == "__main__":
+    main()
