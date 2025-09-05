@@ -3,6 +3,8 @@ import time
 from utils.socket_utils import send_cmd, receive_msg, create_server, accept_client
 
 CSV_FOLDER = r"C:\Users\mmm11\OneDrive\桌面\yun-chen\code\auto\LAB-auto-measurement\data"
+os.makedirs(CSV_FOLDER, exist_ok=True)
+
 HOST = "0.0.0.0"
 PORT = 5002  # separate port for CSV transfer
 
