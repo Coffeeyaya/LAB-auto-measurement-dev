@@ -128,9 +128,6 @@ def change_idvd_vg_level(voltage): # change vg value for idvd
     fill_box_ctrl_a(voltage)
     scroll_to_bottom()
 
-
-
-
 def watch_pixel(x=RUN_BOTTON[0], y=RUN_BOTTON[1], tol=10):
     """
     Monitors the color of a pixel at (x,y).

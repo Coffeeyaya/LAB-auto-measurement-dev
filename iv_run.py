@@ -9,10 +9,10 @@ from utils.socket_utils import connect_to_server
 idvg_path = r'D:\kickstart\YunChen\idvg_yunChen\idvg'
 idvd_path = r'D:\kickstart\YunChen\idvd_yunChen\idvd'
 time_path = r'D:\kickstart\YunChen\timeDependent_yunChen\time'
-save_folder_idvg = r'C:\Users\mmm11\OneDrive\桌面\yun-chen\KickStart\hs2\20250901\idvg'
-save_folder_idvd = r'C:\Users\mmm11\OneDrive\桌面\yun-chen\KickStart\hs2\20250901\idvd'
-save_folder_time = r'C:\Users\mmm11\OneDrive\桌面\yun-chen\KickStart\hs2\20250901\time'
-CSV_FOLDER = r"C:\Users\mmm11\OneDrive\桌面\yun-chen\code\auto\LAB-auto-measurement\data"
+# save_folder_idvg = r'C:\Users\mmm11\OneDrive\桌面\yun-chen\KickStart\hs2\20250901\idvg'
+# save_folder_idvd = r'C:\Users\mmm11\OneDrive\桌面\yun-chen\KickStart\hs2\20250901\idvd'
+# save_folder_time = r'C:\Users\mmm11\OneDrive\桌面\yun-chen\KickStart\hs2\20250901\time'
+CSV_FOLDER = r"C:\Users\mmm11\OneDrive\桌面\yun-chen\code\auto\data"
 os.makedirs(CSV_FOLDER, exist_ok=True)
 material = 'mw'
 device_number = '5-5'
@@ -32,7 +32,11 @@ get_window(r'Kick')
 change_measurement_mode(idvg_path)
 # dark
 time.sleep(3)
-change_vg_range("-3", "3")
+if material in ['mw', 'wse2']:
+    change_vg_range("5", "-5")
+else:
+    change_vg_range("-5", "5")
+time.sleep(1)
 run_measurement()
 
 filename = filename_generator(material, device_number, measurement_type='idvg', condition='dark')
@@ -47,7 +51,7 @@ time.sleep(5)
 
 # --- idvd ---
 change_measurement_mode(idvd_path)
-change_vd_range("4", "-4")
+change_vd_range("3", "-3")
 
 vg_values = ["-5", "0", "5"]
 scroll_to_bottom()
