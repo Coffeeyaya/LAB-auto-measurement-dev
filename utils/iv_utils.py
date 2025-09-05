@@ -108,7 +108,18 @@ def run_measurement():
     move_and_click(RUN_BOTTON)
     time.sleep(1)
     move_and_click(GRAPH_BOTTON)
-    time.sleep(10) # change this to openCV
+    prev_color = None
+    while True:
+        # Get color at the pixel
+        color = pyautogui.screenshot().getpixel(RUN_BOTTON)
+
+        if prev_color is not None and color != prev_color:
+            print(f"Color changed! {prev_color} -> {color}")
+            break
+
+        prev_color = color
+        time.sleep(1)  # small delay to reduce CPU usage
+    time.sleep(1)
 
 def stop_measurement():
     move_and_click(STOP_BOTTON)

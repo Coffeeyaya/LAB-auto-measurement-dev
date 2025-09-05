@@ -1,4 +1,5 @@
 import time
+import os 
 from utils.iv_utils import get_window, scroll_to_bottom, change_measurement_mode, \
     run_measurement, stop_measurement, export_data, change_idvd_vg_level, filename_generator, \
     illuminate_and_run, time_dependent_illumination_run
@@ -12,7 +13,7 @@ save_folder_idvg = r'C:\Users\mmm11\OneDrive\桌面\yun-chen\KickStart\hs2\20250
 save_folder_idvd = r'C:\Users\mmm11\OneDrive\桌面\yun-chen\KickStart\hs2\20250901\idvd'
 save_folder_time = r'C:\Users\mmm11\OneDrive\桌面\yun-chen\KickStart\hs2\20250901\time'
 CSV_FOLDER = r'C:\Users\mmm11\OneDrive\桌面\yun-chen\KickStart\hs2\data'
-
+os.makedirs(CSV_FOLDER, exist_ok=True)
 material = 'mw'
 device_number = '5-5'
 laser_wavelength = '660nm'
