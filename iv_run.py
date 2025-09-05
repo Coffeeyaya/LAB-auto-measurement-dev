@@ -54,7 +54,7 @@ for i in range(1, 3):
 # time.sleep(5)
 
 # # --- idvd ---
-# change_measurement_mode(idvd_path)
+change_measurement_mode(idvd_path)
 # time.sleep(3)
 for i in range(1, 3):
     if material in ['mw', 'wse2']:
