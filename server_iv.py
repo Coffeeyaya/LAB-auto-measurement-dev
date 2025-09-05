@@ -106,6 +106,7 @@ def handle_client(conn, addr):
 
     finally:
         kill_all_scripts()  # cleanup all scripts
+        print('hi')
         conn.close()
 
 
@@ -121,6 +122,7 @@ def main():
     finally:
         server_socket.close()
         print("IV command server has shut down.")
+        os._exit(0) 
 
 
 if __name__ == "__main__":

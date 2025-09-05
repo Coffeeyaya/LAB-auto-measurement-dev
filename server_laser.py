@@ -118,7 +118,6 @@ def main(is_iv_server=False):
         handle_client(conn, addr, is_iv_server=is_iv_server)
     finally:
         server_socket.close()
-        print('HI')
 
 
 if __name__ == "__main__":
