@@ -11,6 +11,7 @@ time_path = r'D:\kickstart\YunChen\timeDependent_yunChen\time'
 save_folder_idvg = r'C:\Users\mmm11\OneDrive\桌面\yun-chen\KickStart\hs2\20250901\idvg'
 save_folder_idvd = r'C:\Users\mmm11\OneDrive\桌面\yun-chen\KickStart\hs2\20250901\idvd'
 save_folder_time = r'C:\Users\mmm11\OneDrive\桌面\yun-chen\KickStart\hs2\20250901\time'
+CSV_FOLDER = r''
 
 material = 'mw'
 device_number = '5-5'
@@ -31,13 +32,13 @@ change_measurement_mode(idvg_path)
 # dark
 run_measurement()
 filename = filename_generator(material, device_number, measurement_type='idvg', condition='dark')
-export_data(save_folder_idvg, filename)
+export_data(CSV_FOLDER, filename)
 
 time.sleep(60)
 # light
 illuminate_and_run()
 filename = filename_generator(material, device_number, measurement_type='idvg', condition=f'light_{laser_wavelength}_{laser_power}')
-export_data(save_folder_idvg, filename)
+export_data(CSV_FOLDER, filename)
 
 
 # --- idvd ---
@@ -49,13 +50,13 @@ for vg in vg_values:
     # dark
     run_measurement()
     filename = filename_generator(material, device_number, measurement_type='idvd', condition=f'dark:vg={vg}')
-    export_data(save_folder_idvd, filename)
+    export_data(CSV_FOLDER, filename)
 
     time.sleep(60)
     # light
     illuminate_and_run()
     filename = filename_generator(material, device_number, measurement_type='idvd', condition=f'light_{laser_wavelength}_{laser_power}:vg={vg}')
-    export_data(save_folder_idvd, filename)
+    export_data(CSV_FOLDER, filename)
     time.sleep(60)
 
 # --- time dependent ---
@@ -64,6 +65,6 @@ change_measurement_mode(time_path)
 
 time_dependent_illumination_run()
 filename = filename_generator(material, device_number, measurement_type='time', condition='on-off')
-export_data(save_folder_time, filename)
+export_data(CSV_FOLDER, filename)
 
 print('finish')

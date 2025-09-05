@@ -5,7 +5,7 @@ from utils.socket_utils import send_cmd, receive_msg
 SERVER_IP = "192.168.137.1"  # Windows server IP
 PORT = 5002
 CHUNK_SIZE = 4096
-SAVE_FOLDER = r"/Users/yourusername/Downloads"  # where to save CSV
+SAVE_FOLDER = r"data"  # where to save CSV
 
 def receive_file(sock):
     # Receive header
@@ -19,6 +19,7 @@ def receive_file(sock):
     send_cmd(sock, "READY")  # tell server to start sending
 
     filepath = os.path.join(SAVE_FOLDER, filename)
+    os.makedirs(os.path.dirname(filepath), exist_ok=True)
     received = 0
     with open(filepath, "wb") as f:
         while received < filesize:
