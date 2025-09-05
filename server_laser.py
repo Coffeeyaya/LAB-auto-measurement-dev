@@ -7,7 +7,6 @@ HOST = "0.0.0.0"
 PORT = 5000
 
 DEFAULT_FOLDER = r"C:\Users\8300Elite\Desktop\auto\LAB-auto-measurement"  # must be set
-CSV_FOLDER = r"C:\Users\8300Elite\Desktop\auto\LAB-auto-measurement\data"      # only used in IV server
 processes = {}        # {script_name: subprocess.Popen}
 current_client = None
 watcher_threads = []
@@ -119,6 +118,7 @@ def main(is_iv_server=False):
         handle_client(conn, addr, is_iv_server=is_iv_server)
     finally:
         server_socket.close()
+        print('HI')
 
 
 if __name__ == "__main__":
