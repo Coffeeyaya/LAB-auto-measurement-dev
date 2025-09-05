@@ -19,9 +19,9 @@ laser_wavelength = '660nm'
 laser_power = '100nw'
 
 # Communication settings
-SERVER_IP = "192.168.151.20"   # IP of the laser computer
-PORT = 5001
-sock = connect_to_server(ip=SERVER_IP, port=PORT)
+# SERVER_IP = "192.168.151.20"   # IP of the laser computer
+# PORT = 5001
+# sock = connect_to_server(ip=SERVER_IP, port=PORT)
 
 # start controlling KickStart App
 get_window(r'Kick')
@@ -31,40 +31,40 @@ get_window(r'Kick')
 change_measurement_mode(idvg_path)
 # dark
 run_measurement()
-filename = filename_generator(material, device_number, measurement_type='idvg', condition='dark')
-export_data(CSV_FOLDER, filename)
+# filename = filename_generator(material, device_number, measurement_type='idvg', condition='dark')
+# export_data(CSV_FOLDER, filename)
 
-time.sleep(60)
-# light
-illuminate_and_run()
-filename = filename_generator(material, device_number, measurement_type='idvg', condition=f'light_{laser_wavelength}_{laser_power}')
-export_data(CSV_FOLDER, filename)
+# time.sleep(60)
+# # light
+# illuminate_and_run()
+# filename = filename_generator(material, device_number, measurement_type='idvg', condition=f'light_{laser_wavelength}_{laser_power}')
+# export_data(CSV_FOLDER, filename)
 
 
-# --- idvd ---
-change_measurement_mode(idvd_path)
-vg_values = ["-5", "0", "5"]
-for vg in vg_values:
-    scroll_to_bottom()
-    change_idvd_vg_level(vg)
-    # dark
-    run_measurement()
-    filename = filename_generator(material, device_number, measurement_type='idvd', condition=f'dark:vg={vg}')
-    export_data(CSV_FOLDER, filename)
+# # --- idvd ---
+# change_measurement_mode(idvd_path)
+# vg_values = ["-5", "0", "5"]
+# for vg in vg_values:
+#     scroll_to_bottom()
+#     change_idvd_vg_level(vg)
+#     # dark
+#     run_measurement()
+#     filename = filename_generator(material, device_number, measurement_type='idvd', condition=f'dark:vg={vg}')
+#     export_data(CSV_FOLDER, filename)
 
-    time.sleep(60)
-    # light
-    illuminate_and_run()
-    filename = filename_generator(material, device_number, measurement_type='idvd', condition=f'light_{laser_wavelength}_{laser_power}:vg={vg}')
-    export_data(CSV_FOLDER, filename)
-    time.sleep(60)
+#     time.sleep(60)
+#     # light
+#     illuminate_and_run()
+#     filename = filename_generator(material, device_number, measurement_type='idvd', condition=f'light_{laser_wavelength}_{laser_power}:vg={vg}')
+#     export_data(CSV_FOLDER, filename)
+#     time.sleep(60)
 
-# --- time dependent ---
-# laser off
-change_measurement_mode(time_path)
+# # --- time dependent ---
+# # laser off
+# change_measurement_mode(time_path)
 
-time_dependent_illumination_run()
-filename = filename_generator(material, device_number, measurement_type='time', condition='on-off')
-export_data(CSV_FOLDER, filename)
+# time_dependent_illumination_run()
+# filename = filename_generator(material, device_number, measurement_type='time', condition='on-off')
+# export_data(CSV_FOLDER, filename)
 
-print('finish')
+# print('finish')

@@ -3,7 +3,7 @@ import pyautogui
 import pyperclip
 import re
 import time
-from socket_utils import send_cmd, wait_for
+from utils.socket_utils import send_cmd, wait_for
 
 SCROLL_POSITION = [1700, 500]
 SETTINGS_BOTTON = [360, 160]
