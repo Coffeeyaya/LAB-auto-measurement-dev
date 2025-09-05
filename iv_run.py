@@ -51,8 +51,14 @@ for i in range(1, 4):
 # time.sleep(5)
 
 # # --- idvd ---
-# change_measurement_mode(idvd_path)
-# time.sleep(3)
+change_measurement_mode(idvd_path)
+time.sleep(3)
+for i in range(1, 4):
+    if material in ['mw', 'wse2']:
+        change_vg_range('-' + str(i), str(i))
+    else:
+        change_vg_range('-' + str(i), str(i))
+    time.sleep(1)
 # change_vd_range("3", "-3")
 
 # vg_values = ["-5", "0", "5"]
