@@ -177,8 +177,7 @@ def change_measurement_mode(meas_mode_path):
     time.sleep(1)
     move_and_double_click(KICK_START_FILE_BOTTON)
     time.sleep(5)
-    while not get_window(r'Kick'):
-        time.sleep(1)
+    
 
 def filename_generator(material, device_number, measurement_type, condition):
     return f'{material}_{measurement_type}_{device_number}_{condition}'
