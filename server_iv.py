@@ -7,7 +7,7 @@ HOST = "0.0.0.0"
 PORT = 5000  # command port
 
 # ------------------- MUST CONFIGURE -------------------
-DEFAULT_FOLDER = r"C:\Users\mmm11\OneDrive\桌面\yun-chen\code\auto\LAB-auto-measurement\data"
+DEFAULT_FOLDER = r"C:\Users\mmm11\OneDrive\桌面\yun-chen\code\auto\LAB-auto-measurement"
 # ------------------------------------------------------
 processes = {}        # {script_name: subprocess.Popen}
 current_client = None
