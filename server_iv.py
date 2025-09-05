@@ -9,8 +9,8 @@ HOST = "0.0.0.0"
 PORT = 5000
 
 # ------------------- MUST CONFIGURE -------------------
-DEFAULT_FOLDER = r""   # folder containing your Python scripts
-CSV_FOLDER = r""       # folder where IV scripts output CSV files
+DEFAULT_FOLDER = r"C:\Users\mmm11\OneDrive\桌面\yun-chen\code\auto\LAB-auto-measurement"   # folder containing your Python scripts
+CSV_FOLDER = r"C:\Users\mmm11\OneDrive\桌面\yun-chen\code\auto\LAB-auto-measurement\data"       # folder where IV scripts output CSV files
 # ------------------------------------------------------
 
 processes = {}        # {script_name: subprocess.Popen}
