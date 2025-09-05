@@ -88,6 +88,7 @@ def change_vg_range(low, high):
     scroll_to_bottom()
     move_and_click(GATE_PANEL)
     time.sleep(1)
+    
     move_and_click(GATE_START)
     fill_box_ctrl_a(low)
     scroll_to_bottom()
