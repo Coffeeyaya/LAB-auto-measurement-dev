@@ -63,7 +63,7 @@ def move_and_double_click(coord):
 
 def scroll_to_bottom():
     move_and_click(SCROLL_POSITION)
-    for i in range(10):
+    for i in range(15):
         pyautogui.scroll(-500)
 
 def fill_box_ctrl_a(content):
