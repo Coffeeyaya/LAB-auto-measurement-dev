@@ -95,6 +95,8 @@ def change_vg_range(low, high):
     fill_box_ctrl_a(low)
     time.sleep(1)
     scroll_to_bottom()
+    time.sleep(3)
+    scroll_to_bottom()
 
     time.sleep(3)
 
@@ -125,7 +127,8 @@ def change_vd_range(low, high):
     fill_box_ctrl_a(low)
     time.sleep(1)
     scroll_to_bottom()
-    
+    time.sleep(3)
+    scroll_to_bottom()
     time.sleep(3)
 
     move_and_click(DRAIN_PANEL)
