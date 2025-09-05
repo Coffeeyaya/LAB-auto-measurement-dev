@@ -155,7 +155,7 @@ def watch_pixel(x=RUN_BOTTON[0], y=RUN_BOTTON[1], tol=10):
         time.sleep(0.5)  # adjust speed as needed
 def click_RUN():
     move_and_double_click(RUN_BOTTON)
-    time.sleep(2)
+    time.sleep(1)
     move_and_double_click(GRAPH_BOTTON)
     time.sleep(1)
 
