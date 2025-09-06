@@ -5,7 +5,7 @@ import re
 import time
 from utils.socket_utils import send_cmd, wait_for
 from PIL import ImageGrab
-from check_state import wait_for_cursor_idle
+from utils.check_state import wait_for_cursor_idle
 
 SCROLL_POSITION = [1700, 500]
 SETTINGS_BOTTON = [360, 160]
