@@ -1,7 +1,7 @@
 import time
 import os 
 from utils.iv_utils import get_window, scroll_to_bottom, change_measurement_mode, \
-    run_measurement, export_data, change_idvd_vg_level, filename_generator, \
+    run_measurement, export_data, change_idvd_vg_level, change_idvg_vd_level, filename_generator, \
     illuminate_and_run, time_dependent_illumination_run, change_vg_range, change_vd_range
 from utils.socket_utils import connect_to_server
 
@@ -32,7 +32,8 @@ scroll_to_bottom()
 change_measurement_mode(idvg_path)
 # dark
 time.sleep(3)
-for i in range(1, 3):
+for i in range(1, 5):
+    change_idvg_vd_level(str(i))
     if material in ['mw', 'wse2']:
         change_vg_range(str(i), '-' + str(i))
         change_vg_range(str(i), '-' + str(i))
@@ -42,13 +43,15 @@ for i in range(1, 3):
     time.sleep(1)
     run_measurement()
     time.sleep(1)
+    filename = filename_generator(material, device_number, measurement_type='idvg', condition='dark')
+    export_data(CSV_FOLDER, filename)
 
-run_measurement()
 
-filename = filename_generator(material, device_number, measurement_type='idvg', condition='dark')
-export_data(CSV_FOLDER, filename)
+# run_measurement()
+# filename = filename_generator(material, device_number, measurement_type='idvg', condition='dark')
+# export_data(CSV_FOLDER, filename)
 
-# time.sleep(5)
+time.sleep(5)
 # # light
 # illuminate_and_run(sock)
 # filename = filename_generator(material, device_number, measurement_type='idvg', condition=f'light_{laser_wavelength}_{laser_power}')
@@ -58,21 +61,23 @@ export_data(CSV_FOLDER, filename)
 # # --- idvd ---
 change_measurement_mode(idvd_path)
 time.sleep(3)
-for i in range(1, 3):
+for i in range(1, 4):
+    change_idvd_vg_level(str(i))
     change_vd_range('-' + str(i), str(i))
     change_vd_range('-' + str(i), str(i))
     time.sleep(1)
     run_measurement()
+    filename = filename_generator(material, device_number, measurement_type='idvd', condition=f'dark:vg={i}')
+    export_data(CSV_FOLDER, filename)
     time.sleep(1)
 
-vg_values = ["-5", "0", "5"]
-scroll_to_bottom()
-for vg in vg_values:
-    change_idvd_vg_level(vg)
-    # dark
-    run_measurement()
-    filename = filename_generator(material, device_number, measurement_type='idvd', condition=f'dark:vg={vg}')
-    export_data(CSV_FOLDER, filename)
+# vg_values = ["-5", "0", "5"]
+# for vg in vg_values:
+#     change_idvd_vg_level(vg)
+#     # dark
+#     run_measurement()
+#     filename = filename_generator(material, device_number, measurement_type='idvd', condition=f'dark:vg={vg}')
+#     export_data(CSV_FOLDER, filename)
 
 #     time.sleep(5)
 #     # light

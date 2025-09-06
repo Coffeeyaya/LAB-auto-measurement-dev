@@ -25,6 +25,7 @@ GATE_MODE = [1100, 310]
 GATE_DUAL_SWEEP = [1044, 350]
 GATE_START = [1350, 370]
 GATE_STOP = [1350, 430]
+GATE_VD_VALUE = [1420, 360]
 
 #run & save
 RUN_BOTTON = [325, 1000]
@@ -136,10 +137,25 @@ def change_idvd_vg_level(voltage): # change vg value for idvd
     voltage: voltage value (str)
     '''
     move_and_click(SETTINGS_BOTTON)
+    time.sleep(2)
     scroll_to_bottom()
     move_and_click(GATE_PANEL)
     scroll_to_bottom()
     move_and_click(DRIAN_VG_VALUE)
+
+    fill_box_ctrl_a(voltage)
+    scroll_to_bottom()
+
+def change_idvg_vd_level(voltage): # change vd value for idvg
+    '''
+    voltage: voltage value (str)
+    '''
+    move_and_click(SETTINGS_BOTTON)
+    time.sleep(2)
+    scroll_to_bottom()
+    move_and_click(GATE_PANEL)
+    scroll_to_bottom()
+    move_and_click(GATE_VD_VALUE)
 
     fill_box_ctrl_a(voltage)
     scroll_to_bottom()
