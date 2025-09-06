@@ -4,6 +4,7 @@ from utils.iv_utils import get_window, scroll_to_bottom, change_measurement_mode
     run_measurement, export_data, change_idvd_vg_level, filename_generator, \
     illuminate_and_run, time_dependent_illumination_run, change_vg_range, change_vd_range
 from utils.socket_utils import connect_to_server
+from check_state import wait_for_cursor_idle
 
 # measurement settings
 idvg_path = r'D:\kickstart\YunChen\idvg_yunChen\idvg'
