@@ -87,29 +87,22 @@ def change_vg_range(low, high):
     high: vg end (str)
     '''
     move_and_click(SETTINGS_BOTTON)
-    time.sleep(3)
+    time.sleep(2)
     scroll_to_bottom()
 
     move_and_click(GATE_PANEL)
-    time.sleep(1)
-    scroll_to_bottom()
-    time.sleep(1)
+    wait_for_cursor_idle()
     move_and_click(GATE_START)
     fill_box_ctrl_a(low)
+    wait_for_cursor_idle()
+    scroll_to_bottom()
     time.sleep(1)
-    scroll_to_bottom()
-    time.sleep(3)
-    scroll_to_bottom()
-
-    time.sleep(3)
 
     move_and_click(GATE_PANEL)
-    time.sleep(1)
-    scroll_to_bottom()
-    time.sleep(1)
+    wait_for_cursor_idle()
     move_and_click(GATE_STOP)
     fill_box_ctrl_a(high)
-    time.sleep(1)
+    wait_for_cursor_idle()
     scroll_to_bottom()
 
 
@@ -127,7 +120,6 @@ def change_vd_range(low, high):
     wait_for_cursor_idle()
     move_and_click(DRAIN_START)
     fill_box_ctrl_a(low)
-    time.sleep(1)
     wait_for_cursor_idle()
     scroll_to_bottom()
     time.sleep(1)
@@ -136,7 +128,6 @@ def change_vd_range(low, high):
     wait_for_cursor_idle()
     move_and_click(DRAIN_STOP)
     fill_box_ctrl_a(high)
-    time.sleep(1)
     wait_for_cursor_idle()
     scroll_to_bottom()
 
@@ -192,18 +183,20 @@ def click_STOP():
 
 def export_data(folder_path, file_name):
     move_and_click(EXPORT_BOTTON)
+    wait_for_cursor_idle()
     move_and_click(PATH_BOTTON)
-    time.sleep(1)
+    wait_for_cursor_idle()
     while not get_window(r'選擇'):
         time.sleep(1)
     move_and_click(EIDT_PATH_POSITION)
     fill_box_ctrl_a(folder_path)
     move_and_click(SELECT_FOLDER_BOTTON)
-    time.sleep(1)
+    wait_for_cursor_idle()
     move_and_click(FILE_NAME_BOTTON)
     fill_box_ctrl_a(file_name)
     move_and_click(EXPORT_SELECTED_RUN_BOTTON)
     print(f'STEP: export data to {folder_path}/{file_name}')
+    wait_for_cursor_idle()
     
 CHANGE_MEAS_MODE_BOTTON = [415, 65]
 SAVE_PROJ_BOTTON = [890, 580]
