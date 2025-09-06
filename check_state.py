@@ -49,6 +49,7 @@ def wait_for_cursor_idle(timeout=30, check_interval=0.5):
             return True
         if time.time() - start_time > timeout:
             return False
+        print('loading')
         time.sleep(check_interval)
 
 # ---------------- Example Usage ----------------
