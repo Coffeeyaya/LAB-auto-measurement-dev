@@ -5,6 +5,7 @@ import re
 import time
 from utils.socket_utils import send_cmd, wait_for
 from PIL import ImageGrab
+from check_state import wait_for_cursor_idle
 
 SCROLL_POSITION = [1700, 500]
 SETTINGS_BOTTON = [360, 160]
@@ -119,22 +120,24 @@ def change_vd_range(low, high):
     high: vd end (str)
     '''
     move_and_click(SETTINGS_BOTTON)
-    time.sleep(1)
+    time.sleep(2)
     scroll_to_bottom()
 
     move_and_click(DRAIN_PANEL)
-    time.sleep(1)
+    wait_for_cursor_idle()
     move_and_click(DRAIN_START)
     fill_box_ctrl_a(low)
     time.sleep(1)
+    wait_for_cursor_idle()
     scroll_to_bottom()
-    time.sleep(3)
+    time.sleep(1)
 
     move_and_click(DRAIN_PANEL)
-    time.sleep(1)
+    wait_for_cursor_idle()
     move_and_click(DRAIN_STOP)
     fill_box_ctrl_a(high)
     time.sleep(1)
+    wait_for_cursor_idle()
     scroll_to_bottom()
 
 def change_idvd_vg_level(voltage): # change vg value for idvd
