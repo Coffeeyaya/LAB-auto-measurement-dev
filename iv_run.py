@@ -20,9 +20,9 @@ laser_wavelength = '660nm'
 laser_power = '100nw'
 
 # Communication settings
-# SERVER_IP = "192.168.151.20"   # IP of the laser computer
-# PORT = 5001
-# sock = connect_to_server(ip=SERVER_IP, port=PORT)
+SERVER_IP = "192.168.151.20"   # IP of the laser computer
+PORT = 5001
+sock = connect_to_server(ip=SERVER_IP, port=PORT)
 
 # start controlling KickStart App
 get_window(r'Kick')
@@ -32,66 +32,56 @@ scroll_to_bottom()
 change_measurement_mode(idvg_path)
 # dark
 time.sleep(3)
-for i in range(1, 3):
-    change_idvg_vd_level(str(i))
-    if material in ['mw', 'wse2']:
-        change_vg_range(str(i), '-' + str(i))
-        change_vg_range(str(i), '-' + str(i))
-    else:
-        change_vg_range('-' + str(i), str(i))
-        change_vg_range('-' + str(i), str(i))
-    time.sleep(1)
-    run_measurement()
-    time.sleep(1)
-    filename = filename_generator(material, device_number, measurement_type='idvg', condition='dark')
-    export_data(CSV_FOLDER, filename)
-
-
-# run_measurement()
-# filename = filename_generator(material, device_number, measurement_type='idvg', condition='dark')
-# export_data(CSV_FOLDER, filename)
+get_window(r'Kick')
+change_idvg_vd_level("1")
+if material in ['mw', 'wse2']:
+    change_vg_range("5", "-5")
+    change_vg_range("5", "-5")
+else:
+    change_vg_range("-5", "5")
+    change_vg_range("-5", "5")
+    
+time.sleep(1)
+run_measurement()
+time.sleep(1)
+filename = filename_generator(material, device_number, measurement_type='idvg', condition='dark')
+export_data(CSV_FOLDER, filename)
 
 time.sleep(5)
-# # light
-# illuminate_and_run(sock)
-# filename = filename_generator(material, device_number, measurement_type='idvg', condition=f'light_{laser_wavelength}_{laser_power}')
-# export_data(CSV_FOLDER, filename)
-# time.sleep(5)
+# light
+illuminate_and_run(sock)
+filename = filename_generator(material, device_number, measurement_type='idvg', condition=f'light_{laser_wavelength}_{laser_power}')
+export_data(CSV_FOLDER, filename)
 
-# # --- idvd ---
+time.sleep(5)
+
+# --- idvd ---
 change_measurement_mode(idvd_path)
 time.sleep(3)
-for i in range(1, 3):
-    change_idvd_vg_level(str(i))
-    change_vd_range('-' + str(i), str(i))
-    change_vd_range('-' + str(i), str(i))
-    time.sleep(1)
+
+vg_values = ["-5", "0", "5"]
+for vg in vg_values:
+    change_idvd_vg_level(vg)
+    change_idvd_vg_level(vg)
+    change_vd_range("3", "-3")
+    # dark
     run_measurement()
-    filename = filename_generator(material, device_number, measurement_type='idvd', condition=f'dark:vg={i}')
+    filename = filename_generator(material, device_number, measurement_type='idvd', condition=f'dark:vg={vg}')
     export_data(CSV_FOLDER, filename)
-    time.sleep(1)
 
-# vg_values = ["-5", "0", "5"]
-# for vg in vg_values:
-#     change_idvd_vg_level(vg)
-#     # dark
-#     run_measurement()
-#     filename = filename_generator(material, device_number, measurement_type='idvd', condition=f'dark:vg={vg}')
-#     export_data(CSV_FOLDER, filename)
+    time.sleep(5)
+    # light
+    illuminate_and_run(sock)
+    filename = filename_generator(material, device_number, measurement_type='idvd', condition=f'light_{laser_wavelength}_{laser_power}:vg={vg}')
+    export_data(CSV_FOLDER, filename)
+    time.sleep(5)
 
-#     time.sleep(5)
-#     # light
-#     illuminate_and_run(sock)
-#     filename = filename_generator(material, device_number, measurement_type='idvd', condition=f'light_{laser_wavelength}_{laser_power}:vg={vg}')
-#     export_data(CSV_FOLDER, filename)
-#     time.sleep(5)
+# --- time dependent ---
+# laser off
+change_measurement_mode(time_path)
+time.sleep(3)
+time_dependent_illumination_run(sock)
+filename = filename_generator(material, device_number, measurement_type='time', condition='on-off')
+export_data(CSV_FOLDER, filename)
 
-# # --- time dependent ---
-# # laser off
-# change_measurement_mode(time_path)
-
-# time_dependent_illumination_run(sock)
-# filename = filename_generator(material, device_number, measurement_type='time', condition='on-off')
-# export_data(CSV_FOLDER, filename)
-
-# print('finish')
+print('finish')
