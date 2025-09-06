@@ -55,7 +55,7 @@ def wait_for_cursor_idle(timeout=30, check_interval=0.5):
 if __name__ == "__main__":
     print("Waiting for cursor to become idle...")
     while True:
-        wait_for_cursor_idle(time_out=10)
+        wait_for_cursor_idle(timeout=10)
     # if wait_for_cursor_idle(timeout=15):
     #     print("Cursor is idle, safe to continue automation.")
     # else:
