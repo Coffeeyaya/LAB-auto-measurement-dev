@@ -32,7 +32,7 @@ scroll_to_bottom()
 change_measurement_mode(idvg_path)
 # dark
 time.sleep(3)
-for i in range(1, 5):
+for i in range(1, 3):
     change_idvg_vd_level(str(i))
     if material in ['mw', 'wse2']:
         change_vg_range(str(i), '-' + str(i))
@@ -61,7 +61,7 @@ time.sleep(5)
 # # --- idvd ---
 change_measurement_mode(idvd_path)
 time.sleep(3)
-for i in range(1, 4):
+for i in range(1, 3):
     change_idvd_vg_level(str(i))
     change_vd_range('-' + str(i), str(i))
     change_vd_range('-' + str(i), str(i))

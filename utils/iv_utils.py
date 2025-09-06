@@ -144,6 +144,7 @@ def change_idvd_vg_level(voltage): # change vg value for idvd
     move_and_click(DRIAN_VG_VALUE)
 
     fill_box_ctrl_a(voltage)
+    wait_for_cursor_idle()
     scroll_to_bottom()
 
 def change_idvg_vd_level(voltage): # change vd value for idvg
@@ -153,11 +154,12 @@ def change_idvg_vd_level(voltage): # change vd value for idvg
     move_and_click(SETTINGS_BOTTON)
     time.sleep(2)
     scroll_to_bottom()
-    move_and_click(GATE_PANEL)
+    move_and_click(DRAIN_PANEL)
     scroll_to_bottom()
     move_and_click(GATE_VD_VALUE)
 
     fill_box_ctrl_a(voltage)
+    wait_for_cursor_idle()
     scroll_to_bottom()
 
 def watch_pixel(x=RUN_BOTTON[0], y=RUN_BOTTON[1], tol=10):
@@ -184,9 +186,9 @@ def watch_pixel(x=RUN_BOTTON[0], y=RUN_BOTTON[1], tol=10):
         time.sleep(0.5)  # adjust speed as needed
 def click_RUN():
     move_and_double_click(RUN_BOTTON)
+    wait_for_cursor_idle()
     time.sleep(1)
     move_and_double_click(GRAPH_BOTTON)
-    time.sleep(1)
 
 def run_measurement(): # will detect color change, block if not change
     click_RUN()
