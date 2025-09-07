@@ -68,7 +68,7 @@ def kill_all_scripts():
 
 
 # ------------------- Client Handling -------------------
-def handle_client(conn, addr, is_iv_server=False):
+def handle_client(conn, addr):
     global current_client
     current_client = addr
     log_event("CONNECTED")
@@ -108,17 +108,20 @@ def handle_client(conn, addr, is_iv_server=False):
 
 
 # ------------------- Main -------------------
-def main(is_iv_server=False):
+def main():
     if not DEFAULT_FOLDER:
         raise RuntimeError("DEFAULT_FOLDER must be set before running server.")
 
     server_socket = create_server(host=HOST, port=PORT)
-    conn, addr = accept_client(server_socket)
     try:
-        handle_client(conn, addr, is_iv_server=is_iv_server)
+        while True:
+            conn, addr = accept_client(server_socket)
+            try:
+                handle_client(conn, addr)
+            finally:
+                conn.close()
     finally:
         server_socket.close()
 
-
 if __name__ == "__main__":
-    main(is_iv_server=False)  # set True in server_iv.py
+    main()  # set True in server_iv.py

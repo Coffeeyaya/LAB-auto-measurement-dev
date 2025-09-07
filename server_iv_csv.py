@@ -62,10 +62,14 @@ def handle_client(conn, addr):
 
 
 def main():
-    server_socket = create_server(HOST, PORT)
-    conn, addr = accept_client(server_socket)
+    server_socket = create_server(host=HOST, port=PORT)
     try:
-        handle_client(conn, addr)
+        while True:
+            conn, addr = accept_client(server_socket)
+            try:
+                handle_client(conn, addr)
+            finally:
+                conn.close()
     finally:
         server_socket.close()
 

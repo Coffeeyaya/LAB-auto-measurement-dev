@@ -51,30 +51,35 @@ def time_dependent(conn, grid, channel, power, num_peaks=10):
     laser_state = "FUNCTION_DONE"
     send_cmd(conn, "FUNCTION_DONE")
 
-server_socket = create_server(host="0.0.0.0", port=5001)
-conn, addr = accept_client(server_socket)
+
 
 grid = init_AOTF()
+server_socket = create_server(host="0.0.0.0", port=5001)
+try: 
+    while True:    
+        conn, addr = accept_client(server_socket)
+        while True:
+            try:
+                cmd = receive_msg(conn)
+                time.sleep(1)
+            except ConnectionError:
+                print("Client disconnected.")
+                break # break only the inner loop
 
-while True:
-    try:
-        cmd = receive_msg(conn)
-        time.sleep(1)
-    except ConnectionError:
-        print("Client disconnected.")
-        break
+            if cmd in ["ON", "OFF"] and laser_state != cmd:
+                channel = 6
+                power = "16"
+                change_power_function(grid, channel, power)
+                on_coord = get_coord(grid, channel, "on")
+                move_and_click(on_coord)
+                time.sleep(0.5)
+                laser_state = cmd
+                send_cmd(conn, cmd)
 
-    if cmd in ["ON", "OFF"] and laser_state != cmd:
-        channel = 5
-        on_coord = get_coord(grid, channel, "on")
-        move_and_click(on_coord)
-        time.sleep(0.5)
-        laser_state = cmd
-        send_cmd(conn, cmd)
+            elif cmd == "FUNCTION" and laser_state != "FUNCTION":
+                # time_dependent_wavelength(conn, grid)  # multi-channel FUNCTION
+                time_dependent(conn, grid, channel=6, power="16", num_peaks=50)  # single-channel FUNCTION
 
-    elif cmd == "FUNCTION" and laser_state != "FUNCTION":
-        # time_dependent_wavelength(conn, grid)  # multi-channel FUNCTION
-        time_dependent(conn, grid, channel=5, power="80", num_peaks=30)  # single-channel FUNCTION
-
-conn.close()
-server_socket.close()
+        conn.close()
+finally:
+    server_socket.close()

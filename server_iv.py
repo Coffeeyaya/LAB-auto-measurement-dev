@@ -115,9 +115,13 @@ def main():
         raise RuntimeError("DEFAULT_FOLDER must be set before running server.")
 
     server_socket = create_server(host=HOST, port=PORT)
-    conn, addr = accept_client(server_socket)
     try:
-        handle_client(conn, addr)
+        while True:
+            conn, addr = accept_client(server_socket)
+            try:
+                handle_client(conn, addr)
+            finally:
+                conn.close()
     finally:
         server_socket.close()
 
