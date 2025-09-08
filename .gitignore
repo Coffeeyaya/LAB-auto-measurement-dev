@@ -1,6 +1,7 @@
 # macOS
 .DS_Store
-
+data_mw_7-2
+data_mw_7-3
 # Python
 __pycache__/
 *.pyc
