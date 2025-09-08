@@ -44,6 +44,7 @@ def watch_and_send_csvs(conn, folder):
                 filepath = os.path.join(folder, new_file)
                 if os.path.exists(filepath) and os.path.getsize(filepath) > 0:
                     send_file(conn, filepath)
+                    time.sleep(1)
                     known_files.add(new_file)
             time.sleep(1)
         except Exception as e:
