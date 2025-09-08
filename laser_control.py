@@ -70,7 +70,9 @@ try:
                 channel = 6
                 power = "16"
                 change_power_function(grid, channel, power)
+                time.sleep(1)
                 on_coord = get_coord(grid, channel, "on")
+                time.sleep(1)
                 move_and_click(on_coord)
                 time.sleep(0.5)
                 laser_state = cmd
