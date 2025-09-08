@@ -51,7 +51,7 @@ else:
 # change_idvg_vd_level("1")
 # change_idvg_vd_level("1")
 
-time.sleep(3 * rest_time)
+time.sleep(rest_time)
 
 for i in range(2):
     run_measurement()
