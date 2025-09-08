@@ -238,11 +238,11 @@ def change_measurement_mode(meas_mode_path):
 def filename_generator(material, device_number, measurement_type, condition):
     return f'{material}_{measurement_type}_{device_number}_{condition}'
 
-def illuminate_and_run(sock):
+def illuminate_and_run(sock, wait_time=30):
     print('STEP: illuminate and run()')
     send_cmd(sock, "ON")
     wait_for(sock, "ON")
-    time.sleep(5) # ex: wait 30 s
+    time.sleep(wait_time) # ex: wait 30 s
     run_measurement()
 
     send_cmd(sock, "OFF")
