@@ -248,11 +248,11 @@ def illuminate_and_run(sock):
     send_cmd(sock, "OFF")
     wait_for(sock, "OFF")
 
-def time_dependent_illumination_run(sock):
+def time_dependent_illumination_run(sock, wait_time=30):
     print('STEP: time dependent illuminate and run()')
     click_RUN()
     send_cmd(sock, "FUNCTION")
-    time.sleep(5)
+    time.sleep(wait_time)
     wait_for(sock, "FUNCTION_DONE")
-    time.sleep(5)
+    time.sleep(wait_time)
     click_STOP()
