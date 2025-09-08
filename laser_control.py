@@ -68,7 +68,7 @@ try:
 
             if cmd in ["ON", "OFF"] and laser_state != cmd:
                 channel = 6
-                power = "16"
+                power = "15"
                 change_power_function(grid, channel, power)
                 time.sleep(1)
                 on_coord = get_coord(grid, channel, "on")
@@ -80,7 +80,7 @@ try:
 
             elif cmd == "FUNCTION" and laser_state != "FUNCTION":
                 # time_dependent_wavelength(conn, grid)  # multi-channel FUNCTION
-                time_dependent(conn, grid, channel=6, power="16", num_peaks=50)  # single-channel FUNCTION
+                time_dependent(conn, grid, channel=6, power="15", num_peaks=50)  # single-channel FUNCTION
 
         conn.close()
 finally:
