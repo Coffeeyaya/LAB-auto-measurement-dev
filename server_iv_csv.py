@@ -52,12 +52,11 @@ def watch_and_send_csvs(conn, folder):
             break
 
 
-def handle_client(conn, addr):
-    print(f"[CSV SERVER] Connected by {addr}")
+def handle_client(conn):
     try:
         watch_and_send_csvs(conn, CSV_FOLDER)
     except ConnectionError:
-        print(f"[CSV SERVER] Client {addr} disconnected")
+        print(f"[CSV SERVER] Client disconnected")
     finally:
         conn.close()
 
@@ -68,7 +67,7 @@ def main():
         while True:
             conn, addr = accept_client(server_socket)
             try:
-                handle_client(conn, addr)
+                handle_client(conn)
             finally:
                 conn.close()
     finally:
