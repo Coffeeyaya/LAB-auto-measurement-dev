@@ -14,11 +14,16 @@ def connect_to_server(ip=SERVER_IP, port=PORT):
 
 def main():
     sock = connect_to_server()
-
+    menu = (
+            "\n=== Command Menu ===\n"
+            "1. RUN laser_control.py\n"
+            "2. KILL laser_control.py\n"
+            "3. STOP_ALL\n"
+            "Enter choice (1-3): \n"
+        )
     try:
-        response = receive_msg(sock)
         while True:
-            cmd = input("Laser Command (ON/OFF/FUNCTION/STOP_ALL/quit): ").strip()
+            cmd = input(menu).strip()
             if not cmd:
                 continue
             send_cmd(sock, cmd)
