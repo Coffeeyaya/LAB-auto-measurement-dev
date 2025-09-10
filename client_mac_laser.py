@@ -16,6 +16,7 @@ def main():
     sock = connect_to_server()
 
     try:
+        response = receive_msg(sock)
         while True:
             cmd = input("Laser Command (ON/OFF/FUNCTION/STOP_ALL/quit): ").strip()
             if not cmd:

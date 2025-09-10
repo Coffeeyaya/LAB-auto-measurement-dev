@@ -54,11 +54,11 @@ def kill_all_scripts():
 def handle_client(conn):
     try:
         menu = (
-            "\n=== Command Menu ===\n"
-            "1. RUN laser_control.py\n"
-            "2. KILL laser_control.py\n"
-            "3. STOP_ALL\n"
-            "Enter choice (1-3):"
+            "\n=== Command Menu ===\t"
+            "1. RUN laser_control.py\t"
+            "2. KILL laser_control.py\t"
+            "3. STOP_ALL\t"
+            "Enter choice (1-3): \n"
         )
         send_cmd(conn, menu)
 

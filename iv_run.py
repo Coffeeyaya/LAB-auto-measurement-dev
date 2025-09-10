@@ -62,7 +62,7 @@ for i in range(2):
 
     # light idvg
     illuminate_and_run(sock)
-    filename = filename_generator(material, device_number, measurement_type='idvg', condition=f'light_{laser_wavelength}_{laser_power}_{i}')
+    filename = filename_generator(material, device_number, measurement_type='idvg', condition=f'light-{laser_wavelength}-{laser_power}-{i}')
     export_data(CSV_FOLDER, filename)
 
     time.sleep(rest_time)
@@ -81,14 +81,14 @@ for vg in vg_values:
     
     # dark idvd
     run_measurement()
-    filename = filename_generator(material, device_number, measurement_type='idvd', condition=f'dark:vg={vg}')
+    filename = filename_generator(material, device_number, measurement_type='idvd', condition=f'dark-vg={vg}')
     export_data(CSV_FOLDER, filename)
 
     time.sleep(rest_time)
 
     # light idvd
     illuminate_and_run(sock)
-    filename = filename_generator(material, device_number, measurement_type='idvd', condition=f'light_{laser_wavelength}_{laser_power}:vg={vg}')
+    filename = filename_generator(material, device_number, measurement_type='idvd', condition=f'light-{laser_wavelength}-{laser_power}-vg={vg}')
     export_data(CSV_FOLDER, filename)
     time.sleep(rest_time)
 '''
