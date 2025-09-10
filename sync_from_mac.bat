@@ -1,8 +1,4 @@
 @echo off
-REM ---- Change this to your repo folder ----
-SET REPO_DIR=C:\Users\ASUS\Desktop\test\LAB-auto-measurement
-
-cd /d "%REPO_DIR%"
 
 echo Fetching latest from origin...
 git fetch origin
