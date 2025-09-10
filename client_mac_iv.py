@@ -13,10 +13,18 @@ def connect_to_server(ip=SERVER_IP, port=PORT):
 
 def main():
     sock = connect_to_server()
-
+    menu = (
+            "\n=== Command Menu ===\n"
+            "1. RUN iv_run.py\n"
+            "2. KILL iv_run.py\n"
+            "3. RUN server_iv_csv.py\n"
+            "4. KILL server_iv_csv.py\n"
+            "5. quit \n"
+            "Enter command (1-5): \n"
+        )
     try:
         while True:
-            cmd = input("IV Command (RUN/KILL/STOP_ALL/quit): ").strip()
+            cmd = input(menu).strip()
             if not cmd:
                 continue
 

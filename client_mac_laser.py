@@ -18,7 +18,7 @@ def main():
             "\n=== Command Menu ===\n"
             "1. RUN laser_control.py\n"
             "2. KILL laser_control.py\n"
-            "3. STOP_ALL\n"
+            "3. quit \n"
             "Enter choice (1-3): \n"
         )
     try:

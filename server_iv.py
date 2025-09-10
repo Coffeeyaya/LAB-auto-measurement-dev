@@ -55,17 +55,6 @@ def kill_all_scripts():
 # ------------------- Client Handling -------------------
 def handle_client(conn):
     try:
-        menu = (
-            "\n=== Command Menu ===\n"
-            "1. RUN iv_run.py\n"
-            "2. KILL iv_run.py\n"
-            "3. RUN server_iv_csv.py\n"
-            "4. KILL server_iv_csv.py\n"
-            "5. STOP_ALL\n"
-            "Enter choice (1-5):"
-        )
-        send_cmd(conn, menu)
-
         while True:
             try:
                 choice = receive_msg(conn)
