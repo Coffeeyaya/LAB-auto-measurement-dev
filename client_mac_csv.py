@@ -4,7 +4,7 @@ from utils.socket_utils import send_cmd, receive_msg
 
 SERVER_IP = "192.168.50.101"  # Windows IV machine
 PORT = 5002
-SAVE_DIR = "/Users/tsaiyunchen/Desktop/lab/code/auto_measurement/to_usb/raw_data/data"
+SAVE_DIR = "/Users/tsaiyunchen/Desktop/lab/code/auto_measurement/raw_data/data"
 
 os.makedirs(SAVE_DIR, exist_ok=True)
 
