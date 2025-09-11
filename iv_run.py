@@ -33,7 +33,7 @@ sock = connect_to_server(ip=SERVER_IP, port=PORT)
 # start controlling KickStart App
 get_window(r'Kick')
 scroll_to_bottom()
-'''
+
 # --- idvg ---
 change_measurement_mode(idvg_path)
 # dark idvg
@@ -52,21 +52,22 @@ else:
 
 time.sleep(rest_time)
 
-for i in range(2):
+for i in range(5):
     run_measurement()
     time.sleep(1)
     filename = filename_generator(material, device_number, measurement_type='idvg', condition=f'dark{i}')
     export_data(CSV_FOLDER, filename)
 
-    time.sleep(rest_time)
+time.sleep(rest_time)
 
-    # light idvg
+# light idvg
+for i in range(5):
     illuminate_and_run(sock)
     filename = filename_generator(material, device_number, measurement_type='idvg', condition=f'light-{laser_wavelength}-{laser_power}-{i}')
     export_data(CSV_FOLDER, filename)
 
     time.sleep(rest_time)
-
+'''
 # --- idvd ---
 change_measurement_mode(idvd_path)
 time.sleep(3)
@@ -97,7 +98,7 @@ change_measurement_mode(time_path)
 time.sleep(1)
 time_dependent_illumination_run(sock)
 time.sleep(1)
-filename = filename_generator(material, device_number, measurement_type='time', condition='on-off')
+filename = filename_generator(material, device_number, measurement_type='time', condition=f'on-off-{laser_wavelength}-{laser_power}')
 export_data(CSV_FOLDER, filename)
 
 print('finish')
