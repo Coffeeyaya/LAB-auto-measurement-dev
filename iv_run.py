@@ -46,9 +46,10 @@ scroll_to_bottom()
 # else:
 #     change_vg_range("-4", "4")
 #     change_vg_range("-4", "4")
-
-change_vg_range("2", "-6")
-change_vg_range("2", "-6")
+vg_start = "0"
+vg_end = "-10"
+change_vg_range(vg_start, vg_end)
+change_vg_range(vg_start, vg_end)
 
 # change_idvg_vd_level("1")
 # change_idvg_vd_level("1")
@@ -58,7 +59,7 @@ time.sleep(rest_time)
 for i in range(2):
     run_measurement()
     time.sleep(1)
-    filename = filename_generator(material, device_number, measurement_type='idvg', condition=f'dark{i}')
+    filename = filename_generator(material, device_number, measurement_type='idvg', condition=f'dark{i}-vg={vg_start}-vg={vg_end}-{i}')
     # export_data(CSV_FOLDER, filename)
 
 time.sleep(rest_time)
@@ -66,7 +67,7 @@ time.sleep(rest_time)
 # light idvg
 for i in range(2):
     illuminate_and_run(sock)
-    filename = filename_generator(material, device_number, measurement_type='idvg', condition=f'light-{laser_wavelength}-{laser_power}-{i}')
+    filename = filename_generator(material, device_number, measurement_type='idvg', condition=f'light-{laser_wavelength}-{laser_power}-vg={vg_start}-vg={vg_end}-{i}')
     # export_data(CSV_FOLDER, filename)
 
     time.sleep(rest_time)
