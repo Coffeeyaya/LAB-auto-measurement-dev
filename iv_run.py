@@ -35,17 +35,20 @@ get_window(r'Kick')
 scroll_to_bottom()
 
 # --- idvg ---
-change_measurement_mode(idvg_path)
+# change_measurement_mode(idvg_path)
 # dark idvg
-time.sleep(3)
-get_window(r'Kick')
+# time.sleep(3)
+# get_window(r'Kick')
 
-if material in ['mw', 'wse2']:
-    change_vg_range("4", "-4")
-    change_vg_range("4", "-4")
-else:
-    change_vg_range("-4", "4")
-    change_vg_range("-4", "4")
+# if material in ['mw', 'wse2']:
+#     change_vg_range("4", "-4")
+#     change_vg_range("4", "-4")
+# else:
+#     change_vg_range("-4", "4")
+#     change_vg_range("-4", "4")
+
+change_vg_range("-4", "4")
+change_vg_range("-4", "4")
 
 # change_idvg_vd_level("1")
 # change_idvg_vd_level("1")
