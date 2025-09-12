@@ -47,8 +47,8 @@ scroll_to_bottom()
 #     change_vg_range("-4", "4")
 #     change_vg_range("-4", "4")
 
-change_vg_range("-4", "4")
-change_vg_range("-4", "4")
+change_vg_range("2", "-6")
+change_vg_range("2", "-6")
 
 # change_idvg_vd_level("1")
 # change_idvg_vd_level("1")
