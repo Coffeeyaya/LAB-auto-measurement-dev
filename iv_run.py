@@ -33,9 +33,9 @@ sock = connect_to_server(ip=SERVER_IP, port=PORT)
 # start controlling KickStart App
 get_window(r'Kick')
 scroll_to_bottom()
-time.sleep(rest_time)
-'''
+time.sleep(3 * rest_time)
 
+'''
 # --- idvg ---
 change_measurement_mode(idvg_path)
 # dark idvg
@@ -75,7 +75,7 @@ for i in range(2):
     export_data(CSV_FOLDER, filename)
 
     time.sleep(rest_time)
-
+'''
 # --- idvd ---
 change_measurement_mode(idvd_path)
 time.sleep(3)
@@ -84,7 +84,7 @@ time.sleep(3)
 # change_vd_range("0", "1.5")
 
 
-vg_values = ["-5", "-3", "-1", "1", "3", "5"]
+vg_values = ["-3", "-1", "1", "3"]
 for vg in vg_values:
     change_idvd_vg_level(vg)
     change_idvd_vg_level(vg)
@@ -116,5 +116,5 @@ time_dependent_dark_current()
 time.sleep(1)
 filename = filename_generator(material, device_number, measurement_type='time', condition=f'on-off-darkcurrent')
 export_data(CSV_FOLDER, filename)
-
+'''
 print('finish')
