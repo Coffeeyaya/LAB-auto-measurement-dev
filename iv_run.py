@@ -9,8 +9,8 @@ from utils.socket_utils import connect_to_server
 ###-----------------------------------###
 CSV_FOLDER = r"C:\Users\mmm11\OneDrive\桌面\yun-chen\code\auto\data"
 os.makedirs(CSV_FOLDER, exist_ok=True)
-material = 'mos2'
-device_number = ''
+material = 'mw'
+device_number = '8-2'
 laser_wavelength = '660nm'
 laser_power = '100nw'
 rest_time = 60
@@ -41,30 +41,30 @@ time.sleep(3)
 get_window(r'Kick')
 
 if material in ['mw', 'wse2']:
-    change_vg_range("5", "-5")
-    change_vg_range("5", "-5")
+    change_vg_range("4", "-4")
+    change_vg_range("4", "-4")
 else:
-    change_vg_range("-5", "5")
-    change_vg_range("-5", "5")
+    change_vg_range("-4", "4")
+    change_vg_range("-4", "4")
 
 # change_idvg_vd_level("1")
 # change_idvg_vd_level("1")
 
 time.sleep(rest_time)
 
-for i in range(5):
+for i in range(1):
     run_measurement()
     time.sleep(1)
     filename = filename_generator(material, device_number, measurement_type='idvg', condition=f'dark{i}')
-    export_data(CSV_FOLDER, filename)
+    # export_data(CSV_FOLDER, filename)
 
 time.sleep(rest_time)
 
 # light idvg
-for i in range(5):
+for i in range(1):
     illuminate_and_run(sock)
     filename = filename_generator(material, device_number, measurement_type='idvg', condition=f'light-{laser_wavelength}-{laser_power}-{i}')
-    export_data(CSV_FOLDER, filename)
+    # export_data(CSV_FOLDER, filename)
 
     time.sleep(rest_time)
 '''
@@ -92,13 +92,14 @@ for vg in vg_values:
     filename = filename_generator(material, device_number, measurement_type='idvd', condition=f'light-{laser_wavelength}-{laser_power}-vg={vg}')
     export_data(CSV_FOLDER, filename)
     time.sleep(rest_time)
-'''
+
 # --- time dependent ---
 change_measurement_mode(time_path)
 time.sleep(1)
-time_dependent_illumination_run(sock)
+time_dependent_illumination_run(sock, wait_time=60)
 time.sleep(1)
 filename = filename_generator(material, device_number, measurement_type='time', condition=f'on-off-{laser_wavelength}-{laser_power}')
 export_data(CSV_FOLDER, filename)
 
 print('finish')
+'''
