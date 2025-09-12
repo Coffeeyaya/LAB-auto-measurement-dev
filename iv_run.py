@@ -13,13 +13,13 @@ material = 'mw'
 device_number = '8-2'
 laser_wavelength = '660nm'
 laser_power = '100nw'
-rest_time = 90
+rest_time = 60
 ###-----------------------------------###
 
 # measurement settings
-idvg_path = r'D:\kickstart\YunChen\idvg_yunChen\idvg'
-idvd_path = r'D:\kickstart\YunChen\idvd_yunChen\idvd'
-time_path = r'D:\kickstart\YunChen\timeDependent_yunChen\time'
+idvg_path = r'D:\kickstart\YunChen\IDVG\IDVG'
+idvd_path = r'D:\kickstart\YunChen\IDVD\IDVD'
+time_path = r'D:\kickstart\YunChen\TIME\TIME'
 # save_folder_idvg = r'C:\Users\mmm11\OneDrive\桌面\yun-chen\KickStart\hs2\20250901\idvg'
 # save_folder_idvd = r'C:\Users\mmm11\OneDrive\桌面\yun-chen\KickStart\hs2\20250901\idvd'
 # save_folder_time = r'C:\Users\mmm11\OneDrive\桌面\yun-chen\KickStart\hs2\20250901\time'
@@ -33,7 +33,7 @@ sock = connect_to_server(ip=SERVER_IP, port=PORT)
 # start controlling KickStart App
 get_window(r'Kick')
 scroll_to_bottom()
-'''
+
 
 # --- idvg ---
 change_measurement_mode(idvg_path)
@@ -74,7 +74,7 @@ for i in range(2):
     export_data(CSV_FOLDER, filename)
 
     time.sleep(rest_time)
-'''
+
 # --- idvd ---
 change_measurement_mode(idvd_path)
 time.sleep(3)
