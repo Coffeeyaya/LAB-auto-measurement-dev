@@ -13,7 +13,7 @@ material = 'mw'
 device_number = '8-2'
 laser_wavelength = '660nm'
 laser_power = '100nw'
-rest_time = 60
+rest_time = 90
 ###-----------------------------------###
 
 # measurement settings
@@ -35,26 +35,27 @@ get_window(r'Kick')
 scroll_to_bottom()
 
 # --- idvg ---
-# change_measurement_mode(idvg_path)
+change_measurement_mode(idvg_path)
 # dark idvg
-# time.sleep(3)
-# get_window(r'Kick')
-
-# if material in ['mw', 'wse2']:
-#     change_vg_range("4", "-4")
-#     change_vg_range("4", "-4")
-# else:
-#     change_vg_range("-4", "4")
-#     change_vg_range("-4", "4")
-vg_start = "0"
-vg_end = "-10"
-change_vg_range(vg_start, vg_end)
-change_vg_range(vg_start, vg_end)
+time.sleep(3)
+get_window(r'Kick')
+vg_1 = "5"
+vg_2 = "-5"
+if material in ['mw', 'wse2']:
+    change_vg_range(vg_1, vg_2)
+    change_vg_range(vg_1, vg_2)
+    vg_start = vg_1
+    vg_end = vg_2
+else:
+    change_vg_range(vg_2, vg_1)
+    change_vg_range(vg_2, vg_1)
+    vg_start = vg_2
+    vg_end = vg_1
 
 # change_idvg_vd_level("1")
 # change_idvg_vd_level("1")
 
-time.sleep(rest_time)
+time.sleep(2 * rest_time)
 
 for i in range(2):
     run_measurement()
@@ -62,7 +63,7 @@ for i in range(2):
     filename = filename_generator(material, device_number, measurement_type='idvg', condition=f'dark{i}-vg={vg_start}-vg={vg_end}-{i}')
     export_data(CSV_FOLDER, filename)
     time.sleep(rest_time)
-    
+
 time.sleep(rest_time)
 
 # light idvg
@@ -72,15 +73,16 @@ for i in range(2):
     export_data(CSV_FOLDER, filename)
 
     time.sleep(rest_time)
-'''
+
 # --- idvd ---
 change_measurement_mode(idvd_path)
 time.sleep(3)
 
-# change_vd_range("3", "-3")
-# change_vd_range("3", "-3")
+# change_vd_range("0", "1.5")
+# change_vd_range("0", "1.5")
 
-vg_values = ["-4", "-2", "0", "2", "4"]
+
+vg_values = ["-5", "-3", "-1", "1", "4", "5"]
 for vg in vg_values:
     change_idvd_vg_level(vg)
     change_idvd_vg_level(vg)
@@ -100,11 +102,10 @@ for vg in vg_values:
 
 # --- time dependent ---
 change_measurement_mode(time_path)
-time.sleep(1)
+time.sleep(3)
 time_dependent_illumination_run(sock, wait_time=60)
 time.sleep(1)
 filename = filename_generator(material, device_number, measurement_type='time', condition=f'on-off-{laser_wavelength}-{laser_power}')
 export_data(CSV_FOLDER, filename)
 
 print('finish')
-'''
