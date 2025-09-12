@@ -33,7 +33,7 @@ sock = connect_to_server(ip=SERVER_IP, port=PORT)
 # start controlling KickStart App
 get_window(r'Kick')
 scroll_to_bottom()
-time.sleep(3 * rest_time)
+time.sleep(rest_time)
 
 '''
 # --- idvg ---
@@ -84,7 +84,7 @@ time.sleep(3)
 # change_vd_range("0", "1.5")
 
 
-vg_values = ["-3", "-1", "1", "3"]
+vg_values = ["-3"]
 for vg in vg_values:
     change_idvd_vg_level(vg)
     change_idvd_vg_level(vg)
