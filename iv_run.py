@@ -2,7 +2,7 @@ import time
 import os 
 from utils.iv_utils import get_window, scroll_to_bottom, change_measurement_mode, \
     run_measurement, export_data, change_idvd_vg_level, change_idvg_vd_level, filename_generator, \
-    illuminate_and_run, time_dependent_illumination_run, change_vg_range, change_vd_range
+    illuminate_and_run, time_dependent_illumination_run, change_vg_range, change_vd_range, time_dependent_dark_current
 from utils.socket_utils import connect_to_server
 
 
@@ -108,7 +108,11 @@ time_dependent_illumination_run(sock, wait_time=60)
 time.sleep(1)
 filename = filename_generator(material, device_number, measurement_type='time', condition=f'on-off-{laser_wavelength}-{laser_power}-2')
 export_data(CSV_FOLDER, filename)
+
 time.sleep(30)
+
+time_dependent_dark_current()
+time.sleep(1)
 filename = filename_generator(material, device_number, measurement_type='time', condition=f'on-off-darkcurrent')
 export_data(CSV_FOLDER, filename)
 

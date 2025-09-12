@@ -256,3 +256,9 @@ def time_dependent_illumination_run(sock, wait_time=60):
     wait_for(sock, "FUNCTION_DONE")
     time.sleep(wait_time * 2)
     click_STOP()
+
+def time_dependent_dark_current():
+    print('STEP: time dependent dark current()')
+    click_RUN()
+    time.sleep(600)
+    click_STOP()
