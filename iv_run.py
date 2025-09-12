@@ -33,7 +33,7 @@ sock = connect_to_server(ip=SERVER_IP, port=PORT)
 # start controlling KickStart App
 get_window(r'Kick')
 scroll_to_bottom()
-
+'''
 
 # --- idvg ---
 change_measurement_mode(idvg_path)
@@ -100,7 +100,7 @@ for vg in vg_values:
     filename = filename_generator(material, device_number, measurement_type='idvd', condition=f'light-{laser_wavelength}-{laser_power}-vg={vg}')
     export_data(CSV_FOLDER, filename)
     time.sleep(rest_time)
-
+'''
 # --- time dependent ---
 change_measurement_mode(time_path)
 time.sleep(3)
