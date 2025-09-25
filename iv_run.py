@@ -10,7 +10,7 @@ from utils.socket_utils import connect_to_server
 CSV_FOLDER = r"C:\Users\mmm11\OneDrive\桌面\yun-chen\code\auto\data"
 os.makedirs(CSV_FOLDER, exist_ok=True)
 material = 'mw'
-device_number = '9-8'
+device_number = '9-13'
 laser_wavelength = '660nm'
 laser_power = '100nw'
 rest_time = 60
@@ -35,7 +35,7 @@ get_window(r'Kick')
 scroll_to_bottom()
 # time.sleep(rest_time)
 
-'''
+
 # --- idvg ---
 change_measurement_mode(idvg_path)
 # dark idvg
@@ -73,7 +73,7 @@ for i in range(2):
     export_data(CSV_FOLDER, filename)
 
     time.sleep(rest_time)
-'''
+
 
 '''
 # --- idvd ---
