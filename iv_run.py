@@ -9,7 +9,7 @@ from utils.socket_utils import connect_to_server
 ###-----------------------------------###
 CSV_FOLDER = r"C:\Users\mmm11\OneDrive\桌面\yun-chen\code\auto\data"
 os.makedirs(CSV_FOLDER, exist_ok=True)
-material = 'mw'
+material = 'wm'
 device_number = '8-4'
 laser_wavelength = '660nm'
 laser_power = '100nw'
@@ -35,7 +35,7 @@ get_window(r'Kick')
 scroll_to_bottom()
 time.sleep(rest_time)
 
-'''
+
 # --- idvg ---
 change_measurement_mode(idvg_path)
 # dark idvg
@@ -71,7 +71,7 @@ time.sleep(rest_time)
 # light idvg
 for i in range(2):
     illuminate_and_run(sock)
-    filename = filename_generator(material, device_number, measurement_type='idvg', condition=f'light-{laser_wavelength}-{laser_power}-{i}')
+    filename = filename_generator(material, device_number, measurement_type='idvg', condition=f'light-{i}')
     export_data(CSV_FOLDER, filename)
 
     time.sleep(rest_time)
@@ -107,7 +107,7 @@ change_measurement_mode(time_path)
 time.sleep(3)
 time_dependent_illumination_run(sock, wait_time=60)
 time.sleep(1)
-filename = filename_generator(material, device_number, measurement_type='time', condition=f'on-off-{laser_wavelength}-{laser_power}-2')
+filename = filename_generator(material, device_number, measurement_type='time', condition=f'on-off')
 export_data(CSV_FOLDER, filename)
 
 time.sleep(30)
@@ -116,5 +116,5 @@ time_dependent_dark_current()
 time.sleep(1)
 filename = filename_generator(material, device_number, measurement_type='time', condition=f'on-off-darkcurrent')
 export_data(CSV_FOLDER, filename)
-'''
+
 print('finish')
