@@ -29,7 +29,7 @@ def time_dependent_wavelength(conn, grid):
     laser_state = "FUNCTION_DONE"
     send_cmd(conn, "FUNCTION_DONE")
 
-def time_dependent(conn, grid, channel, power, on_time=1, off_time=9, num_peaks=10):
+def time_dependent(conn, grid, channel, power, on_time=1, off_time=4, num_peaks=10):
     global laser_state
     laser_state = "FUNCTION"
     send_cmd(conn, "FUNCTION")
