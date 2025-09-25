@@ -10,7 +10,7 @@ from utils.socket_utils import connect_to_server
 CSV_FOLDER = r"C:\Users\mmm11\OneDrive\桌面\yun-chen\code\auto\data"
 os.makedirs(CSV_FOLDER, exist_ok=True)
 material = 'mw'
-device_number = '9-13'
+device_number = '2-2'
 laser_wavelength = '660nm'
 laser_power = '100nw'
 rest_time = 60
@@ -37,42 +37,42 @@ scroll_to_bottom()
 
 
 # --- idvg ---
-change_measurement_mode(idvg_path)
-# dark idvg
-time.sleep(3)
-get_window(r'Kick')
-vg_1 = "5"
-vg_2 = "-5"
-if material in ['mw', 'wse2']:
-    change_vg_range(vg_1, vg_2)
-    change_vg_range(vg_1, vg_2)
-    vg_start = vg_1
-    vg_end = vg_2
-else:
-    change_vg_range(vg_2, vg_1)
-    change_vg_range(vg_2, vg_1)
-    vg_start = vg_2
-    vg_end = vg_1
+# change_measurement_mode(idvg_path)
+# # dark idvg
+# time.sleep(3)
+# get_window(r'Kick')
+# vg_1 = "5"
+# vg_2 = "-5"
+# if material in ['mw', 'wse2']:
+#     change_vg_range(vg_1, vg_2)
+#     change_vg_range(vg_1, vg_2)
+#     vg_start = vg_1
+#     vg_end = vg_2
+# else:
+#     change_vg_range(vg_2, vg_1)
+#     change_vg_range(vg_2, vg_1)
+#     vg_start = vg_2
+#     vg_end = vg_1
 
-# change_idvg_vd_level("1")
-# change_idvg_vd_level("1")
+# # change_idvg_vd_level("1")
+# # change_idvg_vd_level("1")
 
-for i in range(2):
-    run_measurement()
-    time.sleep(1)
-    filename = filename_generator(material, device_number, measurement_type='idvg', condition=f'dark-{i}')
-    export_data(CSV_FOLDER, filename)
-    time.sleep(rest_time)
+# for i in range(2):
+#     run_measurement()
+#     time.sleep(1)
+#     filename = filename_generator(material, device_number, measurement_type='idvg', condition=f'dark-{i}')
+#     export_data(CSV_FOLDER, filename)
+#     time.sleep(rest_time)
 
-time.sleep(rest_time)
+# time.sleep(rest_time)
 
-# light idvg
-for i in range(2):
-    illuminate_and_run(sock)
-    filename = filename_generator(material, device_number, measurement_type='idvg', condition=f'light-{i}')
-    export_data(CSV_FOLDER, filename)
+# # light idvg
+# for i in range(2):
+#     illuminate_and_run(sock)
+#     filename = filename_generator(material, device_number, measurement_type='idvg', condition=f'light-{i}')
+#     export_data(CSV_FOLDER, filename)
 
-    time.sleep(rest_time)
+#     time.sleep(rest_time)
 
 
 '''
@@ -111,11 +111,11 @@ time.sleep(1)
 filename = filename_generator(material, device_number, measurement_type='time', condition=f'on-off')
 export_data(CSV_FOLDER, filename)
 
-time.sleep(30)
+# time.sleep(30)
 
-time_dependent_dark_current()
-time.sleep(1)
-filename = filename_generator(material, device_number, measurement_type='time', condition=f'on-off-darkcurrent')
-export_data(CSV_FOLDER, filename)
+# time_dependent_dark_current()
+# time.sleep(1)
+# filename = filename_generator(material, device_number, measurement_type='time', condition=f'on-off-darkcurrent')
+# export_data(CSV_FOLDER, filename)
 
 print('finish')
