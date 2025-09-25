@@ -10,7 +10,7 @@ from utils.socket_utils import connect_to_server
 CSV_FOLDER = r"C:\Users\mmm11\OneDrive\桌面\yun-chen\code\auto\data"
 os.makedirs(CSV_FOLDER, exist_ok=True)
 material = 'mw'
-device_number = '2-2'
+device_number = '2-5'
 laser_wavelength = '660nm'
 laser_power = '100nw'
 rest_time = 60
