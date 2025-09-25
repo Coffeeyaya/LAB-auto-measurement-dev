@@ -37,44 +37,44 @@ time.sleep(rest_time)
 
 
 # --- idvg ---
-change_measurement_mode(idvg_path)
-# dark idvg
-time.sleep(3)
-get_window(r'Kick')
-vg_1 = "5"
-vg_2 = "-5"
-if material in ['mw', 'wse2']:
-    change_vg_range(vg_1, vg_2)
-    change_vg_range(vg_1, vg_2)
-    vg_start = vg_1
-    vg_end = vg_2
-else:
-    change_vg_range(vg_2, vg_1)
-    change_vg_range(vg_2, vg_1)
-    vg_start = vg_2
-    vg_end = vg_1
+# change_measurement_mode(idvg_path)
+# # dark idvg
+# time.sleep(3)
+# get_window(r'Kick')
+# vg_1 = "5"
+# vg_2 = "-5"
+# if material in ['mw', 'wse2']:
+#     change_vg_range(vg_1, vg_2)
+#     change_vg_range(vg_1, vg_2)
+#     vg_start = vg_1
+#     vg_end = vg_2
+# else:
+#     change_vg_range(vg_2, vg_1)
+#     change_vg_range(vg_2, vg_1)
+#     vg_start = vg_2
+#     vg_end = vg_1
 
 # change_idvg_vd_level("1")
 # change_idvg_vd_level("1")
 
-time.sleep(2 * rest_time)
+# for i in range(2):
+#     run_measurement()
+#     time.sleep(1)
+#     filename = filename_generator(material, device_number, measurement_type='idvg', condition=f'dark-{i}')
+#     export_data(CSV_FOLDER, filename)
+#     time.sleep(rest_time)
 
-for i in range(2):
-    run_measurement()
-    time.sleep(1)
-    filename = filename_generator(material, device_number, measurement_type='idvg', condition=f'dark-{i}')
-    export_data(CSV_FOLDER, filename)
-    time.sleep(rest_time)
+# time.sleep(rest_time)
 
-time.sleep(rest_time)
+# # light idvg
+# for i in range(2):
+#     illuminate_and_run(sock)
+#     filename = filename_generator(material, device_number, measurement_type='idvg', condition=f'light-{i}')
+#     export_data(CSV_FOLDER, filename)
 
-# light idvg
-for i in range(2):
-    illuminate_and_run(sock)
-    filename = filename_generator(material, device_number, measurement_type='idvg', condition=f'light-{i}')
-    export_data(CSV_FOLDER, filename)
+#     time.sleep(rest_time)
 
-    time.sleep(rest_time)
+
 '''
 # --- idvd ---
 change_measurement_mode(idvd_path)
