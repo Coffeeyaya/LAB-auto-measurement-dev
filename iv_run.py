@@ -35,7 +35,7 @@ get_window(r'Kick')
 # scroll_to_bottom()
 time.sleep(rest_time)
 
-
+'''
 # --- idvg ---
 change_measurement_mode(idvg_path)
 # dark idvg
@@ -73,7 +73,7 @@ for i in range(2):
     export_data(CSV_FOLDER, filename)
 
     time.sleep(rest_time)
-
+'''
 
 '''
 # --- idvd ---
@@ -102,6 +102,7 @@ for vg in vg_values:
     export_data(CSV_FOLDER, filename)
     time.sleep(rest_time)
 '''
+
 # --- time dependent ---
 change_measurement_mode(time_path)
 time.sleep(3)
