@@ -32,7 +32,7 @@ sock = connect_to_server(ip=SERVER_IP, port=PORT)
 
 # start controlling KickStart App
 get_window(r'Kick')
-# scroll_to_bottom()
+scroll_to_bottom()
 time.sleep(rest_time)
 
 '''
