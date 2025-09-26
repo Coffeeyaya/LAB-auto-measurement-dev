@@ -10,7 +10,7 @@ from utils.socket_utils import connect_to_server
 CSV_FOLDER = r"C:\Users\mmm11\OneDrive\桌面\yun-chen\code\auto\data"
 os.makedirs(CSV_FOLDER, exist_ok=True)
 material = 'mw'
-device_number = '2-6'
+device_number = '2-7'
 laser_wavelength = '660nm'
 laser_power = '100nw'
 rest_time = 60
@@ -104,18 +104,19 @@ for vg in vg_values:
 '''
 
 # --- time dependent ---
+time.sleep(60)
 change_measurement_mode(time_path)
 time.sleep(3)
 time_dependent_illumination_run(sock, wait_time=60)
 time.sleep(1)
-filename = filename_generator(material, device_number, measurement_type='time', condition=f'onoff_2')
+filename = filename_generator(material, device_number, measurement_type='time', condition=f'onoff')
 export_data(CSV_FOLDER, filename)
 
-# time.sleep(30)
+time.sleep(30)
 
-# time_dependent_dark_current()
-# time.sleep(1)
-# filename = filename_generator(material, device_number, measurement_type='time', condition=f'onoff-darkcurrent')
-# export_data(CSV_FOLDER, filename)
+time_dependent_dark_current()
+time.sleep(1)
+filename = filename_generator(material, device_number, measurement_type='time', condition=f'onoff-darkcurrent')
+export_data(CSV_FOLDER, filename)
 
 print('finish')
