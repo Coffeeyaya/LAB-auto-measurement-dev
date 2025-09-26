@@ -104,10 +104,9 @@ for vg in vg_values:
 '''
 
 # --- time dependent ---
-time.sleep(60)
 change_measurement_mode(time_path)
 time.sleep(3)
-time_dependent_illumination_run(sock, wait_time=60)
+time_dependent_illumination_run(sock, wait_time=120)
 time.sleep(1)
 filename = filename_generator(material, device_number, measurement_type='time', condition=f'onoff')
 export_data(CSV_FOLDER, filename)

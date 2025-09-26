@@ -29,16 +29,13 @@ def time_dependent_wavelength(conn, grid):
     laser_state = "FUNCTION_DONE"
     send_cmd(conn, "FUNCTION_DONE")
 
-def time_dependent(conn, grid, channel, power, on_time=1, off_time=4, num_peaks=10):
+def time_dependent(conn, grid, channel, power, on_time=1, off_time=2, num_peaks=10):
     global laser_state
     laser_state = "FUNCTION"
     send_cmd(conn, "FUNCTION")
 
     on_coord = get_coord(grid, channel, "on")
-    change_power_function(grid, channel, "1")
-    move_and_click(on_coord)
-    time.sleep(10)
-    move_and_click(on_coord)
+    time.sleep(1)
 
     change_power_function(grid, channel, power)
     time.sleep(10)
@@ -50,6 +47,26 @@ def time_dependent(conn, grid, channel, power, on_time=1, off_time=4, num_peaks=
 
         # turn off
         move_and_click(on_coord)
+        time.sleep(off_time)
+
+    time.sleep(60)    
+    for i in range(num_peaks):
+        # turn on
+        move_and_click(on_coord)
+        time.sleep(on_time)
+
+        # turn off
+        move_and_click(on_coord * 2)
+        time.sleep(off_time)
+
+    time.sleep(60)    
+    for i in range(num_peaks):
+        # turn on
+        move_and_click(on_coord)
+        time.sleep(on_time)
+
+        # turn off
+        move_and_click(on_coord * 4)
         time.sleep(off_time)
 
     laser_state = "FUNCTION_DONE"
