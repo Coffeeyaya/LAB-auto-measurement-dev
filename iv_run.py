@@ -70,7 +70,7 @@ else:
 
 # change_idvg_vd_level("1")
 # change_idvg_vd_level("1")
-
+mac_conn.send_json({"cmd": "PROGRESS", "progress": "measure idvg dark"})
 for i in range(1):
     run_measurement()
     time.sleep(1)
@@ -79,7 +79,7 @@ for i in range(1):
     # time.sleep(rest_time)
 
 time.sleep(rest_time)
-
+mac_conn.send_json({"cmd": "PROGRESS", "progress": "measure idvg light"})
 # light idvg
 for i in range(1):
     illuminate_and_run(laser_conn)
