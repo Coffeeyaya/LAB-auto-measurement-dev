@@ -60,7 +60,7 @@ conn, addr = Connection.accept(server_socket)
 try:   
     while True:
         try:
-            cmd = conn.receive(conn)
+            cmd = conn.receive()
             time.sleep(1)
         except ConnectionError:
             print("Client disconnected.")
