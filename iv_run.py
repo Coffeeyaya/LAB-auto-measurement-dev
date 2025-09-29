@@ -120,7 +120,7 @@ for vg in vg_values:
 # --- time dependent ---
 time.sleep(2)
 mac_conn.send_json({"cmd": "PROGRESS", "progress": "wait 60 s"})
-time.sleep(60)
+time.sleep(2)
 mac_conn.send_json({"cmd": "PROGRESS", "progress": "time"})
 change_measurement_mode(time_path)
 time.sleep(3)
