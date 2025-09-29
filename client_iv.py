@@ -2,6 +2,20 @@ from PyQt5.QtWidgets import QApplication, QDialog, QVBoxLayout, QHBoxLayout, QLa
 from LabAuto.network import Connection
 import sys
 
+from PyQt5.QtGui import QMovie
+
+class FinishedDialog(QDialog):
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle("Experiment Finished!")
+        layout = QVBoxLayout(self)
+        label = QLabel(self)
+        movie = QMovie("celebration.gif")  # path to your gif
+        label.setMovie(movie)
+        movie.start()
+        layout.addWidget(label)
+
+
 # iv computer (win 10)
 SERVER_IP = "192.168.50.101"
 PORT = 6000
@@ -61,6 +75,10 @@ try:
 
         elif cmd == "PROGRESS":
             print(f"[MAC] Progress update: {msg.get('progress')}")
+            if msg.get('progress') == 'finished':
+                dlg = FinishedDialog()
+                dlg.exec_()
+
 
 except KeyboardInterrupt:
     print("Exiting...")
