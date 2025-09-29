@@ -8,8 +8,8 @@ def main():
         "\n=== Command Menu ===\n"
         "1. RUN iv_run.py\n"
         "2. KILL iv_run.py\n"
-        "3. RUN server_iv_csv.py\n"
-        "4. KILL server_iv_csv.py\n"
+        "3. RUN server_csv.py\n"
+        "4. KILL server_csv.py\n"
         "5. quit\n"
         "Enter command (1-5): "
     )
@@ -24,8 +24,8 @@ def main():
             cmd_map = {
                 "1": {"cmd": "RUN", "target": "iv_run.py"},
                 "2": {"cmd": "KILL", "target": "iv_run.py"},
-                "3": {"cmd": "RUN", "target": "server_iv_csv.py"},
-                "4": {"cmd": "KILL", "target": "server_iv_csv.py"},
+                "3": {"cmd": "RUN", "target": "server_csv.py"},
+                "4": {"cmd": "KILL", "target": "server_csv.py"},
                 "5": {"cmd": "QUIT"}
             }
 
