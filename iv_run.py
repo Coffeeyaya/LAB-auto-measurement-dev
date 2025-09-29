@@ -40,6 +40,7 @@ print("Received parameters from Mac:", params)
 
 material = params.get("material", "default")
 device_number = params.get("device_number", "default")
+measurement_index = params.get("measurement_index", "0")
 
 mac_conn.send_json({"cmd": "PROGRESS", "progress": "Measurement started"})
 # time.sleep(2)
@@ -125,14 +126,14 @@ change_measurement_mode(time_path)
 time.sleep(3)
 time_dependent_illumination_run(laser_conn, wait_time=60)
 time.sleep(1)
-filename = filename_generator(material, device_number, measurement_type='time', condition=f'onoff')
+filename = filename_generator(material, device_number, measurement_type='time', condition=f'onoff_{measurement_index}')
 export_data(CSV_FOLDER, filename)
 
 time.sleep(15)
 
 time_dependent_dark_current()
 time.sleep(1)
-filename = filename_generator(material, device_number, measurement_type='time', condition=f'onoff-darkcurrent')
+filename = filename_generator(material, device_number, measurement_type='time', condition=f'onoff-darkcurrent_{measurement_index}')
 export_data(CSV_FOLDER, filename)
 
 print('finish')
