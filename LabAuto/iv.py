@@ -3,9 +3,9 @@ import pyautogui
 import pyperclip
 import re
 import time
-from utils.socket_utils import send_cmd, wait_for
+from LabAuto.network import Connection
 from PIL import ImageGrab
-from utils.check_state import wait_for_cursor_idle
+from LabAuto.check_state import wait_for_cursor_idle
 
 SCROLL_POSITION = [1700, 500]
 SETTINGS_BOTTON = [360, 160]
@@ -238,22 +238,30 @@ def change_measurement_mode(meas_mode_path):
 def filename_generator(material, device_number, measurement_type, condition):
     return rf'{material}_{measurement_type}_{device_number}_{condition}'
 
-def illuminate_and_run(sock, wait_time=30):
-    print('STEP: illuminate and run()')
-    send_cmd(sock, "ON")
-    wait_for(sock, "ON")
-    time.sleep(wait_time) # ex: wait 30 s
-    run_measurement()
+def illuminate_and_run(conn: Connection, wait_time=30):
+    """
+    Turn on illumination, wait, run measurement, then turn off.
+    """
+    print('STEP: illuminate_and_run()')
 
-    send_cmd(sock, "OFF")
-    wait_for(sock, "OFF")
+    # Send ON and wait for acknowledgment
+    conn.send_json({"cmd": "ON"})
+    conn.wait_for("ON")
 
-def time_dependent_illumination_run(sock, wait_time=60):
+    time.sleep(wait_time)  
+    run_measurement()      
+
+    # Turn OFF and wait for acknowledgment
+    conn.send_json({"cmd": "OFF"})
+    conn.wait_for("OFF")
+
+
+def time_dependent_illumination_run(conn: Connection, wait_time=60):
     print('STEP: time dependent illuminate and run()')
     click_RUN()
     time.sleep(wait_time)
-    send_cmd(sock, "FUNCTION")
-    wait_for(sock, "FUNCTION_DONE")
+    conn.send_json({"cmd": "FUNCTION"})
+    conn.wait_for("FUNCTION_DONE")
     time.sleep(wait_time)
     click_STOP()
 

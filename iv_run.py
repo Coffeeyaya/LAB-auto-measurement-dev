@@ -1,16 +1,15 @@
 import time
 import os 
-from utils.iv_utils import get_window, scroll_to_bottom, change_measurement_mode, \
+from LabAuto.iv import get_window, scroll_to_bottom, change_measurement_mode, \
     run_measurement, export_data, change_idvd_vg_level, change_idvg_vd_level, filename_generator, \
     illuminate_and_run, time_dependent_illumination_run, change_vg_range, change_vd_range, time_dependent_dark_current
-from utils.socket_utils import connect_to_server
-
+from LabAuto.network import create_server, Connection
 
 ###-----------------------------------###
 CSV_FOLDER = r"C:\Users\mmm11\OneDrive\桌面\yun-chen\code\auto\data"
 os.makedirs(CSV_FOLDER, exist_ok=True)
-material = 'mw'
-device_number = '2-7'
+
+###-----------------------------------###
 laser_wavelength = '660nm'
 laser_power = '100nw'
 rest_time = 60
@@ -20,20 +19,31 @@ rest_time = 60
 idvg_path = r'D:\kickstart\YunChen\IDVG\IDVG'
 idvd_path = r'D:\kickstart\YunChen\IDVD\IDVD'
 time_path = r'D:\kickstart\YunChen\TIME\TIME'
-# save_folder_idvg = r'C:\Users\mmm11\OneDrive\桌面\yun-chen\KickStart\hs2\20250901\idvg'
-# save_folder_idvd = r'C:\Users\mmm11\OneDrive\桌面\yun-chen\KickStart\hs2\20250901\idvd'
-# save_folder_time = r'C:\Users\mmm11\OneDrive\桌面\yun-chen\KickStart\hs2\20250901\time'
 
-
-# Communication settings
-SERVER_IP = "192.168.151.20"   # IP of the laser computer
+# connect to laser computer (win 7)
+SERVER_IP = "192.168.151.20"
 PORT = 5001
-sock = connect_to_server(ip=SERVER_IP, port=PORT)
+laser_conn = Connection.connect(SERVER_IP, PORT)
+
+# accept client_iv (mac)
+server_socket = create_server("0.0.0.0", 6000)
+mac_conn, addr = Connection.accept(server_socket)
+
 
 # start controlling KickStart App
 get_window(r'Kick')
 scroll_to_bottom()
-# time.sleep(rest_time)
+
+mac_conn.send_json({"cmd": "REQUEST_PARAMS", "message": "Please enter parameters"})
+params = mac_conn.receive_json()
+print("Received parameters from Mac:", params)
+
+material = params.get("material", "default")
+device_number = params.get("device_number", "default")
+
+mac_conn.send_json({"cmd": "PROGRESS", "progress": "Measurement started"})
+time.sleep(2)
+mac_conn.send_json({"cmd": "PROGRESS", "progress": "idvg"})
 
 
 # --- idvg ---
@@ -76,6 +86,9 @@ scroll_to_bottom()
 
 
 '''
+time.sleep(2)
+mac_conn.send_json({"cmd": "PROGRESS", "progress": "idvd"})
+
 # --- idvd ---
 change_measurement_mode(idvd_path)
 time.sleep(3)
@@ -104,9 +117,11 @@ for vg in vg_values:
 '''
 
 # --- time dependent ---
+time.sleep(2)
+mac_conn.send_json({"cmd": "PROGRESS", "progress": "time"})
 change_measurement_mode(time_path)
 time.sleep(3)
-time_dependent_illumination_run(sock, wait_time=120)
+time_dependent_illumination_run(laser_conn, wait_time=120)
 time.sleep(1)
 filename = filename_generator(material, device_number, measurement_type='time', condition=f'onoff')
 export_data(CSV_FOLDER, filename)

@@ -1,2 +1,4 @@
 import os
-print(os.listdir('../raw_data'))
+
+DEFAULT_FOLDER = os.path.abspath('.')
+print(DEFAULT_FOLDER)
