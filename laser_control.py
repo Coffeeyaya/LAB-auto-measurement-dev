@@ -79,7 +79,7 @@ try:
 
         elif cmd == "FUNCTION" and laser_state != "FUNCTION":
             # time_dependent_wavelength(conn, grid)  # multi-channel FUNCTION
-            time_dependent(conn, grid, channel=6, power="15", num_peaks=20)  # single-channel FUNCTION
+            time_dependent(conn, grid, channel=6, power="15", num_peaks=30)  # single-channel FUNCTION
     conn.close()
 finally:
     server_socket.close()
