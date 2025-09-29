@@ -45,12 +45,14 @@ measurement_index = params.get("measurement_index", "0")
 
 mac_conn.send_json({"cmd": "PROGRESS", "progress": "Measurement started"})
 time.sleep(2)
-mac_conn.send_json({"cmd": "PROGRESS", "progress": "idvg"})
+
 
 
 # --- idvg ---
+mac_conn.send_json({"cmd": "PROGRESS", "progress": "idvg"})
 change_measurement_mode(idvg_path)
 # dark idvg
+mac_conn.send_json({"cmd": "PROGRESS", "progress": "wait"})
 time.sleep(rest_time)
 get_window(r'Kick')
 vg_1 = "5"
