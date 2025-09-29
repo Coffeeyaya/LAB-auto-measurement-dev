@@ -245,14 +245,14 @@ def illuminate_and_run(conn: Connection, wait_time=30):
     print('STEP: illuminate_and_run()')
 
     # Send ON and wait for acknowledgment
-    conn.send_json({"cmd": "ON"})
+    conn.send("ON")
     conn.wait_for("ON")
 
     time.sleep(wait_time)  
     run_measurement()      
 
     # Turn OFF and wait for acknowledgment
-    conn.send_json({"cmd": "OFF"})
+    conn.send("OFF")
     conn.wait_for("OFF")
 
 
@@ -260,7 +260,7 @@ def time_dependent_illumination_run(conn: Connection, wait_time=60):
     print('STEP: time dependent illuminate and run()')
     click_RUN()
     time.sleep(wait_time)
-    conn.send_json({"cmd": "FUNCTION"})
+    conn.send("FUNCTION")
     conn.wait_for("FUNCTION_DONE")
     time.sleep(wait_time)
     click_STOP()
