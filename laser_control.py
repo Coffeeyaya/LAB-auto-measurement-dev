@@ -38,7 +38,6 @@ def time_dependent(conn, grid, channel, power, on_time=1, off_time=3, num_peaks=
     time.sleep(1)
 
     change_power_function(grid, channel, power)
-    time.sleep(10)
 
     for i in range(num_peaks):
         # turn on
@@ -80,7 +79,7 @@ try:
 
         elif cmd == "FUNCTION" and laser_state != "FUNCTION":
             # time_dependent_wavelength(conn, grid)  # multi-channel FUNCTION
-            time_dependent(conn, grid, channel=6, power="15", num_peaks=3)  # single-channel FUNCTION
+            time_dependent(conn, grid, channel=6, power="15", num_peaks=20)  # single-channel FUNCTION
     conn.close()
 finally:
     server_socket.close()
