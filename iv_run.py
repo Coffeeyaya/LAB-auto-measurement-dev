@@ -6,7 +6,7 @@ from LabAuto.iv import get_window, scroll_to_bottom, change_measurement_mode, \
 from LabAuto.network import create_server, Connection
 
 ###-----------------------------------###
-CSV_FOLDER = r"C:\Users\mmm11\OneDrive\桌面\yun-chen\code\auto\data"
+CSV_FOLDER = r"C:\Users\mmm11\OneDrive\桌面\yun-chen\code\auto\LAB-auto-measurement-dev\send_data"
 os.makedirs(CSV_FOLDER, exist_ok=True)
 
 ###-----------------------------------###
