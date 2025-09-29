@@ -265,8 +265,8 @@ def time_dependent_illumination_run(conn: Connection, wait_time=60):
     time.sleep(wait_time)
     click_STOP()
 
-def time_dependent_dark_current():
+def time_dependent_dark_current(wait_time=60):
     print('STEP: time dependent dark current()')
     click_RUN()
-    time.sleep(60)
+    time.sleep(wait_time)
     click_STOP()

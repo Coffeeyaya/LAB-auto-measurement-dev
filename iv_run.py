@@ -42,8 +42,8 @@ material = params.get("material", "default")
 device_number = params.get("device_number", "default")
 
 mac_conn.send_json({"cmd": "PROGRESS", "progress": "Measurement started"})
-time.sleep(2)
-mac_conn.send_json({"cmd": "PROGRESS", "progress": "idvg"})
+# time.sleep(2)
+# mac_conn.send_json({"cmd": "PROGRESS", "progress": "idvg"})
 
 
 # --- idvg ---
@@ -118,6 +118,8 @@ for vg in vg_values:
 
 # --- time dependent ---
 time.sleep(2)
+mac_conn.send_json({"cmd": "PROGRESS", "progress": "wait 60 s"})
+time.sleep(60)
 mac_conn.send_json({"cmd": "PROGRESS", "progress": "time"})
 change_measurement_mode(time_path)
 time.sleep(3)
