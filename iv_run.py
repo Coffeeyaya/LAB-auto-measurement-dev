@@ -74,7 +74,7 @@ else:
 for i in range(1):
     run_measurement()
     time.sleep(1)
-    filename = filename_generator(material, device_number, measurement_type=measurement_type, condition=f'dark-{i}')
+    filename = filename_generator(material, device_number, measurement_type=measurement_type, condition=f'dark-{measurement_index}')
     export_data(CSV_FOLDER, filename)
     # time.sleep(rest_time)
 
@@ -83,7 +83,7 @@ time.sleep(rest_time)
 # light idvg
 for i in range(1):
     illuminate_and_run(laser_conn)
-    filename = filename_generator(material, device_number, measurement_type=measurement_type, condition=f'light-{i}')
+    filename = filename_generator(material, device_number, measurement_type=measurement_type, condition=f'light-{measurement_index}')
     export_data(CSV_FOLDER, filename)
 
     # time.sleep(rest_time)
