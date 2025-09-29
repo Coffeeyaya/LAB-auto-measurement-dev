@@ -2,19 +2,34 @@ from PyQt5.QtWidgets import QApplication, QDialog, QVBoxLayout, QHBoxLayout, QLa
 from LabAuto.network import Connection
 import sys
 
-from PyQt5.QtGui import QMovie
 
-class FinishedDialog(QDialog):
-    def __init__(self):
-        super().__init__()
-        self.setWindowTitle("Experiment Finished!")
-        layout = QVBoxLayout(self)
-        label = QLabel(self)
-        movie = QMovie("celebration.gif")  # path to your gif
-        label.setMovie(movie)
-        movie.start()
-        layout.addWidget(label)
+import numpy as np
+import matplotlib.pyplot as plt
+from matplotlib.animation import FuncAnimation
 
+def celebrate_animation():
+    fig, ax = plt.subplots(figsize=(8, 6))
+    ax.set_facecolor('black')
+    ax.set_xlim(0, 1)
+    ax.set_ylim(0, 1)
+    ax.axis('off')
+
+    # generate some random points for confetti
+    n = 500
+    x = np.random.rand(n)
+    y = np.random.rand(n)
+    colors = np.random.rand(n, 3)
+    sizes = np.random.randint(20, 80, n)
+
+    scat = ax.scatter(x, y, s=sizes, c=colors)
+
+    def update(frame):
+        # update positions randomly
+        scat.set_offsets(np.c_[np.random.rand(n), np.random.rand(n)])
+        return scat,
+
+    ani = FuncAnimation(fig, update, frames=30, interval=150, blit=True, repeat=False)
+    plt.show()
 
 # iv computer (win 10)
 SERVER_IP = "192.168.50.101"
@@ -76,8 +91,7 @@ try:
         elif cmd == "PROGRESS":
             print(f"[MAC] Progress update: {msg.get('progress')}")
             if msg.get('progress') == 'finished':
-                dlg = FinishedDialog()
-                dlg.exec_()
+                celebrate_animation()
 
 
 except KeyboardInterrupt:
