@@ -1,5 +1,6 @@
 import os
 import subprocess
+import sys
 from LabAuto.network import create_server, Connection
 import signal
 import platform
@@ -30,8 +31,38 @@ def run_script(script_name: str):
 
     if script_name in processes and processes[script_name].poll() is None:
         return {"status": "error", "message": "SCRIPT_ALREADY_RUNNING"}
+    
+    python_executable = sys.executable
+    # choose method based on OS
+    system = platform.system()
 
-    proc = subprocess.Popen(["python", full_path])
+    if system == "Darwin":  # macOS
+        applescript = f'''
+        tell application "iTerm"
+            create window with default profile
+            tell current window
+                tell current session
+                    write text "{python_executable} {full_path}"
+                end tell
+            end tell
+        end tell
+        '''
+        proc = subprocess.Popen(
+            ["osascript", "-e", applescript],
+            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
+        )
+
+    elif system == "Windows":
+        proc = subprocess.Popen(
+            [python_executable, full_path],
+            creationflags=subprocess.CREATE_NEW_CONSOLE
+        )
+
+    else:  # Linux
+        proc = subprocess.Popen(
+            ["gnome-terminal", "--", python_executable, full_path]
+        )
+
     processes[script_name] = proc
     return {"status": "ok", "message": f"{script_name} started"}
 
