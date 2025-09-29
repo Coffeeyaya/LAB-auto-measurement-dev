@@ -38,7 +38,7 @@ def time_dependent(conn, grid, channel, power, on_time=1, off_time=3, num_peaks=
     time.sleep(1)
 
     change_power_function(grid, channel, power)
-
+    time.sleep(1)
     for i in range(num_peaks):
         # turn on
         move_and_click(on_coord)
