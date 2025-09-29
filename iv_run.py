@@ -126,11 +126,11 @@ time.sleep(1)
 filename = filename_generator(material, device_number, measurement_type='time', condition=f'onoff')
 export_data(CSV_FOLDER, filename)
 
-time.sleep(30)
+# time.sleep(30)
 
-time_dependent_dark_current()
-time.sleep(1)
-filename = filename_generator(material, device_number, measurement_type='time', condition=f'onoff-darkcurrent')
-export_data(CSV_FOLDER, filename)
+# time_dependent_dark_current()
+# time.sleep(1)
+# filename = filename_generator(material, device_number, measurement_type='time', condition=f'onoff-darkcurrent')
+# export_data(CSV_FOLDER, filename)
 
 print('finish')
