@@ -10,8 +10,8 @@ CSV_FOLDER = r"C:\Users\mmm11\OneDrive\桌面\yun-chen\code\auto\LAB-auto-measur
 os.makedirs(CSV_FOLDER, exist_ok=True)
 
 ###-----------------------------------###
-laser_wavelength = '660nm'
-laser_power = '100nw'
+# laser_wavelength = '660nm'
+# laser_power = '100nw'
 rest_time = 60
 ###-----------------------------------###
 
@@ -29,8 +29,6 @@ laser_conn = Connection.connect(SERVER_IP, PORT)
 server_socket = create_server("0.0.0.0", 6000)
 mac_conn, addr = Connection.accept(server_socket)
 
-
-# start controlling KickStart App
 get_window(r'Kick')
 scroll_to_bottom()
 
@@ -46,97 +44,96 @@ measurement_index = params.get("measurement_index", "0")
 mac_conn.send_json({"cmd": "PROGRESS", "progress": "Measurement started"})
 time.sleep(2)
 
+def IDVG(rest_time=60):
+    mac_conn.send_json({"cmd": "PROGRESS", "progress": "change mode: idvg"})
+    change_measurement_mode(idvg_path)
+    mac_conn.send_json({"cmd": "PROGRESS", "progress": "wait"})
+    time.sleep(rest_time)
 
+    get_window(r'Kick')
 
-# --- idvg ---
-mac_conn.send_json({"cmd": "PROGRESS", "progress": "idvg"})
-change_measurement_mode(idvg_path)
-# dark idvg
-mac_conn.send_json({"cmd": "PROGRESS", "progress": "wait"})
-time.sleep(rest_time)
-get_window(r'Kick')
-vg_1 = "5"
-vg_2 = "-5"
-if material in ['mw', 'wse2']:
-    change_vg_range(vg_1, vg_2)
-    change_vg_range(vg_1, vg_2)
-    vg_start = vg_1
-    vg_end = vg_2
-else:
-    change_vg_range(vg_2, vg_1)
-    change_vg_range(vg_2, vg_1)
-    vg_start = vg_2
-    vg_end = vg_1
+    vg_1 = "5"
+    vg_2 = "-5"
+    if material in ['mw', 'wse2']:
+        change_vg_range(vg_1, vg_2)
+        change_vg_range(vg_1, vg_2)
+    else:
+        change_vg_range(vg_2, vg_1)
+        change_vg_range(vg_2, vg_1)
 
-# change_idvg_vd_level("1")
-# change_idvg_vd_level("1")
-mac_conn.send_json({"cmd": "PROGRESS", "progress": "measure idvg dark"})
-for i in range(1):
-    run_measurement()
+    # change_idvg_vd_level("1")
+    # change_idvg_vd_level("1")
+    mac_conn.send_json({"cmd": "PROGRESS", "progress": "measure idvg dark"})
+    for i in range(1):
+        run_measurement()
+        time.sleep(1)
+        filename = filename_generator(material, device_number, measurement_type=measurement_type, condition=f'dark-{measurement_index}')
+        export_data(CSV_FOLDER, filename)
+        # time.sleep(rest_time)
+
+    time.sleep(rest_time)
+    mac_conn.send_json({"cmd": "PROGRESS", "progress": "measure idvg light"})
+    for i in range(1):
+        illuminate_and_run(laser_conn)
+        filename = filename_generator(material, device_number, measurement_type=measurement_type, condition=f'light-{measurement_index}')
+        export_data(CSV_FOLDER, filename)
+
+        # time.sleep(rest_time)
+    mac_conn.send_json({"cmd": "PROGRESS", "progress": "idvg finished"})
+
+def IDVD(rest_time=60, vg_values=['3', '4', '5']):
+    time.sleep(2)
+    mac_conn.send_json({"cmd": "PROGRESS", "progress": "change mode: idvd"})
+
+    # --- idvd ---
+    change_measurement_mode(idvd_path)
+    time.sleep(3)
+
+    # change_vd_range("0", "1.5")
+    # change_vd_range("0", "1.5")
+
+    for vg in vg_values:
+        change_idvd_vg_level(vg)
+        change_idvd_vg_level(vg)
+        
+        # dark idvd
+        run_measurement()
+        filename = filename_generator(material, device_number, measurement_type='idvd', condition=f'dark-vg={vg}')
+        export_data(CSV_FOLDER, filename)
+
+        time.sleep(rest_time)
+
+        # light idvd
+        illuminate_and_run(laser_conn)
+        filename = filename_generator(material, device_number, measurement_type='idvd', condition=f'light-vg={vg}')
+        export_data(CSV_FOLDER, filename)
+        time.sleep(rest_time)
+    mac_conn.send_json({"cmd": "PROGRESS", "progress": "idvd finished"})
+
+def TIME(rest_time=60, wait_time=60):
+    '''
+    rest_time: time rested before measurement
+    wait_time: start measurement ~ start illumination, stop illumination ~ end measurement
+    '''
+    mac_conn.send_json({"cmd": "PROGRESS", "progress": "change mode: time"})
+    change_measurement_mode(time_path)
+
+    mac_conn.send_json({"cmd": "PROGRESS", "progress": f"wait {rest_time} s"})
+    time.sleep(rest_time)
+
+    mac_conn.send_json({"cmd": "PROGRESS", "progress": "time measurement started"})
+    time_dependent_illumination_run(laser_conn, wait_time=wait_time)
     time.sleep(1)
-    filename = filename_generator(material, device_number, measurement_type=measurement_type, condition=f'dark-{measurement_index}')
+    filename = filename_generator(material, device_number, measurement_type='time', condition=f'onoff_{measurement_index}')
     export_data(CSV_FOLDER, filename)
-    # time.sleep(rest_time)
+    mac_conn.send_json({"cmd": "PROGRESS", "progress": "time measurement finished"})
 
-time.sleep(rest_time)
-mac_conn.send_json({"cmd": "PROGRESS", "progress": "measure idvg light"})
-# light idvg
-for i in range(1):
-    illuminate_and_run(laser_conn)
-    filename = filename_generator(material, device_number, measurement_type=measurement_type, condition=f'light-{measurement_index}')
+    time.sleep(10)
+    mac_conn.send_json({"cmd": "PROGRESS", "progress": "darkcurrent measurement started"})
+    time_dependent_dark_current(wait_time=wait_time)
+    time.sleep(1)
+    filename = filename_generator(material, device_number, measurement_type='time', condition=f'onoff-darkcurrent_{measurement_index}')
     export_data(CSV_FOLDER, filename)
+    mac_conn.send_json({"cmd": "PROGRESS", "progress": "darkcurrent measurement finished"})
 
-    # time.sleep(rest_time)
-
-
-'''
-time.sleep(2)
-mac_conn.send_json({"cmd": "PROGRESS", "progress": "idvd"})
-
-# --- idvd ---
-change_measurement_mode(idvd_path)
-time.sleep(3)
-
-# change_vd_range("0", "1.5")
-# change_vd_range("0", "1.5")
-
-
-vg_values = ["-3"]
-for vg in vg_values:
-    change_idvd_vg_level(vg)
-    change_idvd_vg_level(vg)
-    
-    # dark idvd
-    run_measurement()
-    filename = filename_generator(material, device_number, measurement_type='idvd', condition=f'dark-vg={vg}')
-    export_data(CSV_FOLDER, filename)
-
-    time.sleep(rest_time)
-
-    # light idvd
-    illuminate_and_run(sock)
-    filename = filename_generator(material, device_number, measurement_type='idvd', condition=f'light-{laser_wavelength}-{laser_power}-vg={vg}')
-    export_data(CSV_FOLDER, filename)
-    time.sleep(rest_time)
-'''
-
-# --- time dependent ---
-# time.sleep(2)
-# mac_conn.send_json({"cmd": "PROGRESS", "progress": "wait 60 s"})
-# time.sleep(60)
-# mac_conn.send_json({"cmd": "PROGRESS", "progress": "time"})
-# change_measurement_mode(time_path)
-# time.sleep(3)
-# time_dependent_illumination_run(laser_conn, wait_time=60)
-# time.sleep(1)
-# filename = filename_generator(material, device_number, measurement_type='time', condition=f'onoff_{measurement_index}')
-# export_data(CSV_FOLDER, filename)
-
-# time.sleep(15)
-
-# time_dependent_dark_current()
-# time.sleep(1)
-# filename = filename_generator(material, device_number, measurement_type='time', condition=f'onoff-darkcurrent_{measurement_index}')
-# export_data(CSV_FOLDER, filename)
-mac_conn.send_json({"cmd": "PROGRESS", "progress": "finished"})
 print('finish')
