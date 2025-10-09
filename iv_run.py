@@ -5,14 +5,10 @@ from LabAuto.iv import get_window, scroll_to_bottom, change_measurement_mode, \
     illuminate_and_run, time_dependent_illumination_run, change_vg_range, change_vd_range, time_dependent_dark_current
 from LabAuto.network import create_server, Connection
 
+
 ###-----------------------------------###
 CSV_FOLDER = r"C:\Users\mmm11\OneDrive\桌面\yun-chen\code\auto\LAB-auto-measurement-dev\send_data"
 os.makedirs(CSV_FOLDER, exist_ok=True)
-
-###-----------------------------------###
-# laser_wavelength = '660nm'
-# laser_power = '100nw'
-rest_time = 60
 ###-----------------------------------###
 
 # measurement settings
@@ -29,22 +25,7 @@ laser_conn = Connection.connect(SERVER_IP, PORT)
 server_socket = create_server("0.0.0.0", 6000)
 mac_conn, addr = Connection.accept(server_socket)
 
-get_window(r'Kick')
-scroll_to_bottom()
-
-mac_conn.send_json({"cmd": "REQUEST_PARAMS", "message": "Please enter parameters"})
-params = mac_conn.receive_json()
-print("Received parameters from Mac:", params)
-
-material = params.get("material", "default")
-device_number = params.get("device_number", "default")
-measurement_type = params.get("measurement_type", "default_type")
-measurement_index = params.get("measurement_index", "0")
-
-mac_conn.send_json({"cmd": "PROGRESS", "progress": "Measurement started"})
-time.sleep(2)
-
-def IDVG(rest_time=60):
+def IDVG(material, device_number, measurement_index, rest_time=60):
     mac_conn.send_json({"cmd": "PROGRESS", "progress": "change mode: idvg"})
     change_measurement_mode(idvg_path)
     mac_conn.send_json({"cmd": "PROGRESS", "progress": "wait"})
@@ -67,7 +48,7 @@ def IDVG(rest_time=60):
     for i in range(1):
         run_measurement()
         time.sleep(1)
-        filename = filename_generator(material, device_number, measurement_type=measurement_type, condition=f'dark-{measurement_index}')
+        filename = filename_generator(material, device_number, measurement_type='idvg', condition=f'dark-{measurement_index}')
         export_data(CSV_FOLDER, filename)
         # time.sleep(rest_time)
 
@@ -75,13 +56,13 @@ def IDVG(rest_time=60):
     mac_conn.send_json({"cmd": "PROGRESS", "progress": "measure idvg light"})
     for i in range(1):
         illuminate_and_run(laser_conn)
-        filename = filename_generator(material, device_number, measurement_type=measurement_type, condition=f'light-{measurement_index}')
+        filename = filename_generator(material, device_number, measurement_type='idvg', condition=f'light-{measurement_index}')
         export_data(CSV_FOLDER, filename)
 
         # time.sleep(rest_time)
     mac_conn.send_json({"cmd": "PROGRESS", "progress": "idvg finished"})
 
-def IDVD(rest_time=60, vg_values=['3', '4', '5']):
+def IDVD(material, device_number, measurement_index, vg_values, rest_time=60):
     time.sleep(2)
     mac_conn.send_json({"cmd": "PROGRESS", "progress": "change mode: idvd"})
 
@@ -98,19 +79,19 @@ def IDVD(rest_time=60, vg_values=['3', '4', '5']):
         
         # dark idvd
         run_measurement()
-        filename = filename_generator(material, device_number, measurement_type='idvd', condition=f'dark-vg={vg}')
+        filename = filename_generator(material, device_number, measurement_type='idvd', condition=f'dark-vg={vg}-{measurement_index}')
         export_data(CSV_FOLDER, filename)
 
         time.sleep(rest_time)
 
         # light idvd
         illuminate_and_run(laser_conn)
-        filename = filename_generator(material, device_number, measurement_type='idvd', condition=f'light-vg={vg}')
+        filename = filename_generator(material, device_number, measurement_type='idvd', condition=f'light-vg={vg}-{measurement_index}')
         export_data(CSV_FOLDER, filename)
         time.sleep(rest_time)
     mac_conn.send_json({"cmd": "PROGRESS", "progress": "idvd finished"})
 
-def TIME(rest_time=60, wait_time=60):
+def TIME(material, device_number, measurement_index, rest_time=60, wait_time=60):
     '''
     rest_time: time rested before measurement
     wait_time: start measurement ~ start illumination, stop illumination ~ end measurement
@@ -124,7 +105,7 @@ def TIME(rest_time=60, wait_time=60):
     mac_conn.send_json({"cmd": "PROGRESS", "progress": "time measurement started"})
     time_dependent_illumination_run(laser_conn, wait_time=wait_time)
     time.sleep(1)
-    filename = filename_generator(material, device_number, measurement_type='time', condition=f'onoff_{measurement_index}')
+    filename = filename_generator(material, device_number, measurement_type='time', condition=f'onoff-{measurement_index}')
     export_data(CSV_FOLDER, filename)
     mac_conn.send_json({"cmd": "PROGRESS", "progress": "time measurement finished"})
 
@@ -132,8 +113,35 @@ def TIME(rest_time=60, wait_time=60):
     mac_conn.send_json({"cmd": "PROGRESS", "progress": "darkcurrent measurement started"})
     time_dependent_dark_current(wait_time=wait_time)
     time.sleep(1)
-    filename = filename_generator(material, device_number, measurement_type='time', condition=f'onoff-darkcurrent_{measurement_index}')
+    filename = filename_generator(material, device_number, measurement_type='time', condition=f'onoff-darkcurrent-{measurement_index}')
     export_data(CSV_FOLDER, filename)
     mac_conn.send_json({"cmd": "PROGRESS", "progress": "darkcurrent measurement finished"})
 
-print('finish')
+def main():
+    get_window(r'Kick')
+    scroll_to_bottom()
+
+    mac_conn.send_json({"cmd": "REQUEST_PARAMS", "message": "Please enter parameters"})
+    params = mac_conn.receive_json()
+    print("Received parameters from Mac:", params)
+
+    material = params.get("material", "default")
+    device_number = params.get("device_number", "default")
+    measurement_type = params.get("measurement_type", "default_type")
+    measurement_index = params.get("measurement_index", "0")
+
+    mac_conn.send_json({"cmd": "PROGRESS", "progress": "Measurement started"})
+    time.sleep(2)
+
+    if measurement_type == 'idvg':
+        IDVG(material, device_number, measurement_index)
+    elif measurement_type == 'idvd':
+        IDVD(material, device_number, measurement_index, vg_values=['3', '4', '5'])
+    elif measurement_type == 'time':
+        TIME(material, device_number, measurement_index)
+    else:
+        mac_conn.send_json({"cmd": "PROGRESS", "progress": "invalid measurement type"})
+    print('finish')
+
+if __name__ == '__main__':
+    main()
