@@ -7,7 +7,7 @@ from LabAuto.network import create_server, Connection
 
 
 ###-----------------------------------###
-CSV_FOLDER = r"C:\Users\mmm11\OneDrive\桌面\yun-chen\code\auto\LAB-auto-measurement-dev\send_data"
+CSV_FOLDER = r"C:\Users\mmm11\OneDrive\桌面\yun-chen\code\auto\send_data"
 os.makedirs(CSV_FOLDER, exist_ok=True)
 ###-----------------------------------###
 
