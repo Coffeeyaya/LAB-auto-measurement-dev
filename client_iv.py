@@ -1,8 +1,6 @@
 from PyQt5.QtWidgets import QApplication, QDialog, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QPushButton
 from LabAuto.network import Connection
 import sys
-
-
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
