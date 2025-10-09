@@ -8,7 +8,7 @@ set_server_name(os.path.basename(__file__))
 HOST = '0.0.0.0'
 PORT = 5002
 
-CSV_FOLDER = r"C:\Users\mmm11\OneDrive\桌面\yun-chen\code\auto\LAB-auto-measurement-dev\send_data"
+CSV_FOLDER = r"C:\Users\mmm11\OneDrive\桌面\yun-chen\code\auto\send_data"
 os.makedirs(CSV_FOLDER, exist_ok=True)
 
 def send_file(conn: Connection, filepath):
