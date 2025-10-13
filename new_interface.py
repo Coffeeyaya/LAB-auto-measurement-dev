@@ -9,6 +9,15 @@ from PyQt5.QtWidgets import (
 from PyQt5.QtGui import QFont
 from LabAuto.network import Connection  # same Connection used by iv_run
 
+def launch_script(script_name):
+    # If running as .exe, scripts are inside sys._MEIPASS
+    if getattr(sys, 'frozen', False):
+        script_path = os.path.join(sys._MEIPASS, script_name)
+    else:
+        script_path = script_name
+
+    subprocess.Popen([sys.executable, script_path], creationflags=subprocess.CREATE_NEW_CONSOLE)
+
 
 class LabControlUI(QWidget):
     def __init__(self):
@@ -188,13 +197,17 @@ class LabControlUI(QWidget):
         self.log.append(text)
         self.log.moveCursor(self.log.textCursor().End)
 
-
     def launch_client_in_new_terminal(self, script_name):
+        # Determine script path depending on whether running as exe or normal
+        if getattr(sys, 'frozen', False):
+            # Running as PyInstaller exe
+            script_path = os.path.join(sys._MEIPASS, script_name)
+        else:
+            script_path = os.path.abspath(script_name)
+
         python_executable = sys.executable
-        script_path = os.path.abspath(script_name)
 
         if sys.platform == "darwin":  # macOS
-            # Launch in iTerm
             applescript = f'''
             tell application "iTerm"
                 create window with default profile
@@ -212,18 +225,15 @@ class LabControlUI(QWidget):
             )
 
         elif sys.platform == "win32":
-            # Launch in new Windows console
             subprocess.Popen(
                 [python_executable, script_path],
                 creationflags=subprocess.CREATE_NEW_CONSOLE
             )
 
         else:  # Linux
-            # Launch in new gnome-terminal window
             subprocess.Popen(
                 ["gnome-terminal", "--", python_executable, script_path]
             )
-
 
 
 if __name__ == "__main__":
