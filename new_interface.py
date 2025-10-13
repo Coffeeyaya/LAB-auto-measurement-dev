@@ -199,11 +199,11 @@ class LabControlUI(QWidget):
 
     def launch_client_in_new_terminal(self, script_name):
         # Determine script path depending on whether running as exe or normal
-        if getattr(sys, 'frozen', False):
-            # Running as PyInstaller exe
-            script_path = os.path.join(sys._MEIPASS, script_name)
-        else:
-            script_path = os.path.abspath(script_name)
+        # if getattr(sys, 'frozen', False):
+        #     # Running as PyInstaller exe
+        #     script_path = os.path.join(sys._MEIPASS, script_name)
+        # else:
+        script_path = os.path.abspath(script_name)
 
         python_executable = sys.executable
 
