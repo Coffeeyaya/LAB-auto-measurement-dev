@@ -117,13 +117,39 @@ def TIME(material, device_number, measurement_index, rest_time=60, wait_time=60)
     export_data(CSV_FOLDER, filename)
     mac_conn.send_json({"cmd": "PROGRESS", "progress": "darkcurrent measurement finished"})
 
+# def main():
+#     get_window(r'Kick')
+#     scroll_to_bottom()
+
+#     mac_conn.send_json({"cmd": "REQUEST_PARAMS", "message": "Please enter parameters"})
+#     params = mac_conn.receive_json()
+#     print("Received parameters from Mac:", params)
+
+#     material = params.get("material", "default")
+#     device_number = params.get("device_number", "default")
+#     measurement_type = params.get("measurement_type", "default_type")
+#     measurement_index = params.get("measurement_index", "0")
+
+#     mac_conn.send_json({"cmd": "PROGRESS", "progress": "Measurement started"})
+#     time.sleep(2)
+
+#     if measurement_type == 'idvg':
+#         IDVG(material, device_number, measurement_index)
+#     elif measurement_type == 'idvd':
+#         IDVD(material, device_number, measurement_index, vg_values=['3', '4', '5'])
+#     elif measurement_type == 'time':
+#         TIME(material, device_number, measurement_index)
+#     else:
+#         mac_conn.send_json({"cmd": "PROGRESS", "progress": "invalid measurement type"})
+#     print('finish')
+
 def main():
     get_window(r'Kick')
     scroll_to_bottom()
 
-    mac_conn.send_json({"cmd": "REQUEST_PARAMS", "message": "Please enter parameters"})
-    params = mac_conn.receive_json()
-    print("Received parameters from Mac:", params)
+    print("[IV_RUN] Waiting for connection from Interface...")
+    params = mac_conn.receive_json()  # Just wait for parameters
+    print("[IV_RUN] Received parameters:", params)
 
     material = params.get("material", "default")
     device_number = params.get("device_number", "default")
@@ -141,7 +167,10 @@ def main():
         TIME(material, device_number, measurement_index)
     else:
         mac_conn.send_json({"cmd": "PROGRESS", "progress": "invalid measurement type"})
-    print('finish')
+
+    mac_conn.send_json({"cmd": "PROGRESS", "progress": "finished"})
+    print("[IV_RUN] Finished all measurements.")
+
 
 if __name__ == '__main__':
     main()
