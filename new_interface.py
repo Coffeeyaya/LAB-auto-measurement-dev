@@ -226,7 +226,7 @@ class LabControlUI(QWidget):
 
         elif sys.platform == "win32":
             subprocess.Popen(
-                [python_executable, script_path],
+                ["cmd.exe", "/k", python_executable, script_path],
                 creationflags=subprocess.CREATE_NEW_CONSOLE
             )
 
