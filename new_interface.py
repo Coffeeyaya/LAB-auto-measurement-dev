@@ -20,7 +20,8 @@ class LabControlUI(QWidget):
         self.listener_thread = None
         self.listening = False
 
-        font_button = QFont("Arial", 12)
+        font_button = QFont("Arial", 20)
+        app.setFont(font_button)
         main_layout = QVBoxLayout()
 
         # --- Fixed connection info ---
@@ -91,13 +92,26 @@ class LabControlUI(QWidget):
 
     # ----------------- Connection + Send -----------------
     def connect_to_server(self):
-        """Connect to iv_run server if not already connected."""
-        if self.conn is not None:
-            return True
+        """Connect to iv_run server, ensuring old connections/threads are cleaned."""
         try:
-            self.append_log(f"Connecting to {self.server_ip}:{self.server_port} ...")
+            # Stop old listener thread
+            self.listening = False
+            if hasattr(self, "listener_thread") and self.listener_thread and self.listener_thread.is_alive():
+                self.listener_thread.join(timeout=0.1)
+
+            # Close old socket
+            if hasattr(self, "conn") and self.conn:
+                try:
+                    self.conn.sock.close()
+                except:
+                    pass
+                self.conn = None
+
+            # Connect new socket
             self.conn = Connection.connect(self.server_ip, self.server_port)
-            self.append_log("Connected.")
+            self.append_log(f"Connected to {self.server_ip}:{self.server_port}")
+
+            # Start fresh listener thread
             self.listening = True
             self.listener_thread = threading.Thread(target=self.listen_to_server, daemon=True)
             self.listener_thread.start()
@@ -107,19 +121,40 @@ class LabControlUI(QWidget):
             self.conn = None
             return False
 
+
     def send_params_and_listen(self):
-        """Called when the Send button is clicked."""
-        if not self.connect_to_server():
-            return
+        params = self.collect_params()
+
         try:
-            params = self.collect_params()
+            # Ensure connection
+            if not self.conn:
+                self.connect_to_server()
             self.conn.send_json(params)
             self.append_log(f"Sent parameters: {params}")
+
         except Exception as e:
             self.append_log(f"Error sending parameters: {e}")
+            self.append_log("Attempting to reconnect and resend...")
+
+            # Close old socket if broken
+            if self.conn:
+                try:
+                    self.conn.sock.close()
+                except:
+                    pass
+                self.conn = None
+                self.listening = False
+
+            # Reconnect and resend
+            if self.connect_to_server():
+                try:
+                    self.conn.send_json(params)
+                    self.append_log(f"Sent parameters: {params}")
+                except Exception as e2:
+                    self.append_log(f"Failed again: {e2}")
+
 
     def listen_to_server(self):
-        """Background thread: listens for messages from iv_run."""
         self.append_log("Listening for server messages...")
         while self.listening and self.conn:
             try:
@@ -130,7 +165,6 @@ class LabControlUI(QWidget):
                 if cmd == "PROGRESS":
                     self.append_log(f"Progress: {msg.get('progress')}")
                 elif cmd == "REQUEST_PARAMS":
-                    # If iv_run asks explicitly, send again
                     self.append_log("Server requested parameters again.")
                     self.conn.send_json(self.collect_params())
                 else:
@@ -139,6 +173,7 @@ class LabControlUI(QWidget):
                 self.append_log(f"Listener error: {e}")
                 break
         self.append_log("Listener stopped.")
+
 
     # ----------------- Utility -----------------
     def collect_params(self):
