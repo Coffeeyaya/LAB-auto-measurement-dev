@@ -26,15 +26,15 @@ server_socket = create_server("0.0.0.0", 6000)
 mac_conn, addr = Connection.accept(server_socket)
 
 def IDVG(material, device_number, measurement_index, rest_time=60):
-    mac_conn.send_json({"cmd": "PROGRESS", "progress": "change mode: idvg"})
-    change_measurement_mode(idvg_path)
-    mac_conn.send_json({"cmd": "PROGRESS", "progress": "wait"})
-    time.sleep(rest_time)
+    # mac_conn.send_json({"cmd": "PROGRESS", "progress": "change mode: idvg"})
+    # change_measurement_mode(idvg_path)
+    # mac_conn.send_json({"cmd": "PROGRESS", "progress": "wait"})
+    # time.sleep(rest_time)
 
     get_window(r'Kick')
 
-    vg_1 = "5"
-    vg_2 = "-5"
+    vg_1 = "3"
+    vg_2 = "-3"
     if material in ['mw', 'wse2']:
         change_vg_range(vg_1, vg_2)
         change_vg_range(vg_1, vg_2)
@@ -52,12 +52,12 @@ def IDVG(material, device_number, measurement_index, rest_time=60):
         export_data(CSV_FOLDER, filename)
         # time.sleep(rest_time)
 
-    time.sleep(rest_time)
-    mac_conn.send_json({"cmd": "PROGRESS", "progress": "measure idvg light"})
-    for i in range(1):
-        illuminate_and_run(laser_conn)
-        filename = filename_generator(material, device_number, measurement_type='idvg', condition=f'light-{measurement_index}')
-        export_data(CSV_FOLDER, filename)
+    # time.sleep(rest_time)
+    # mac_conn.send_json({"cmd": "PROGRESS", "progress": "measure idvg light"})
+    # for i in range(1):
+    #     illuminate_and_run(laser_conn)
+    #     filename = filename_generator(material, device_number, measurement_type='idvg', condition=f'light-{measurement_index}')
+    #     export_data(CSV_FOLDER, filename)
 
         # time.sleep(rest_time)
     mac_conn.send_json({"cmd": "PROGRESS", "progress": "idvg finished"})
