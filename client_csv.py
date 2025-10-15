@@ -1,10 +1,11 @@
 import os
 from LabAuto.network import Connection
+from pathlib import Path
 
 SERVER_IP = "192.168.50.101"  # Windows IV machine
 # SERVER_IP = '127.0.0.1'
 PORT = 5002
-SAVE_DIR = "./receive_data/data" 
+SAVE_DIR = Path("/Users/tsaiyunchen/Desktop/lab/master/measurement_dev/receive_data/data")
 
 os.makedirs(SAVE_DIR, exist_ok=True)
 

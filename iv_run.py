@@ -33,14 +33,14 @@ def IDVG(material, device_number, measurement_index, rest_time=60):
 
     get_window(r'Kick')
 
-    vg_1 = "3"
-    vg_2 = "-3"
-    if material in ['mw', 'wse2']:
-        change_vg_range(vg_1, vg_2)
-        change_vg_range(vg_1, vg_2)
-    else:
-        change_vg_range(vg_2, vg_1)
-        change_vg_range(vg_2, vg_1)
+    # vg_1 = "3"
+    # vg_2 = "-3"
+    # if material in ['mw', 'wse2']:
+    #     change_vg_range(vg_1, vg_2)
+    #     change_vg_range(vg_1, vg_2)
+    # else:
+    #     change_vg_range(vg_2, vg_1)
+    #     change_vg_range(vg_2, vg_1)
 
     # change_idvg_vd_level("1")
     # change_idvg_vd_level("1")
