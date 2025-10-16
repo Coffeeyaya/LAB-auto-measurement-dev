@@ -96,7 +96,7 @@ def IDVD(material, device_number, measurement_index, vg_values, rest_time=60):
         time.sleep(rest_time)
     mac_conn.send_json({"cmd": "PROGRESS", "progress": "idvd finished"})
 
-def TIME(material, device_number, measurement_index, rest_time=60, wait_time=60):
+def TIME(material, device_number, measurement_index, rest_time=2, wait_time=2):
     '''
     rest_time: time rested before measurement
     wait_time: start measurement ~ start illumination, stop illumination ~ end measurement
