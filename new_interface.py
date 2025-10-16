@@ -1,4 +1,5 @@
 import sys
+from PyQt5 import QtCore
 import os
 import threading
 import subprocess
@@ -12,29 +13,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.animation import FuncAnimation
 
-def celebrate_animation():
-    fig, ax = plt.subplots(figsize=(8, 6))
-    ax.set_facecolor('black')
-    ax.set_xlim(0, 1)
-    ax.set_ylim(0, 1)
-    ax.axis('off')
-
-    # generate some random points for confetti
-    n = 500
-    x = np.random.rand(n)
-    y = np.random.rand(n)
-    colors = np.random.rand(n, 3)
-    sizes = np.random.randint(20, 80, n)
-
-    scat = ax.scatter(x, y, s=sizes, c=colors)
-
-    def update(frame):
-        # update positions randomly
-        scat.set_offsets(np.c_[np.random.rand(n), np.random.rand(n)])
-        return scat,
-
-    ani = FuncAnimation(fig, update, frames=30, interval=150, blit=True, repeat=False)
-    plt.show()
 
 def launch_script(script_name):
     # If running as .exe, scripts are inside sys._MEIPASS
@@ -126,6 +104,27 @@ class LabControlUI(QWidget):
 
         self.setLayout(main_layout)
 
+    def celebrate_animation(self):
+        fig, ax = plt.subplots(figsize=(8, 6))
+        ax.set_facecolor('black')
+        ax.set_xlim(0, 1)
+        ax.set_ylim(0, 1)
+        ax.axis('off')
+
+        n = 500
+        x = np.random.rand(n)
+        y = np.random.rand(n)
+        colors = np.random.rand(n, 3)
+        sizes = np.random.randint(20, 80, n)
+        scat = ax.scatter(x, y, s=sizes, c=colors)
+
+        def update(frame):
+            scat.set_offsets(np.c_[np.random.rand(n), np.random.rand(n)])
+            return scat,
+
+        ani = FuncAnimation(fig, update, frames=30, interval=150, blit=True, repeat=False)
+        plt.show(block=False)
+
     # ----------------- Connection + Send -----------------
     def connect_to_server(self):
         """Connect to iv_run server, ensuring old connections/threads are cleaned."""
@@ -201,7 +200,9 @@ class LabControlUI(QWidget):
                 if cmd == "PROGRESS":
                     self.append_log(f"Progress: {msg.get('progress')}")
                     if msg.get('progress') == 'finished':
-                        celebrate_animation()
+                        print('hi')
+                        # run celebrate_animation in main thread safely
+                        # QtCore.QTimer.singleShot(0, celebrate_animation)
                 elif cmd == "REQUEST_PARAMS":
                     self.append_log("Server requested parameters again.")
                     self.conn.send_json(self.collect_params())

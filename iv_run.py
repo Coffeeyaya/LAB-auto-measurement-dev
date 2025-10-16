@@ -45,11 +45,11 @@ def IDVG(material, device_number, measurement_index, rest_time=60):
     # change_idvg_vd_level("1")
     # change_idvg_vd_level("1")
     mac_conn.send_json({"cmd": "PROGRESS", "progress": "measure idvg dark"})
-    for i in range(1):
-        run_measurement()
-        time.sleep(1)
-        filename = filename_generator(material, device_number, measurement_type='idvg', condition=f'dark-{measurement_index}')
-        export_data(CSV_FOLDER, filename)
+    # for i in range(1):
+    #     run_measurement()
+    #     time.sleep(1)
+    #     filename = filename_generator(material, device_number, measurement_type='idvg', condition=f'dark-{measurement_index}')
+    #     export_data(CSV_FOLDER, filename)
         # time.sleep(rest_time)
 
     # time.sleep(rest_time)
