@@ -123,7 +123,10 @@ class LabControlUI(QWidget):
             return scat,
 
         ani = FuncAnimation(fig, update, frames=30, interval=150, blit=True, repeat=False)
+
         plt.show(block=False)
+        plt.pause(5)  # <-- let it run for 5 seconds before window closes
+        plt.close()
 
     # ----------------- Connection + Send -----------------
     def connect_to_server(self):
@@ -200,9 +203,9 @@ class LabControlUI(QWidget):
                 if cmd == "PROGRESS":
                     self.append_log(f"Progress: {msg.get('progress')}")
                     if msg.get('progress') == 'finished':
-                        print('hi')
+                        # print('hi')
                         # run celebrate_animation in main thread safely
-                        # QtCore.QTimer.singleShot(0, celebrate_animation)
+                        QtCore.QTimer.singleShot(0, self.celebrate_animation)
                 elif cmd == "REQUEST_PARAMS":
                     self.append_log("Server requested parameters again.")
                     self.conn.send_json(self.collect_params())
