@@ -144,7 +144,7 @@ def main():
     elif measurement_type == 'idvd':
         IDVD(material, device_number, measurement_index, vg_values=['3', '4', '5'])
     elif measurement_type == 'time':
-        TIME(material, device_number, measurement_index)
+        TIME(material, device_number, measurement_index, rest_time=1)
     else:
         mac_conn.send_json({"cmd": "PROGRESS", "progress": "invalid measurement type"})
 
