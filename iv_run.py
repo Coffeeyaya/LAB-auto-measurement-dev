@@ -50,7 +50,7 @@ def IDVG(material, device_number, measurement_index, rest_time=60):
         time.sleep(1)
         filename = filename_generator(material, device_number, measurement_type='idvg', condition=f'dark-{measurement_index}')
         export_data(CSV_FOLDER, filename)
-        time.sleep(rest_time)
+        # time.sleep(rest_time)
     mac_conn.send_json({"cmd": "PROGRESS", "progress": "idvg dark finished"})
 
     mac_conn.send_json({"cmd": "PROGRESS", "progress": f"wait {rest_time}"})
