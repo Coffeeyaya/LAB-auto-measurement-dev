@@ -29,7 +29,7 @@ def time_dependent_wavelength(conn, grid):
     laser_state = "FUNCTION_DONE"
     conn.send("FUNCTION_DONE")
 
-def time_dependent(conn, grid, channel, power, on_time=10, off_time=20, num_peaks=5):
+def time_dependent(conn, grid, channel, power, on_time=3, off_time=3, num_peaks=10):
     global laser_state
     laser_state = "FUNCTION"
     conn.send("FUNCTION")
@@ -79,7 +79,7 @@ try:
 
         elif cmd == "FUNCTION" and laser_state != "FUNCTION":
             # time_dependent_wavelength(conn, grid)  # multi-channel FUNCTION
-            time_dependent(conn, grid, channel=6, power="15", num_peaks=5)  # single-channel FUNCTION
+            time_dependent(conn, grid, channel=6, power="15", num_peaks=10)  # single-channel FUNCTION
     conn.close()
 finally:
     server_socket.close()
