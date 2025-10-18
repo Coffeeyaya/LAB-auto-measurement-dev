@@ -1,41 +1,37 @@
 import os
 import time
-from LabAuto.network import Connection
-from LabAuto.script_manager import run_server, set_server_name
+from pathlib import Path
+import zmq
 
-set_server_name(os.path.basename(__file__))
-
-HOST = '0.0.0.0'
-PORT = 5002
-
-CSV_FOLDER = r"C:\Users\mmm11\OneDrive\桌面\yun-chen\code\auto\send_data"
+CSV_FOLDER = Path(__file__).parent.parent / 'send_csv'
 os.makedirs(CSV_FOLDER, exist_ok=True)
 
-def send_file(conn: Connection, filepath):
-    """Send a single CSV file in chunks."""
-    if not os.path.exists(filepath):
-        conn.send_json({"status": "error", "message": f"FILE_NOT_FOUND {filepath}"})
-        return
+ZMQ_PORT = 5003  # separate port for CSV transfer
 
-    filesize = os.path.getsize(filepath)
-    filename = os.path.basename(filepath)
+# ------------------- ZeroMQ CSV Push -------------------
+class ZmqCsvPush:
+    def __init__(self, socket):
+        self.socket = socket
 
-    # Send header
-    conn.send_json({"cmd": "FILE", "filename": filename, "size": filesize})
-    ack = conn.receive_json()
-    if ack.get("status") != "READY":
-        return
+    @classmethod
+    def server(cls, port):
+        ctx = zmq.Context()
+        sock = ctx.socket(zmq.PUSH)
+        sock.bind(f"tcp://*:{port}")
+        print(f"CSV PUSH server bound to port {port}")
+        return cls(sock)
 
-    # Send file contents
-    with open(filepath, "rb") as f:
-        while chunk := f.read(4096):
-            conn.sock.sendall(chunk)
+    def send_csv(self, filepath):
+        data = open(filepath, "rb").read()
+        header = {"cmd": "FILE", "filename": os.path.basename(filepath), "size": len(data)}
+        self.socket.send_json(header, flags=zmq.SNDMORE)
+        self.socket.send(data)
+        print(f"[CSV SERVER] Sent {filepath} ({len(data)} bytes)")
 
-    conn.send_json({"cmd": "FILE_DONE"})
-    print(f"[CSV SERVER] Sent {filename} ({filesize} bytes)")
 
-def watch_and_send_csvs(conn: Connection, folder: str):
-    """Continuously watch folder for new CSV files and send them."""
+# ------------------- CSV Watcher -------------------
+def watch_and_send_csvs(zmq_server: ZmqCsvPush, folder: str):
+    """Continuously watch folder for new CSV files and push them."""
     known_files = set()
     try:
         while True:
@@ -44,27 +40,21 @@ def watch_and_send_csvs(conn: Connection, folder: str):
             for new_file in new_files:
                 filepath = os.path.join(folder, new_file)
                 if os.path.exists(filepath) and os.path.getsize(filepath) > 0:
-                    send_file(conn, filepath)
+                    zmq_server.send_csv(filepath)
                     time.sleep(1)
                     known_files.add(new_file)
             time.sleep(1)
-    except ConnectionError:
-        print("[CSV SERVER] Client disconnected")
     except Exception as e:
         print(f"[CSV SERVER] Watcher error: {e}")
 
-# ------------------- Extra Client Handler -------------------
-def csv_client_handler(conn: Connection):
+def csv_client_handler():
     try:
-        watch_and_send_csvs(conn, CSV_FOLDER)
+        zmq_server = ZmqCsvPush.server(ZMQ_PORT)
+        watch_and_send_csvs(zmq_server, CSV_FOLDER)
     except ConnectionError:
         print("[CSV SERVER] Client disconnected")
-    finally:
-        conn.sock.close()  # close here, not in run_server finally
-
+    
 
 # ------------------- Main -------------------
 if __name__ == "__main__":
-    run_server(host=HOST, port=PORT, csv_handler=csv_client_handler)
-
-    
+    csv_client_handler()

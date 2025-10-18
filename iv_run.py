@@ -1,5 +1,6 @@
 import time
 import os 
+from pathlib import Path
 from LabAuto.iv import get_window, scroll_to_bottom, change_measurement_mode, \
     run_measurement, export_data, change_idvd_vg_level, change_idvg_vd_level, filename_generator, \
     illuminate_and_run, time_dependent_illumination_run, change_vg_range, change_vd_range, time_dependent_dark_current
@@ -7,7 +8,8 @@ from LabAuto.network import create_server, Connection
 
 
 ###-----------------------------------###
-CSV_FOLDER = r"C:\Users\mmm11\OneDrive\桌面\yun-chen\code\auto\send_data"
+# CSV_FOLDER = r"C:\Users\mmm11\OneDrive\桌面\yun-chen\code\auto\send_data"
+CSV_FOLDER = Path(__file__).parent.parent / 'send_data'
 os.makedirs(CSV_FOLDER, exist_ok=True)
 ###-----------------------------------###
 
