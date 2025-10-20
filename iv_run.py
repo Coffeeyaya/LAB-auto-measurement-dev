@@ -38,8 +38,8 @@ def IDVG(material, device_number, measurement_index, rest_time=60):
         time.sleep(3)
 
     mac_conn.send_json({"cmd": "PROGRESS", "progress": "set parameters"})
-    vg_1 = "3"
-    vg_2 = "-3"
+    vg_1 = "5"
+    vg_2 = "-5"
     if material in ['mw', 'wse2']:
         change_vg_range(vg_1, vg_2)
         change_vg_range(vg_1, vg_2)
