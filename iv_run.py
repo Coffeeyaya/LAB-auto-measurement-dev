@@ -28,13 +28,16 @@ server_socket = create_server("0.0.0.0", 6000)
 mac_conn, addr = Connection.accept(server_socket)
 
 def IDVG(material, device_number, measurement_index, rest_time=60):
-    mac_conn.send_json({"cmd": "PROGRESS", "progress": "change mode: idvg"})
-    change_measurement_mode(idvg_path)
-    mac_conn.send_json({"cmd": "PROGRESS", "progress": f"wait {rest_time}"})
-    time.sleep(rest_time)
-
+    reset_mode = True
     get_window(r'Kick')
+    if get_window(r'KickStart - IDVG'):
+        reset_mode = False
+    if reset_mode:
+        mac_conn.send_json({"cmd": "PROGRESS", "progress": "change mode: idvg"})
+        change_measurement_mode(idvg_path)
+        time.sleep(3)
 
+    mac_conn.send_json({"cmd": "PROGRESS", "progress": "set parameters"})
     vg_1 = "3"
     vg_2 = "-3"
     if material in ['mw', 'wse2']:
@@ -42,10 +45,14 @@ def IDVG(material, device_number, measurement_index, rest_time=60):
         change_vg_range(vg_1, vg_2)
     else:
         change_vg_range(vg_2, vg_1)
-        change_vg_range(vg_2, vg_1)
+        change_vg_range(vg_2, vg_1)    
+    # change_idvg_vd_level("1")
+    # change_idvg_vd_level("1")
 
-    # change_idvg_vd_level("1")
-    # change_idvg_vd_level("1")
+
+    mac_conn.send_json({"cmd": "PROGRESS", "progress": f"wait {rest_time}"})
+    time.sleep(rest_time)
+
     mac_conn.send_json({"cmd": "PROGRESS", "progress": "measure idvg dark"})
     for i in range(1):
         run_measurement()
@@ -67,12 +74,14 @@ def IDVG(material, device_number, measurement_index, rest_time=60):
     mac_conn.send_json({"cmd": "PROGRESS", "progress": "idvg light finished"})
 
 def IDVD(material, device_number, measurement_index, vg_values, rest_time=60):
-    time.sleep(2)
-    mac_conn.send_json({"cmd": "PROGRESS", "progress": "change mode: idvd"})
-
-    # --- idvd ---
-    change_measurement_mode(idvd_path)
-    time.sleep(3)
+    reset_mode = True
+    get_window(r'Kick')
+    if get_window(r'KickStart - IDVD'):
+        reset_mode = False
+    if reset_mode:
+        mac_conn.send_json({"cmd": "PROGRESS", "progress": "change mode: idvd"})
+        change_measurement_mode(idvd_path)
+        time.sleep(3)
 
     # change_vd_range("0", "1.5")
     # change_vd_range("0", "1.5")
@@ -103,8 +112,14 @@ def TIME(material, device_number, measurement_index, rest_time=60, wait_time=60)
     rest_time: time rested before measurement
     wait_time: start measurement ~ start illumination, stop illumination ~ end measurement
     '''
-    mac_conn.send_json({"cmd": "PROGRESS", "progress": "change mode: time"})
-    change_measurement_mode(time_path)
+    reset_mode = True
+    get_window(r'Kick')
+    if get_window(r'KickStart - TIME'):
+        reset_mode = False
+    if reset_mode:
+        mac_conn.send_json({"cmd": "PROGRESS", "progress": "change mode: time"})
+        change_measurement_mode(time_path)
+        time.sleep(3)
 
     mac_conn.send_json({"cmd": "PROGRESS", "progress": f"wait {rest_time} s"})
     time.sleep(rest_time)
