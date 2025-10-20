@@ -1,7 +1,7 @@
 from pathlib import Path
 import zmq
 
-SAVE_DIR = Path(__file__).parent.parent / 'receive_csv'
+SAVE_DIR = Path(__file__).parent.parent / 'receive_data'
 SAVE_DIR.mkdir(exist_ok=True)
 
 SERVER_IP = "192.168.50.101"

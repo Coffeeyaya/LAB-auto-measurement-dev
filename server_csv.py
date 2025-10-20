@@ -3,7 +3,7 @@ import time
 from pathlib import Path
 import zmq
 
-CSV_FOLDER = Path(__file__).parent.parent / 'send_csv'
+CSV_FOLDER = Path(__file__).parent.parent / 'send_data'
 os.makedirs(CSV_FOLDER, exist_ok=True)
 
 ZMQ_PORT = 5003  # separate port for CSV transfer
