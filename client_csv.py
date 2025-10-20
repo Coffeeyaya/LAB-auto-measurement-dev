@@ -5,7 +5,7 @@ SAVE_DIR = Path(__file__).parent.parent / 'receive_csv'
 SAVE_DIR.mkdir(exist_ok=True)
 
 SERVER_IP = "192.168.50.101"
-ZMQ_PORT = 5003                # must match the server PUSH port
+ZMQ_PORT = 5003      # must match the server PUSH port
 
 
 class ZmqCsvPull:

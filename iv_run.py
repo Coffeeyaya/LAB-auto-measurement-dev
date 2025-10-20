@@ -35,8 +35,8 @@ def IDVG(material, device_number, measurement_index, rest_time=60):
 
     get_window(r'Kick')
 
-    vg_1 = "5"
-    vg_2 = "-5"
+    vg_1 = "3"
+    vg_2 = "-3"
     if material in ['mw', 'wse2']:
         change_vg_range(vg_1, vg_2)
         change_vg_range(vg_1, vg_2)
