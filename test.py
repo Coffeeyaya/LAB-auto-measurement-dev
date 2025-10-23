@@ -1,3 +1,4 @@
 import numpy as np
-channels = np.arange(0, 8, 1, dtype=str)
-print(channels)
+power_values = np.arange(10, 18, 1)
+power_values = power_values.astype(str)
+print(power_values)
