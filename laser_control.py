@@ -74,7 +74,7 @@ try:
             conn.send(cmd)
 
         elif cmd == "FUNCTION" and laser_state != "FUNCTION":
-            time_dependent(conn, grid, channel=6, power="15", num_peaks=1)  # single-channel FUNCTION
+            time_dependent(conn, grid, channel=6, power="18.3", num_peaks=1)  # single-channel FUNCTION
             # channels = np.arange(0, 8, 1, dtype=int)
             # power_values = ["114", "85", "39", "39", "28", "21.5", "18.3", "18.2"]
             # time_dependent_wavelength(conn, grid, channels, power_values, on_time=10, off_time=30)
