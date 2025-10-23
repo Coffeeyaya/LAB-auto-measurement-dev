@@ -28,4 +28,4 @@ if __name__ == "__main__":
     channels = np.arange(0, 7, 1, dtype=int)
     power_values = np.arange(10, 18, 1)
     power_values = power_values.astype(str)
-    time_dependent_wavelength(grid, power_values)
+    time_dependent_wavelength(grid, channels, power_values)
