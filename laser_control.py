@@ -6,25 +6,21 @@ from LabAuto.network import create_server, Connection
 
 laser_state = "OFF"
 
-def time_dependent_wavelength(conn, grid):
+def time_dependent_wavelength(conn, grid, channels, power_values, on_time=10, off_time=30):
     global laser_state
     laser_state = "FUNCTION"
     conn.send("FUNCTION")
-
-    # here, assume all power percentages are pre-setted
-    channels = np.linspace(0, 7, 2, dtype=int)
-    power_values = np.array(["50", "15"])
     
     for channel, power in zip(channels, power_values):
         on_coord = get_coord(grid, channel, "on")
         change_power_function(grid, channel, power)
         # turn on
         move_and_click(on_coord)
-        time.sleep(0.9)
+        time.sleep(on_time)
 
         # turn off
         move_and_click(on_coord)
-        time.sleep(0.9)
+        time.sleep(off_time)
 
     laser_state = "FUNCTION_DONE"
     conn.send("FUNCTION_DONE")
@@ -78,8 +74,11 @@ try:
             conn.send(cmd)
 
         elif cmd == "FUNCTION" and laser_state != "FUNCTION":
-            # time_dependent_wavelength(conn, grid)  # multi-channel FUNCTION
-            time_dependent(conn, grid, channel=6, power="15", num_peaks=3)  # single-channel FUNCTION
+            time_dependent(conn, grid, channel=6, power="15", num_peaks=1)  # single-channel FUNCTION
+            # channels = np.arange(0, 8, 1, dtype=int)
+            # power_values = np.arange(10, 18, 1)
+            # power_values = power_values.astype(str)
+            # time_dependent_wavelength(conn, grid, channels, power_values, on_time=10, off_time=30)
     conn.close()
 finally:
     server_socket.close()
