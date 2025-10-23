@@ -6,7 +6,7 @@ from LabAuto.network import create_server, Connection
 
 laser_state = "OFF"
 
-def time_dependent_wavelength(conn, grid, channels, power_values, on_time=10, off_time=30):
+def time_dependent_wavelength(conn, grid, channels, power_values, on_time=10, off_time=60):
     global laser_state
     laser_state = "FUNCTION"
     conn.send("FUNCTION")
