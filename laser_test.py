@@ -12,7 +12,7 @@ def time_dependent_wavelength(grid, power_values):
     
 
     # here, assume all power percentages are pre-setted
-    channels = np.linspace(0, 7, 2, dtype=int)
+    channels = np.arange(0, 7, 1, dtype=int)
     
     for channel, power in zip(channels, power_values):
         on_coord = get_coord(grid, channel, "on")
