@@ -3,7 +3,7 @@ import os
 from pathlib import Path
 from LabAuto.iv import get_window, scroll_to_bottom, change_measurement_mode, \
     run_measurement, export_data, change_idvd_vg_level, change_idvg_vd_level, filename_generator, \
-    illuminate_and_run, time_dependent_illumination_run, change_vg_range, change_vd_range, time_dependent_dark_current
+    illuminate_and_run, time_dependent_illumination_run, change_vg_range, change_vd_range, time_dependent_dark_current, time_dependent_illumination_run_no_wait
 from LabAuto.network import create_server, Connection
 
 
@@ -125,7 +125,8 @@ def TIME(material, device_number, measurement_index, rest_time=60, wait_time=60)
     time.sleep(rest_time)
 
     mac_conn.send_json({"cmd": "PROGRESS", "progress": "time measurement started"})
-    time_dependent_illumination_run(laser_conn, wait_time=wait_time)
+    # time_dependent_illumination_run(laser_conn, wait_time=wait_time)
+    time_dependent_illumination_run_no_wait(laser_conn, wait_time=wait_time)
     time.sleep(1)
     filename = filename_generator(material, device_number, measurement_type='time', condition=f'onoff-{measurement_index}')
     export_data(CSV_FOLDER, filename)
