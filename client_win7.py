@@ -9,8 +9,10 @@ def main():
         "\n=== Command Menu ===\n"
         "1. RUN laser_control.py\n"
         "2. KILL laser_control.py\n"
-        "3. quit\n"
-        "Enter command (1-3): "
+        "3. RUN laser_test.py\n"
+        "4. KILL laser_test.py\n"
+        "5. quit\n"
+        "Enter command (1-5): "
     )
 
     try:
@@ -23,7 +25,9 @@ def main():
             cmd_map = {
                 "1": {"cmd": "RUN", "target": "laser_control.py"},
                 "2": {"cmd": "KILL", "target": "laser_control.py"},
-                "3": {"cmd": "QUIT"}
+                "3": {"cmd": "RUN", "target": "laser_test.py"},
+                "4": {"cmd": "KILL", "target": "laser_test.py"},
+                "5": {"cmd": "QUIT"}
             }
 
             if cmd not in cmd_map:
@@ -37,7 +41,7 @@ def main():
             response = conn.receive_json()
             print("[IV RESPONSE]", response)
 
-            if cmd == "3":  # quit
+            if cmd == "5":  # quit
                 break
             time.sleep(1)
 
