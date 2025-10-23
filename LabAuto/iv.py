@@ -262,8 +262,9 @@ def time_dependent_illumination_run(conn: Connection, wait_time=60):
     time.sleep(wait_time)
     conn.send("FUNCTION")
     conn.wait_for("FUNCTION_DONE")
-    time.sleep(wait_time)
+    # time.sleep(wait_time)
     click_STOP()
+
 def time_dependent_illumination_run_no_wait(conn: Connection):
     print('STEP: time dependent illuminate and run()')
     click_RUN()
