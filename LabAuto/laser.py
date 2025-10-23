@@ -84,6 +84,7 @@ def change_lambda_function(grid, channel, new_lambda_value):
     pyautogui.moveTo(*lambda_ok_coord)
     time.sleep(0.5)
     pyautogui.click(*lambda_ok_coord)
+    time.sleep(0.5)# important
 
 def change_power_function(grid, channel, new_power_value):
     '''
@@ -106,3 +107,4 @@ def change_power_function(grid, channel, new_power_value):
     pyautogui.moveTo(*power_ok_coord)
     time.sleep(0.5)
     pyautogui.click(*power_ok_coord)
+    time.sleep(0.5)# important

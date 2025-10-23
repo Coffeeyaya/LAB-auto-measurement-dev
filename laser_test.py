@@ -13,13 +13,14 @@ def time_dependent_wavelength(grid, channels, power_values):
     for channel, power in zip(channels, power_values):
         on_coord = get_coord(grid, channel, "on")
         change_power_function(grid, channel, power)
+        
         # turn on
         move_and_click(on_coord)
-        time.sleep(2)
+        time.sleep(1)
 
         # turn off
         move_and_click(on_coord)
-        time.sleep(2)
+        time.sleep(1)
 
     laser_state = "FUNCTION_DONE"
 
