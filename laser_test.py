@@ -26,7 +26,7 @@ def time_dependent_wavelength(grid, channels, power_values):
 
 grid = init_AOTF()
 if __name__ == "__main__":
-    channels = np.arange(0, 7, 1, dtype=int)
+    channels = np.arange(0, 8, 1, dtype=int)
     power_values = np.arange(10, 18, 1)
     power_values = power_values.astype(str)
     time_dependent_wavelength(grid, channels, power_values)
