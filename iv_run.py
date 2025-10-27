@@ -153,9 +153,9 @@ def main():
     measurement_type = params.get("measurement_type", "idvg")
     measurement_index = params.get("measurement_index", "0")
     laser_function = params.get("laser_function", "1_on_off")
-    rest_time = params.get(rest_time)
-    dark_time1 = params.get(dark_time1)
-    dark_time2 = params.get(dark_time2)
+    rest_time = int(params.get("rest_time", "60"))
+    dark_time1 = int(params.get("dark_time1", "60"))
+    dark_time2 = int(params.get("dark_time2", "60"))
 
     mac_conn.send_json({"cmd": "PROGRESS", "progress": "Measurement started"})
     time.sleep(2)
