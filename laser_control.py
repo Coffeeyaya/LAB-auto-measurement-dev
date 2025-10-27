@@ -96,11 +96,11 @@ try:
         elif cmd == "wavelength" and laser_state != "wavelength":
             channels = np.arange(0, 8, 1, dtype=int)
             power_values = ["100", "73", "34.5", "33.5", "25.5", "20.3", "17.2", "17"] ### adjust this based on power measured
-            time_dependent_wavelength(conn, grid, channels, power_values, on_time=1, off_time=1)
+            time_dependent_wavelength(conn, grid, channels, power_values, on_time=10, off_time=60)
         elif cmd == "power" and laser_state != "power":
             channel = 6
             power_values = ["30.5", "22.5", "16.8", "12.5", "9.3", "6.8", "5.3"] ### adjust this based on power measured
-            time_dependent_power(conn, grid, channel, power_values, on_time=1, off_time=1)
+            time_dependent_power(conn, grid, channel, power_values, on_time=10, off_time=60)
     conn.close()
 finally:
     server_socket.close()
