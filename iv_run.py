@@ -107,7 +107,7 @@ def IDVD(material, device_number, measurement_index, vg_values, rest_time=60):
         time.sleep(rest_time)
     mac_conn.send_json({"cmd": "PROGRESS", "progress": "idvd finished"})
 
-def TIME(material, device_number, measurement_index, laser_function, rest_time=60, dark_time=60):
+def TIME(material, device_number, measurement_index, laser_function, rest_time=60, dark_time1=60, dark_time2=60):
     '''
     rest_time: time rested before measurement
     wait_time: start measurement ~ start illumination, stop illumination ~ end measurement
@@ -125,7 +125,7 @@ def TIME(material, device_number, measurement_index, laser_function, rest_time=6
     time.sleep(rest_time)
 
     mac_conn.send_json({"cmd": "PROGRESS", "progress": "time measurement started"})
-    time_dependent_function_run(laser_conn, laser_function=laser_function , dark_time1=dark_time, dark_time2=dark_time)
+    time_dependent_function_run(laser_conn, laser_function=laser_function , dark_time1=dark_time1, dark_time2=dark_time2)
     time.sleep(1)
     filename = filename_generator(material, device_number, measurement_type='time', condition=f'onoff-{measurement_index}')
     export_data(CSV_FOLDER, filename)
@@ -153,6 +153,9 @@ def main():
     measurement_type = params.get("measurement_type", "idvg")
     measurement_index = params.get("measurement_index", "0")
     laser_function = params.get("laser_function", "1_on_off")
+    rest_time = params.get(rest_time)
+    dark_time1 = params.get(dark_time1)
+    dark_time2 = params.get(dark_time2)
 
     mac_conn.send_json({"cmd": "PROGRESS", "progress": "Measurement started"})
     time.sleep(2)
@@ -162,7 +165,7 @@ def main():
     elif measurement_type == 'idvd':
         IDVD(material, device_number, measurement_index, vg_values=['3', '4', '5'])
     elif measurement_type == 'time':
-        TIME(material, device_number, measurement_index, laser_function=laser_function)
+        TIME(material, device_number, measurement_index, laser_function=laser_function, rest_time=rest_time, dark_time1=dark_time1, dark_time2=dark_time2)
     else:
         mac_conn.send_json({"cmd": "PROGRESS", "progress": "invalid measurement type"})
 
