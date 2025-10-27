@@ -161,9 +161,9 @@ def main():
     time.sleep(2)
 
     if measurement_type == 'idvg':
-        IDVG(material, device_number, measurement_index)
+        IDVG(material, device_number, measurement_index, rest_time=rest_time)
     elif measurement_type == 'idvd':
-        IDVD(material, device_number, measurement_index, vg_values=['3', '4', '5'])
+        IDVD(material, device_number, measurement_index, vg_values=['3', '4', '5'], rest_time=rest_time)
     elif measurement_type == 'time':
         TIME(material, device_number, measurement_index, laser_function=laser_function, rest_time=rest_time, dark_time1=dark_time1, dark_time2=dark_time2)
     else:

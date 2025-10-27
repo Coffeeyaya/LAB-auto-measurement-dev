@@ -8,10 +8,29 @@ laser_state = "OFF"
 
 def time_dependent_wavelength(conn, grid, channels, power_values, on_time=10, off_time=60):
     global laser_state
+    laser_state = "wavelength"
+    conn.send("wavelength")
+    
+    for channel, power in zip(channels, power_values):
+        on_coord = get_coord(grid, channel, "on")
+        change_power_function(grid, channel, power)
+        # turn on
+        move_and_click(on_coord)
+        time.sleep(on_time)
+
+        # turn off
+        move_and_click(on_coord)
+        time.sleep(off_time)
+
+    laser_state = "DONE"
+    conn.send("DONE")
+
+def time_dependent_power(conn, grid, channel, power_values, on_time=10, off_time=60):
+    global laser_state
     laser_state = "power"
     conn.send("power")
     
-    for channel, power in zip(channels, power_values):
+    for power in power_values:
         on_coord = get_coord(grid, channel, "on")
         change_power_function(grid, channel, power)
         # turn on
@@ -47,8 +66,6 @@ def time_dependent(conn, grid, channel, power, on_time=10, off_time=30, num_peak
     laser_state = "DONE"
     conn.send("DONE")
 
-
-
 grid = init_AOTF()
 server_socket = create_server("0.0.0.0", 5001)
 conn, addr = Connection.accept(server_socket)
@@ -63,7 +80,7 @@ try:
 
         if cmd in ["ON", "OFF"] and laser_state != cmd:
             channel = 6
-            power = "15"
+            power = "15" ### adjust this based on power measured
             change_power_function(grid, channel, power)
             time.sleep(1)
             on_coord = get_coord(grid, channel, "on")
@@ -73,15 +90,13 @@ try:
             laser_state = cmd
             conn.send(cmd)
 
-        elif cmd == "power" and laser_state != "power":
-            # time_dependent(conn, grid, channel=6, power="18.3", num_peaks=1)  # single-channel FUNCTION
+        elif cmd == "wavelength" and laser_state != "wavelength":
             channels = np.arange(0, 8, 1, dtype=int)
-            power_values = ["114", "85", "39", "39", "28", "21.5", "18.3", "18.2"]
-
-            # reverse 
-            # channels = channels[::-1]
-            # power_values = power_values[::-1]
-            time_dependent_wavelength(conn, grid, channels, power_values, on_time=10, off_time=30)
+            power_values = ["114", "85", "39", "39", "28", "21.5", "18.3", "18.2"] ### adjust this based on power measured
+            time_dependent_wavelength(conn, grid, channels, power_values, on_time=1, off_time=1)
+        elif cmd == "power" and laser_state != "power":
+            power_values = ["30.5", "22.5", "16.8", "12.5", "9.3", "6.8", "5.3"] ### adjust this based on power measured
+            time_dependent_power(conn, grid, channel, power_values, on_time=1, off_time=1)
     conn.close()
 finally:
     server_socket.close()
