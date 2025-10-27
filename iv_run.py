@@ -3,7 +3,7 @@ import os
 from pathlib import Path
 from LabAuto.iv import get_window, scroll_to_bottom, change_measurement_mode, \
     run_measurement, export_data, change_idvd_vg_level, change_idvg_vd_level, filename_generator, \
-    illuminate_and_run, time_dependent_illumination_run, change_vg_range, change_vd_range, time_dependent_dark_current, time_dependent_illumination_run_no_wait
+    illuminate_and_run, time_dependent_illumination_run, change_vg_range, change_vd_range, time_dependent_dark_current, time_dependent_illumination_run_no_wait, time_dependent_function_run
 from LabAuto.network import create_server, Connection
 
 
@@ -107,7 +107,7 @@ def IDVD(material, device_number, measurement_index, vg_values, rest_time=60):
         time.sleep(rest_time)
     mac_conn.send_json({"cmd": "PROGRESS", "progress": "idvd finished"})
 
-def TIME(material, device_number, measurement_index, rest_time=60, wait_time=60):
+def TIME(material, device_number, measurement_index, laser_function, rest_time=60, dark_time=60):
     '''
     rest_time: time rested before measurement
     wait_time: start measurement ~ start illumination, stop illumination ~ end measurement
@@ -125,7 +125,7 @@ def TIME(material, device_number, measurement_index, rest_time=60, wait_time=60)
     time.sleep(rest_time)
 
     mac_conn.send_json({"cmd": "PROGRESS", "progress": "time measurement started"})
-    time_dependent_illumination_run(laser_conn, wait_time=wait_time)
+    time_dependent_function_run(laser_conn, laser_function=laser_function , dark_time1=dark_time, dark_time2=dark_time)
     time.sleep(1)
     filename = filename_generator(material, device_number, measurement_type='time', condition=f'onoff-{measurement_index}')
     export_data(CSV_FOLDER, filename)
@@ -148,10 +148,11 @@ def main():
     params = mac_conn.receive_json()  # Just wait for parameters
     print("[IV_RUN] Received parameters:", params)
 
-    material = params.get("material", "default")
-    device_number = params.get("device_number", "default")
-    measurement_type = params.get("measurement_type", "default_type")
+    material = params.get("material", "mos2_default")
+    device_number = params.get("device_number", "0-0_default")
+    measurement_type = params.get("measurement_type", "idvg")
     measurement_index = params.get("measurement_index", "0")
+    laser_function = params.get("laser_function", "1_on_off")
 
     mac_conn.send_json({"cmd": "PROGRESS", "progress": "Measurement started"})
     time.sleep(2)
@@ -161,7 +162,7 @@ def main():
     elif measurement_type == 'idvd':
         IDVD(material, device_number, measurement_index, vg_values=['3', '4', '5'])
     elif measurement_type == 'time':
-        TIME(material, device_number, measurement_index)
+        TIME(material, device_number, measurement_index, laser_function=laser_function)
     else:
         mac_conn.send_json({"cmd": "PROGRESS", "progress": "invalid measurement type"})
 

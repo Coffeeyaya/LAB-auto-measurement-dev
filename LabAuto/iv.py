@@ -256,6 +256,15 @@ def illuminate_and_run(conn: Connection, wait_time=30):
     conn.wait_for("OFF")
 
 
+def time_dependent_function_run(conn: Connection, laser_function, dark_time1=60, dark_time2=60):
+    print('STEP: time dependent illuminate and run()')
+    click_RUN()
+    time.sleep(dark_time1)
+    conn.send(laser_function)
+    conn.wait_for("DONE")
+    time.sleep(dark_time2)
+    click_STOP()
+
 def time_dependent_illumination_run(conn: Connection, wait_time=60):
     print('STEP: time dependent illuminate and run()')
     click_RUN()
