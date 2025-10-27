@@ -80,7 +80,7 @@ try:
 
         if cmd in ["ON", "OFF"] and laser_state != cmd:
             channel = 6
-            power = "15" ### adjust this based on power measured
+            power = "17.2" ### adjust this based on power measured
             change_power_function(grid, channel, power)
             time.sleep(1)
             on_coord = get_coord(grid, channel, "on")
@@ -91,11 +91,11 @@ try:
             conn.send(cmd)
         elif cmd == "1_on_off" and laser_state != "1_on_off":
             channel = 6
-            power = "15"
+            power = "17.2"
             time_dependent(conn, grid, channel, power, on_time=10, off_time=30)
         elif cmd == "wavelength" and laser_state != "wavelength":
             channels = np.arange(0, 8, 1, dtype=int)
-            power_values = ["114", "85", "39", "39", "28", "21.5", "18.3", "18.2"] ### adjust this based on power measured
+            power_values = ["100", "73", "34.5", "33.5", "25.5", "20.3", "17.2", "17"] ### adjust this based on power measured
             time_dependent_wavelength(conn, grid, channels, power_values, on_time=1, off_time=1)
         elif cmd == "power" and laser_state != "power":
             channel = 6
