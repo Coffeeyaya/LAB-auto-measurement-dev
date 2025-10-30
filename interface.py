@@ -49,8 +49,13 @@ class LabControlUI(QWidget):
 
         left_layout = QVBoxLayout()
         right_layout = QVBoxLayout()
+        laser_layout = QVBoxLayout()
+        time_layout = QVBoxLayout()
+
         params_layout.addLayout(left_layout)
         params_layout.addLayout(right_layout)
+        params_layout.addLayout(laser_layout)
+        params_layout.addLayout(time_layout)
 
         left_layout.addWidget(QLabel("Material:"))
         self.material_edit = QLineEdit()
@@ -70,6 +75,23 @@ class LabControlUI(QWidget):
         self.measurement_type_combo = QComboBox()
         self.measurement_type_combo.addItems(["idvg", "idvd", "time"])
         right_layout.addWidget(self.measurement_type_combo)
+
+        laser_layout.addWidget(QLabel("laser functions:"))
+        self.laser_function_combo = QComboBox()
+        self.laser_function_combo.addItems(["1_on_off", "wavelength", "power"])
+        laser_layout.addWidget(self.laser_function_combo)
+
+        time_layout.addWidget(QLabel("rest time:"))
+        self.rest_time = QLineEdit()
+        time_layout.addWidget(self.rest_time)
+
+        time_layout.addWidget(QLabel("dark time1:"))
+        self.dark_time1 = QLineEdit()
+        time_layout.addWidget(self.dark_time1)
+
+        time_layout.addWidget(QLabel("dark time2:"))
+        self.dark_time2 = QLineEdit()
+        time_layout.addWidget(self.dark_time2)
 
         self.send_btn = QPushButton("Send Parameters and Run")
         self.send_btn.setFont(font_button)
@@ -223,7 +245,11 @@ class LabControlUI(QWidget):
             "material": self.material_edit.text().strip(),
             "device_number": self.device_number_edit.text().strip(),
             "measurement_type": self.measurement_type_combo.currentText(),
-            "measurement_index": str(self.measurement_index_spin.value())
+            "measurement_index": str(self.measurement_index_spin.value()),
+            "laser_function": self.laser_function_combo.currentText(),
+            "rest_time": self.rest_time.text().strip(),
+            "dark_time1": self.dark_time1.text().strip(),
+            "dark_time2": self.dark_time2.text().strip()
         }
 
     def append_log(self, text):
