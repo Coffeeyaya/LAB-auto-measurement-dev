@@ -3,7 +3,6 @@ import numpy as np
 from LabAuto.laser import init_AOTF, get_coord, change_power_function, move_and_click
 from LabAuto.network import create_server, Connection
 
-
 laser_state = "OFF"
 
 def time_dependent_wavelength(conn, grid, channels, power_values, on_time=10, off_time=60):
@@ -44,7 +43,7 @@ def time_dependent_power(conn, grid, channel, power_values, on_time=10, off_time
     laser_state = "DONE"
     conn.send("DONE")
 
-def time_dependent(conn, grid, channel, power, on_time=10, off_time=30):
+def single_on_off(conn, grid, channel, power, on_time=10, off_time=30):
     global laser_state
     laser_state = "1_on_off"
     conn.send("1_on_off")
@@ -62,6 +61,27 @@ def time_dependent(conn, grid, channel, power, on_time=10, off_time=30):
     # turn off
     move_and_click(on_coord)
     time.sleep(off_time)
+
+    laser_state = "DONE"
+    conn.send("DONE")
+
+def multi_on_off(conn, grid, channel, power, on_time=1, off_time=1, peaks_num=20):
+    global laser_state
+    laser_state = "multi_on_off"
+    conn.send("multi_on_off")
+
+    on_coord = get_coord(grid, channel, "on")
+    time.sleep(1)
+
+    change_power_function(grid, channel, power)
+    time.sleep(1)
+    
+    for i in range(peaks_num):
+        move_and_click(on_coord)
+        time.sleep(on_time)
+
+        move_and_click(on_coord)
+        time.sleep(off_time)
 
     laser_state = "DONE"
     conn.send("DONE")
@@ -92,7 +112,11 @@ try:
         elif cmd == "1_on_off" and laser_state != "1_on_off":
             channel = 6
             power = "17"
-            time_dependent(conn, grid, channel, power, on_time=10, off_time=30)
+            single_on_off(conn, grid, channel, power, on_time=10, off_time=30)
+        elif cmd == "multi_on_off" and laser_state != "multi_on_off":
+            channel = 6
+            power = "17"
+            multi_on_off(conn, grid, channel, power, on_time=1, off_time=1, peaks_num=20)
         elif cmd == "wavelength" and laser_state != "wavelength":
             channels = np.arange(0, 8, 1, dtype=int)
             power_values = ["115", "77", "34.4", "33", "25.5", "20.2", "17", "17"] ### adjust this based on power measured

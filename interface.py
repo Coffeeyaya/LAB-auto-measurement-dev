@@ -13,7 +13,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.animation import FuncAnimation
 
-
 def launch_script(script_name):
     # If running as .exe, scripts are inside sys._MEIPASS
     if getattr(sys, 'frozen', False):
@@ -78,7 +77,7 @@ class LabControlUI(QWidget):
 
         laser_layout.addWidget(QLabel("laser functions:"))
         self.laser_function_combo = QComboBox()
-        self.laser_function_combo.addItems(["1_on_off", "wavelength", "power"])
+        self.laser_function_combo.addItems(["1_on_off", "multi_on_off", "wavelength", "power"])
         laser_layout.addWidget(self.laser_function_combo)
 
         time_layout.addWidget(QLabel("rest time:"))

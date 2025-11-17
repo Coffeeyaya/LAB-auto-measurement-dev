@@ -29,7 +29,7 @@ class Connection:
         return cls(s)
     
     @classmethod
-    def accept(cls, server_socket):
+    def accept(cls, server_socket: socket.socket):
         """
         Accept a new client from a server_socket.
         """
