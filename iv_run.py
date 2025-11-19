@@ -21,7 +21,7 @@ WIN_7_PORT = 5001
 # act as server, accept mac client
 WIN_10_PORT = 6000
 
-def IDVG(mac_conn, material, device_number, measurement_index, rest_time=60):
+def IDVG(mac_conn, laser_conn, material, device_number, measurement_index, rest_time=60):
     reset_mode = True
     get_window(r'Kick')
     if get_window(r'KickStart - IDVG'):
@@ -67,7 +67,7 @@ def IDVG(mac_conn, material, device_number, measurement_index, rest_time=60):
 
     mac_conn.send_json({"cmd": "PROGRESS", "progress": "idvg light finished"})
 
-def IDVD(mac_conn, material, device_number, measurement_index, vg_values, rest_time=60):
+def IDVD(mac_conn, laser_conn, material, device_number, measurement_index, vg_values, rest_time=60):
     reset_mode = True
     get_window(r'Kick')
     if get_window(r'KickStart - IDVD'):
@@ -101,7 +101,7 @@ def IDVD(mac_conn, material, device_number, measurement_index, vg_values, rest_t
         time.sleep(rest_time)
     mac_conn.send_json({"cmd": "PROGRESS", "progress": "idvd finished"})
 
-def TIME(mac_conn, material, device_number, measurement_index, laser_function, rest_time=60, dark_time1=60, dark_time2=60):
+def TIME(mac_conn, laser_conn, material, device_number, measurement_index, laser_function, rest_time=60, dark_time1=60, dark_time2=60):
     '''
     rest_time: time rested before measurement
     wait_time: start measurement ~ start illumination, stop illumination ~ end measurement
@@ -171,11 +171,11 @@ def main():
     time.sleep(2)
 
     if measurement_type == 'idvg':
-        IDVG(mac_conn, material, device_number, measurement_index, rest_time=rest_time)
+        IDVG(mac_conn, laser_conn, material, device_number, measurement_index, rest_time=rest_time)
     elif measurement_type == 'idvd':
-        IDVD(mac_conn, material, device_number, measurement_index, vg_values=['3', '4', '5'], rest_time=rest_time)
+        IDVD(mac_conn, laser_conn, material, device_number, measurement_index, vg_values=['3', '4', '5'], rest_time=rest_time)
     elif measurement_type == 'time':
-        TIME(mac_conn, material, device_number, measurement_index, laser_function=laser_function, rest_time=rest_time, dark_time1=dark_time1, dark_time2=dark_time2)
+        TIME(mac_conn, laser_conn, material, device_number, measurement_index, laser_function=laser_function, rest_time=rest_time, dark_time1=dark_time1, dark_time2=dark_time2)
     else:
         mac_conn.send_json({"cmd": "PROGRESS", "progress": "invalid measurement type"})
 
