@@ -6,26 +6,20 @@ from LabAuto.iv import get_window, scroll_to_bottom, change_measurement_mode, \
     illuminate_and_run, time_dependent_illumination_run, change_vg_range, change_vd_range, time_dependent_dark_current, time_dependent_illumination_run_no_wait, time_dependent_function_run
 from LabAuto.network import create_server, Connection
 
-
-###-----------------------------------###
-# CSV_FOLDER = r"C:\Users\mmm11\OneDrive\桌面\yun-chen\code\auto\send_data"
+# data saving folder
 CSV_FOLDER = Path(__file__).parent.parent / 'send_data'
 os.makedirs(CSV_FOLDER, exist_ok=True)
-###-----------------------------------###
-
-# measurement settings
+ 
+# kickstart measurement path
 idvg_path = r'D:\kickstart\YunChen\IDVG\IDVG'
 idvd_path = r'D:\kickstart\YunChen\IDVD\IDVD'
 time_path = r'D:\kickstart\YunChen\TIME\TIME'
 
-# connect to laser computer (win 7)
-SERVER_IP = "192.168.151.20"
-PORT = 5001
-laser_conn = Connection.connect(SERVER_IP, PORT)
-
-# accept client_iv (mac)
-server_socket = create_server("0.0.0.0", 6000)
-mac_conn, addr = Connection.accept(server_socket)
+# act as client, connect to win 7 server
+WIN_7_SERVER_IP = "192.168.151.20"
+WIN_7_PORT = 5001
+# act as server, accept mac client
+WIN_10_PORT = 6000
 
 def IDVG(material, device_number, measurement_index, rest_time=60):
     reset_mode = True
@@ -139,8 +133,15 @@ def TIME(material, device_number, measurement_index, laser_function, rest_time=6
     # export_data(CSV_FOLDER, filename)
     # mac_conn.send_json({"cmd": "PROGRESS", "progress": "darkcurrent measurement finished"})
 
-
 def main():
+    # act as client, connect to laser computer (win 7)
+    laser_conn = Connection.connect(WIN_7_SERVER_IP, WIN_7_PORT)
+
+    # act as server, accept client_iv (mac)
+    server_socket = create_server("0.0.0.0", WIN_10_PORT)
+    mac_conn, addr = Connection.accept(server_socket)
+
+    # after all computers are connected, start controlling kickstart
     get_window(r'Kick')
     scroll_to_bottom()
 
@@ -180,9 +181,9 @@ def main():
 
     mac_conn.send_json({"cmd": "PROGRESS", "progress": "finished"})
     print("[IV_RUN] Finished all measurements.")
-
+    mac_conn.send_json({"cmd": "PROGRESS", "progress": "finished"})
 
 if __name__ == '__main__':
     main()
-    mac_conn.send_json({"cmd": "PROGRESS", "progress": "finished"})
+    
     
