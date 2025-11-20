@@ -124,7 +124,7 @@ try:
         elif cmd == "power" and laser_state != "power":
             channel = 6
             power_values = ["30.5", "22.5", "16.8", "12.5", "9.3", "6.8", "5.3"] ### adjust this based on power measured
-            time_dependent_power(conn, grid, channel, power_values, on_time=10, off_time=30)
+            time_dependent_power(conn, grid, channel, power_values, on_time=1, off_time=1)
     conn.close()
 finally:
     server_socket.close()

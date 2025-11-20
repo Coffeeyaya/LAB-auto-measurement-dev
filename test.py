@@ -1,18 +1,28 @@
-import numpy as np
-import matplotlib.pyplot as plt
+params = {
+        "material": "mw",
+        "device_number": "1-1",
+        "measurement_type": "time",
+        "measurement_index": "0",
+        "laser_function": "1_on_off",
+        "rest_time": "2",
+        "dark_time1": "2",
+        "dark_time2": "2" 
+    }
 
-def log_spaced_powers(P_min, P_max, N_points):
-    powers = P_min * (P_max / P_min) ** (np.arange(N_points) / (N_points - 1))
-    return powers
-def test_function(string):
-    print(string)
+def change_params(params, key_values_pairs):
+    params_copy = params.copy()
+    for k, v in key_values_pairs.items():
+        params_copy[k] = v
+    return params_copy
 
-# Example usage:
-# powers = log_spaced_powers(10, 300, 7)
-# print(powers)
-# plt.scatter(powers, powers)
-# plt.xscale('log')
-# plt.yscale('log')
-# plt.show()
-test_function("str")
+work_flow = [{'measurement_index': '0',
+              'laser_function': '1_on_off'
+              },
+              {'measurement_index': '1',
+              'laser_function': 'multi_on_off'
+              }
+              ]
 
+for job in work_flow:
+    params_2 = change_params(params, job)
+    print(params_2)

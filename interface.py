@@ -214,6 +214,9 @@ class LabControlUI(QWidget):
 
 
     def listen_to_server(self):
+        """
+        listened to server for progress updates
+        """
         self.append_log("Listening for server messages...")
         while self.listening and self.conn:
             try:

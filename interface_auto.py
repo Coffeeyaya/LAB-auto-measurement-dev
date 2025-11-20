@@ -1,18 +1,15 @@
-import sys
-from PyQt5 import QtCore
 import os
-import threading
-import subprocess
-from PyQt5.QtWidgets import (
-    QApplication, QWidget, QVBoxLayout, QPushButton, QHBoxLayout,
-    QLabel, QLineEdit, QTextEdit, QComboBox, QSpinBox, QGroupBox
-)
-from PyQt5.QtGui import QFont
+import time
 from LabAuto.network import Connection  # same Connection used by iv_run
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.animation import FuncAnimation
 
+WIN_7_SERVER_IP = "192.168.151.20"
+WIN_7_PORT = 5000
+WIN_10_SERVER_IP = "192.168.50.101"
+WIN_10_PORT = 5000
+WIN_10_PORT_IV_RUN = 6000
 
 def celebrate_animation():
     fig, ax = plt.subplots(figsize=(8, 6))
@@ -38,138 +35,77 @@ def celebrate_animation():
     plt.pause(5)  # <-- let it run for 5 seconds before window closes
     plt.close()
 
-    # ----------------- Connection + Send -----------------
-def connect_to_server(self):
-    """
-    Connect to iv_run server, ensuring old connections/threads are cleaned.
-    """
-    try:
-        # Connect new socket
-        self.conn = Connection.connect(self.server_ip, self.server_port)
-        self.append_log(f"Connected to {self.server_ip}:{self.server_port}")
 
-        return True
-    except Exception as e:
-        self.append_log(f"Connection failed: {e}")
-        self.conn = None
+def listen_to_server(win_10_iv_conn):
+    """
+    listened to server for progress updates
+    """
+    msg = win_10_iv_conn.receive_json()
+    if not msg:
         return False
+    cmd = msg.get("cmd", "")
+    if cmd == "PROGRESS":
+        if msg.get('progress') == 'finished':
+            # celebrate_animation()
+            return True
+        else:
+            print(msg.get('progress'))
+    
+def send_params(win_10_iv_conn, params):
+    time.sleep(3)
+    win_10_iv_conn.send_json(params)
 
+def stop(win_7_conn, win_10_conn, win_10_iv_conn):
+    win_7_conn.send_json({"cmd": "KILL", "target": "laser_control.py"})
+    win_10_conn.send_json({"cmd": "KILL", "target": "iv_run.py"})
+    win_7_conn.close()
+    win_10_conn.close()
+    win_10_iv_conn.close()
 
-    def send_params_and_listen(self):
-        params = self.collect_params()
+def set_up_connection():
+    win_7_conn = Connection.connect(WIN_7_SERVER_IP, WIN_7_PORT)
+    win_10_conn = Connection.connect(WIN_10_SERVER_IP, WIN_10_PORT)
+    win_7_conn.send_json({"cmd": "RUN", "target": "laser_control.py"})
+    win_10_conn.send_json({"cmd": "RUN", "target": "iv_run.py"})
+    win_10_iv_conn = Connection.connect(WIN_10_SERVER_IP, WIN_10_PORT_IV_RUN)
+    return win_7_conn, win_10_conn, win_10_iv_conn
 
-        try:
-            # Ensure connection
-            if not self.conn:
-                self.connect_to_server()
-            self.conn.send_json(params)
-            self.append_log(f"Sent parameters: {params}")
+params = {
+        "material": "mw",
+        "device_number": "1-1",
+        "measurement_type": "time",
+        "measurement_index": "0",
+        "laser_function": "1_on_off",
+        "rest_time": "2",
+        "dark_time1": "2",
+        "dark_time2": "2" 
+    }
 
-        except Exception as e:
-            self.append_log(f"Error sending parameters: {e}")
-            self.append_log("Attempting to reconnect and resend...")
+def change_params(params, key_values_pairs):
+    params_copy = params.copy()
+    for k, v in key_values_pairs.items():
+        params_copy[k] = v
+    return params_copy
 
-            # Close old socket if broken
-            if self.conn:
-                try:
-                    self.conn.sock.close()
-                except:
-                    pass
-                self.conn = None
-                self.listening = False
-
-            # Reconnect and resend
-            if self.connect_to_server():
-                try:
-                    self.conn.send_json(params)
-                    self.append_log(f"Sent parameters: {params}")
-                except Exception as e2:
-                    self.append_log(f"Failed again: {e2}")
-
-
-    def listen_to_server(self):
-        self.append_log("Listening for server messages...")
-        while self.listening and self.conn:
-            try:
-                msg = self.conn.receive_json()
-                if not msg:
-                    break
-                cmd = msg.get("cmd", "")
-                if cmd == "PROGRESS":
-                    self.append_log(f"Progress: {msg.get('progress')}")
-                    if msg.get('progress') == 'finished':
-                        # print('hi')
-                        # run celebrate_animation in main thread safely
-                        QtCore.QTimer.singleShot(0, self.celebrate_animation)
-                elif cmd == "REQUEST_PARAMS":
-                    self.append_log("Server requested parameters again.")
-                    self.conn.send_json(self.collect_params())
-                else:
-                    self.append_log(f"Received: {msg}")
-            except Exception as e:
-                self.append_log(f"Listener error: {e}")
-                break
-        self.append_log("Listener stopped.")
-
-
-    # ----------------- Utility -----------------
-    def collect_params(self):
-        return {
-            "material": self.material_edit.text().strip(),
-            "device_number": self.device_number_edit.text().strip(),
-            "measurement_type": self.measurement_type_combo.currentText(),
-            "measurement_index": str(self.measurement_index_spin.value()),
-            "laser_function": self.laser_function_combo.currentText(),
-            "rest_time": self.rest_time.text().strip(),
-            "dark_time1": self.dark_time1.text().strip(),
-            "dark_time2": self.dark_time2.text().strip()
-        }
-
-    def append_log(self, text):
-        self.log.append(text)
-        self.log.moveCursor(self.log.textCursor().End)
-
-    def launch_client_in_new_terminal(self, script_name):
-        # Determine script path depending on whether running as exe or normal
-        # if getattr(sys, 'frozen', False):
-        #     # Running as PyInstaller exe
-        #     script_path = os.path.join(sys._MEIPASS, script_name)
-        # else:
-        script_path = os.path.abspath(script_name)
-
-        python_executable = sys.executable
-
-        if sys.platform == "darwin":  # macOS
-            applescript = f'''
-            tell application "iTerm"
-                create window with default profile
-                tell current window
-                    tell current session
-                        write text "{python_executable} {script_path}"
-                    end tell
-                end tell
-            end tell
-            '''
-            subprocess.Popen(
-                ["osascript", "-e", applescript],
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL
-            )
-
-        elif sys.platform == "win32":
-            subprocess.Popen(
-                ["cmd.exe", "/k", python_executable, script_path],
-                creationflags=subprocess.CREATE_NEW_CONSOLE
-            )
-
-        else:  # Linux
-            subprocess.Popen(
-                ["gnome-terminal", "--", python_executable, script_path]
-            )
-
+work_flow = [
+    {'measurement_index': '0', 'laser_function': '1_on_off'},
+    {'measurement_index': '1', 'laser_function': 'multi_on_off'}
+    ]
 
 if __name__ == "__main__":
-    app = QApplication(sys.argv)
-    window = LabControlUI()
-    window.show()
-    sys.exit(app.exec_())
+    win_7_conn, win_10_conn, win_10_iv_conn = set_up_connection()
+    num_of_params = 2
+    current_idx = 0
+    expected_idx = 0
+    while (current_idx < num_of_params):
+        if expected_idx == current_idx:
+            current_params = change_params(params, work_flow[current_idx])
+            send_params(win_10_iv_conn, params)
+            expected_idx += 1 # for sending params of next measurement
+        if listen_to_server(win_10_iv_conn):
+            current_idx += 1 # only increment when finish current measurement
+            stop(win_7_conn, win_10_conn, win_10_iv_conn)        
+            if current_idx < num_of_params:
+                win_7_conn, win_10_conn, win_10_iv_conn = set_up_connection()
+    celebrate_animation()
+
