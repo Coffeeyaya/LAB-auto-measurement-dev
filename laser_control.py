@@ -1,17 +1,17 @@
 import time
 import numpy as np
-from LabAuto.laser import init_AOTF, get_coord, change_power_function, move_and_click
+from LabAuto.laser import init_AOTF, get_coord, change_power_function, move_and_click, change_lambda_function
 from LabAuto.network import create_server, Connection
 
 laser_state = "OFF"
 
-def time_dependent_wavelength(conn, grid, channels, power_values, on_time=10, off_time=60):
+def time_dependent_wavelength(conn, grid, channel, wavelength_power_arr, on_time=1, off_time=3):
     global laser_state
     laser_state = "wavelength"
     conn.send("wavelength")
-    
-    for channel, power in zip(channels, power_values):
-        on_coord = get_coord(grid, channel, "on")
+    on_coord = get_coord(grid, channel, "on")
+    for wavelength, power in wavelength_power_arr:
+        change_lambda_function(grid, channel, wavelength)
         change_power_function(grid, channel, power)
         # turn on
         move_and_click(on_coord)
@@ -118,9 +118,10 @@ try:
             power = "17"
             multi_on_off(conn, grid, channel, power, on_time=1, off_time=1, peaks_num=3)
         elif cmd == "wavelength" and laser_state != "wavelength":
-            channels = np.arange(0, 8, 1, dtype=int)
-            power_values = ["115", "77", "34.4", "33", "25.5", "20.2", "17", "17"] ### adjust this based on power measured
-            time_dependent_wavelength(conn, grid, channels, power_values, on_time=10, off_time=30)
+            channel = 6
+            wavelength_power_arr = [("450", "115"), ("488", "77"), ("514", "34.4"), ("532", "33"),
+                                     ("600", "25.5"), ("633", "20.2"), ("660", "17"), ("680", "17")] ### adjust this based on power measured
+            time_dependent_wavelength(conn, grid, channel, wavelength_power_arr, on_time=1, off_time=3)
         elif cmd == "power" and laser_state != "power":
             channel = 6
             power_values = ["30.5", "22.5", "16.8", "12.5", "9.3", "6.8", "5.3"] ### adjust this based on power measured

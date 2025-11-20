@@ -1,28 +1,24 @@
-params = {
-        "material": "mw",
-        "device_number": "1-1",
-        "measurement_type": "time",
-        "measurement_index": "0",
-        "laser_function": "1_on_off",
-        "rest_time": "2",
-        "dark_time1": "2",
-        "dark_time2": "2" 
-    }
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+from scipy.optimize import curve_fit
 
-def change_params(params, key_values_pairs):
-    params_copy = params.copy()
-    for k, v in key_values_pairs.items():
-        params_copy[k] = v
-    return params_copy
+def exp_func_shift(x, a, b, c):
+    return a * np.exp(-b * (x - x_axis[0])) + c
 
-work_flow = [{'measurement_index': '0',
-              'laser_function': '1_on_off'
-              },
-              {'measurement_index': '1',
-              'laser_function': 'multi_on_off'
-              }
-              ]
+wavelength_power_arr = [["450", "115"], ["488", "77"], ["514", "34.4"], ["532", "33"],
+                        ["600", "25.5"], ["633", "20.2"], ["660", "17"], ["680", "17"]]
+wavelength_power_arr = np.array(wavelength_power_arr, dtype=float)
+x_axis = wavelength_power_arr[:, 0]
+y_axis = wavelength_power_arr[:, 1]
 
-for job in work_flow:
-    params_2 = change_params(params, job)
-    print(params_2)
+params, _ = curve_fit(exp_func_shift, x_axis, y_axis, p0=(1, -0.01, 1))
+x_new = np.linspace(400, 700, 31)
+y_new = exp_func_shift(x_new, *params)
+
+plt.scatter(x_axis, y_axis, color='red', label='Original data')
+plt.scatter(x_new, y_new, color='blue', label='exp ift')
+plt.xlabel('Wavelength (nm)')
+plt.ylabel('Power')
+plt.legend()
+plt.show()
