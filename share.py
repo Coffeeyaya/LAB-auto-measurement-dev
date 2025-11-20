@@ -1,7 +1,6 @@
 import http.server
 import socketserver
 import socket
-import threading
 import os
 from pathlib import Path
 
@@ -32,5 +31,5 @@ for ip in lan_ips:
 
 # Start server
 with ThreadedTCPServer(("", PORT), Handler) as httpd:
-    print(f"Serving folder '{DIRECTORY}' on port {PORT}...")
+    print(f"Serving folder '{CSV_FOLDER}' on port {PORT}...")
     httpd.serve_forever()
