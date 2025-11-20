@@ -116,7 +116,7 @@ try:
         elif cmd == "multi_on_off" and laser_state != "multi_on_off":
             channel = 6
             power = "17"
-            multi_on_off(conn, grid, channel, power, on_time=1, off_time=1, peaks_num=20)
+            multi_on_off(conn, grid, channel, power, on_time=1, off_time=1, peaks_num=3)
         elif cmd == "wavelength" and laser_state != "wavelength":
             channels = np.arange(0, 8, 1, dtype=int)
             power_values = ["115", "77", "34.4", "33", "25.5", "20.2", "17", "17"] ### adjust this based on power measured
