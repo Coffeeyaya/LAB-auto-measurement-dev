@@ -112,7 +112,7 @@ try:
         elif cmd == "1_on_off" and laser_state != "1_on_off":
             channel = 6
             power = "17"
-            single_on_off(conn, grid, channel, power, on_time=10, off_time=30)
+            single_on_off(conn, grid, channel, power, on_time=1, off_time=1)
         elif cmd == "multi_on_off" and laser_state != "multi_on_off":
             channel = 6
             power = "17"
