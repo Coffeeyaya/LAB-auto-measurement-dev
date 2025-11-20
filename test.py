@@ -22,3 +22,11 @@ plt.xlabel('Wavelength (nm)')
 plt.ylabel('Power')
 plt.legend()
 plt.show()
+
+power_arr = np.zeros_like(x_new)
+df = pd.DataFrame({
+    'wavelength_arr': x_new,
+    'power_percentage_arr': y_new,
+    'power_arr': power_arr
+})
+df.to_csv('wavelength_power.csv', index=None, header=df.columns)

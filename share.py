@@ -3,14 +3,15 @@ import socketserver
 import socket
 import threading
 import os
+from pathlib import Path
 
 PORT = 8000
-DIRECTORY = os.path.join(os.path.dirname(__file__), "data")  # change folder here
+CSV_FOLDER = Path(__file__).parent.parent / 'send_data'
 
 # Create handler that serves the specified folder
 class Handler(http.server.SimpleHTTPRequestHandler):
     def __init__(self, *args, **kwargs):
-        super().__init__(*args, directory=DIRECTORY, **kwargs)
+        super().__init__(*args, directory=CSV_FOLDER, **kwargs)
 
 # Threaded TCP Server
 class ThreadedTCPServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
