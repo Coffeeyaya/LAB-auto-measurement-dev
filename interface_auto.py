@@ -92,7 +92,7 @@ if __name__ == "__main__":
         
         win_7_conn.send_json({"cmd": "RUN", "target": "laser_control.py"})
         win_10_conn.send_json({"cmd": "RUN", "target": "iv_run.py"})
-        time.sleep(3)
+        time.sleep(1)
         win_10_iv_conn = Connection.connect(WIN_10_SERVER_IP, WIN_10_PORT_IV_RUN)
         current_params = change_params(params, work_flow[0])
         send_params(win_10_iv_conn, current_params)
@@ -121,7 +121,7 @@ if __name__ == "__main__":
         # celebrate_animation()
     finally:
         print('test')
-        win_7_conn.send_json({"cmd": "KILL", "target": "laser_control.py"})
-        win_10_conn.send_json({"cmd": "KILL", "target": "iv_run.py"})
+        # win_7_conn.send_json({"cmd": "KILL", "target": "laser_control.py"})
+        # win_10_conn.send_json({"cmd": "KILL", "target": "iv_run.py"})
 
 

@@ -149,39 +149,39 @@ def main():
     params = mac_conn.receive_json()  # Just wait for parameters
     print("[IV_RUN] Received parameters:", params)
 
-    # material = params.get("material", "mos2_default")
-    # device_number = params.get("device_number", "0-0_default")
-    # measurement_type = params.get("measurement_type", "idvg")
-    # measurement_index = params.get("measurement_index", "0")
-    # laser_function = params.get("laser_function", "1_on_off")
-    # try:
-    #     rest_time = int(params.get("rest_time", "60"))
-    # except:
-    #     rest_time = 5
-    # try:
-    #     dark_time1 = int(params.get("dark_time1", "60"))
-    # except:
-    #     dark_time1 = 5
-    # try:
-    #     dark_time2 = int(params.get("dark_time2", "60"))
-    # except:
-    #     dark_time2 = 5
+    material = params.get("material", "mos2_default")
+    device_number = params.get("device_number", "0-0_default")
+    measurement_type = params.get("measurement_type", "idvg")
+    measurement_index = params.get("measurement_index", "0")
+    laser_function = params.get("laser_function", "1_on_off")
+    try:
+        rest_time = int(params.get("rest_time", "60"))
+    except:
+        rest_time = 5
+    try:
+        dark_time1 = int(params.get("dark_time1", "60"))
+    except:
+        dark_time1 = 5
+    try:
+        dark_time2 = int(params.get("dark_time2", "60"))
+    except:
+        dark_time2 = 5
 
-    # mac_conn.send_json({"cmd": "PROGRESS", "progress": "Measurement started"})
-    # time.sleep(2)
+    mac_conn.send_json({"cmd": "PROGRESS", "progress": "Measurement started"})
+    time.sleep(2)
 
-    # if measurement_type == 'idvg':
-    #     IDVG(mac_conn, laser_conn, material, device_number, measurement_index, rest_time=rest_time)
-    # elif measurement_type == 'idvd':
-    #     IDVD(mac_conn, laser_conn, material, device_number, measurement_index, vg_values=['3', '4', '5'], rest_time=rest_time)
-    # elif measurement_type == 'time':
-    #     TIME(mac_conn, laser_conn, material, device_number, measurement_index, laser_function=laser_function, rest_time=rest_time, dark_time1=dark_time1, dark_time2=dark_time2)
-    # else:
-    #     mac_conn.send_json({"cmd": "PROGRESS", "progress": "invalid measurement type"})
+    if measurement_type == 'idvg':
+        IDVG(mac_conn, laser_conn, material, device_number, measurement_index, rest_time=rest_time)
+    elif measurement_type == 'idvd':
+        IDVD(mac_conn, laser_conn, material, device_number, measurement_index, vg_values=['3', '4', '5'], rest_time=rest_time)
+    elif measurement_type == 'time':
+        TIME(mac_conn, laser_conn, material, device_number, measurement_index, laser_function=laser_function, rest_time=rest_time, dark_time1=dark_time1, dark_time2=dark_time2)
+    else:
+        mac_conn.send_json({"cmd": "PROGRESS", "progress": "invalid measurement type"})
 
-    # mac_conn.send_json({"cmd": "PROGRESS", "progress": "finished"})
-    # print("[IV_RUN] Finished all measurements.")
-    # mac_conn.send_json({"cmd": "PROGRESS", "progress": "finished"})
+    mac_conn.send_json({"cmd": "PROGRESS", "progress": "finished"})
+    print("[IV_RUN] Finished all measurements.")
+    mac_conn.send_json({"cmd": "PROGRESS", "progress": "finished"})
 
 if __name__ == '__main__':
     main()
