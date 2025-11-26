@@ -70,24 +70,25 @@ def change_params(params, key_values_pairs):
 
 params = {
         "material": "mw",
-        "device_number": "5-1",
-        "measurement_type": "idvg",
+        "device_number": "3-1",
+        "measurement_type": "time",
         "measurement_index": "0",
-        "laser_function": "1_on_off",
-        "rest_time": "2",
-        "dark_time1": "2",
-        "dark_time2": "2" 
+        "laser_function": "wavelength",
+        "rest_time": "1",
+        "dark_time1": "1",
+        "dark_time2": "1" 
     }
 
 work_flow = [
-    {'measurement_index': '0', 'laser_function': '1_on_off'},
+    {'measurement_index': '0', 'laser_function': 'wavelength'},
     # {'measurement_index': '1', 'laser_function': 'wavelength'}
     ]
 
 if __name__ == "__main__":
+
     win_7_conn = Connection.connect(WIN_7_SERVER_IP, WIN_7_PORT)
     win_10_conn = Connection.connect(WIN_10_SERVER_IP, WIN_10_PORT)
-    num_of_params = 2
+    num_of_params = len(work_flow)
     current_idx = 0
     expected_idx = 0
     while (current_idx < num_of_params):
@@ -106,4 +107,5 @@ if __name__ == "__main__":
             win_7_conn.send_json({"cmd": "KILL", "target": "laser_control.py"})
             win_10_conn.send_json({"cmd": "KILL", "target": "iv_run.py"})
     celebrate_animation()
+
 
