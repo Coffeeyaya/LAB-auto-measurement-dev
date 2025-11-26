@@ -135,19 +135,19 @@ def TIME(mac_conn, laser_conn, material, device_number, measurement_index, laser
 
 def main():
     # act as client, connect to laser computer (win 7)
-    # laser_conn = Connection.connect(WIN_7_SERVER_IP, WIN_7_PORT)
+    laser_conn = Connection.connect(WIN_7_SERVER_IP, WIN_7_PORT)
 
     # act as server, accept client_iv (mac)
-    # server_socket = create_server("0.0.0.0", WIN_10_PORT)
-    #mac_conn, addr = Connection.accept(server_socket)
+    server_socket = create_server("0.0.0.0", WIN_10_PORT)
+    mac_conn, addr = Connection.accept(server_socket)
 
     # after all computers are connected, start controlling kickstart
     get_window(r'Kick')
     scroll_to_bottom()
 
-    # print("[IV_RUN] Waiting for connection from Interface...")
-    # params = mac_conn.receive_json()  # Just wait for parameters
-    # print("[IV_RUN] Received parameters:", params)
+    print("[IV_RUN] Waiting for connection from Interface...")
+    params = mac_conn.receive_json()  # Just wait for parameters
+    print("[IV_RUN] Received parameters:", params)
 
     # material = params.get("material", "mos2_default")
     # device_number = params.get("device_number", "0-0_default")
