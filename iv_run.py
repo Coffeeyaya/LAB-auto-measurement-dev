@@ -135,7 +135,7 @@ def TIME(mac_conn, laser_conn, material, device_number, measurement_index, laser
 
 def main():
     # act as client, connect to laser computer (win 7)
-    laser_conn = Connection.connect(WIN_7_SERVER_IP, WIN_7_PORT)
+    # laser_conn = Connection.connect(WIN_7_SERVER_IP, WIN_7_PORT)
 
     # act as server, accept client_iv (mac)
     server_socket = create_server("0.0.0.0", WIN_10_PORT)
@@ -170,14 +170,14 @@ def main():
     mac_conn.send_json({"cmd": "PROGRESS", "progress": "Measurement started"})
     time.sleep(2)
 
-    if measurement_type == 'idvg':
-        IDVG(mac_conn, laser_conn, material, device_number, measurement_index, rest_time=rest_time)
-    elif measurement_type == 'idvd':
-        IDVD(mac_conn, laser_conn, material, device_number, measurement_index, vg_values=['3', '4', '5'], rest_time=rest_time)
-    elif measurement_type == 'time':
-        TIME(mac_conn, laser_conn, material, device_number, measurement_index, laser_function=laser_function, rest_time=rest_time, dark_time1=dark_time1, dark_time2=dark_time2)
-    else:
-        mac_conn.send_json({"cmd": "PROGRESS", "progress": "invalid measurement type"})
+    # if measurement_type == 'idvg':
+    #     IDVG(mac_conn, laser_conn, material, device_number, measurement_index, rest_time=rest_time)
+    # elif measurement_type == 'idvd':
+    #     IDVD(mac_conn, laser_conn, material, device_number, measurement_index, vg_values=['3', '4', '5'], rest_time=rest_time)
+    # elif measurement_type == 'time':
+    #     TIME(mac_conn, laser_conn, material, device_number, measurement_index, laser_function=laser_function, rest_time=rest_time, dark_time1=dark_time1, dark_time2=dark_time2)
+    # else:
+    #     mac_conn.send_json({"cmd": "PROGRESS", "progress": "invalid measurement type"})
 
     mac_conn.send_json({"cmd": "PROGRESS", "progress": "finished"})
     print("[IV_RUN] Finished all measurements.")
