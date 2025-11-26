@@ -50,6 +50,8 @@ def listen_to_server(win_10_iv_conn):
             return True
         else:
             print(msg.get('progress'))
+            return False
+    return False
     
 def send_params(win_10_iv_conn, params):
     time.sleep(3)

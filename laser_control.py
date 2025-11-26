@@ -87,45 +87,45 @@ def multi_on_off(conn, grid, channel, power, on_time=1, off_time=1, peaks_num=20
     conn.send("DONE")
 
 grid = init_AOTF()
-# server_socket = create_server("0.0.0.0", 5001)
-# conn, addr = Connection.accept(server_socket)
-# try:   
-#     while True:
-#         try:
-#             cmd = conn.receive()
-#             time.sleep(1)
-#         except ConnectionError:
-#             print("Client disconnected.")
-#             break # break only the inner loop
+server_socket = create_server("0.0.0.0", 5001)
+conn, addr = Connection.accept(server_socket)
+try:   
+    while True:
+        try:
+            cmd = conn.receive()
+            time.sleep(1)
+        except ConnectionError:
+            print("Client disconnected.")
+            break # break only the inner loop
 
-#         if cmd in ["ON", "OFF"] and laser_state != cmd:
-#             channel = 6
-#             power = "17" ### adjust this based on power measured
-#             change_power_function(grid, channel, power)
-#             time.sleep(1)
-#             on_coord = get_coord(grid, channel, "on")
-#             time.sleep(1)
-#             move_and_click(on_coord)
-#             time.sleep(0.5)
-#             laser_state = cmd
-#             conn.send(cmd)
-#         elif cmd == "1_on_off" and laser_state != "1_on_off":
-#             channel = 6
-#             power = "17"
-#             single_on_off(conn, grid, channel, power, on_time=1, off_time=1)
-#         elif cmd == "multi_on_off" and laser_state != "multi_on_off":
-#             channel = 6
-#             power = "17"
-#             multi_on_off(conn, grid, channel, power, on_time=1, off_time=1, peaks_num=3)
-#         elif cmd == "wavelength" and laser_state != "wavelength":
-#             channel = 6
-#             wavelength_power_arr = [("450", "115"), ("488", "77"), ("514", "34.4"), ("532", "33"),
-#                                      ("600", "25.5"), ("633", "20.2"), ("660", "17"), ("680", "17")] ### adjust this based on power measured
-#             time_dependent_wavelength(conn, grid, channel, wavelength_power_arr, on_time=1, off_time=3)
-#         elif cmd == "power" and laser_state != "power":
-#             channel = 6
-#             power_values = ["30.5", "22.5", "16.8", "12.5", "9.3", "6.8", "5.3"] ### adjust this based on power measured
-#             time_dependent_power(conn, grid, channel, power_values, on_time=1, off_time=1)
-#     conn.close()
-# finally:
-#     server_socket.close()
+        if cmd in ["ON", "OFF"] and laser_state != cmd:
+            channel = 6
+            power = "17" ### adjust this based on power measured
+            change_power_function(grid, channel, power)
+            time.sleep(1)
+            on_coord = get_coord(grid, channel, "on")
+            time.sleep(1)
+            move_and_click(on_coord)
+            time.sleep(0.5)
+            laser_state = cmd
+            conn.send(cmd)
+        elif cmd == "1_on_off" and laser_state != "1_on_off":
+            channel = 6
+            power = "17"
+            single_on_off(conn, grid, channel, power, on_time=1, off_time=1)
+        elif cmd == "multi_on_off" and laser_state != "multi_on_off":
+            channel = 6
+            power = "17"
+            multi_on_off(conn, grid, channel, power, on_time=1, off_time=1, peaks_num=3)
+        elif cmd == "wavelength" and laser_state != "wavelength":
+            channel = 6
+            wavelength_power_arr = [("450", "115"), ("488", "77"), ("514", "34.4"), ("532", "33"),
+                                     ("600", "25.5"), ("633", "20.2"), ("660", "17"), ("680", "17")] ### adjust this based on power measured
+            time_dependent_wavelength(conn, grid, channel, wavelength_power_arr, on_time=1, off_time=3)
+        elif cmd == "power" and laser_state != "power":
+            channel = 6
+            power_values = ["30.5", "22.5", "16.8", "12.5", "9.3", "6.8", "5.3"] ### adjust this based on power measured
+            time_dependent_power(conn, grid, channel, power_values, on_time=1, off_time=1)
+    conn.close()
+finally:
+    server_socket.close()
