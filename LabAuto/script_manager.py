@@ -52,11 +52,11 @@ def run_script(script_name: str):
             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
         )
 
-    elif system == "Windows":
-        proc = subprocess.Popen(
-        ["conda", "run", "-n", "myenv", "python", full_path],
-        creationflags=subprocess.CREATE_NEW_CONSOLE
-    )
+    # elif system == "Windows":
+    #     proc = subprocess.Popen(
+    #     ["conda", "run", "-n", "myenv", "python", full_path],
+    #     creationflags=subprocess.CREATE_NEW_CONSOLE
+    # )
     elif system == "Windows": 
         proc = subprocess.Popen( [python_executable, full_path], creationflags=subprocess.CREATE_NEW_CONSOLE )
 
