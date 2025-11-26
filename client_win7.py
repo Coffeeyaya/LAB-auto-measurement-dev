@@ -2,7 +2,7 @@ from LabAuto.network import Connection
 import time
 
 def main():
-    conn = Connection.connect("192.168.151.20", 5000)
+    conn = Connection.connect("192.168.50.17", 5000)
     # conn = Connection.connect("127.0.0.1", 5001)
 
     menu = (

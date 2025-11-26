@@ -5,10 +5,10 @@ import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.animation import FuncAnimation
 
-WIN_7_SERVER_IP = "192.168.151.178"
+WIN_7_SERVER_IP = "192.168.50.17"
 WIN_7_PORT = 5000
 # WIN_7_PORT = 5001
-WIN_10_SERVER_IP = "192.168.137.233"
+WIN_10_SERVER_IP = "192.168.50.101"
 WIN_10_PORT = 7000
 WIN_10_PORT_IV_RUN = 6000
 
@@ -89,36 +89,30 @@ if __name__ == "__main__":
     try:
         win_7_conn = Connection.connect(WIN_7_SERVER_IP, WIN_7_PORT)
         win_10_conn = Connection.connect(WIN_10_SERVER_IP, WIN_10_PORT)
-        
-        win_7_conn.send_json({"cmd": "RUN", "target": "laser_control.py"})
-        win_10_conn.send_json({"cmd": "RUN", "target": "iv_run.py"})
         time.sleep(1)
-        win_10_iv_conn = Connection.connect(WIN_10_SERVER_IP, WIN_10_PORT_IV_RUN)
-        current_params = change_params(params, work_flow[0])
-        send_params(win_10_iv_conn, current_params)
-        time.sleep(10)
-        win_7_conn.send_json({"cmd": "KILL", "target": "laser_control.py"})
-        win_10_conn.send_json({"cmd": "KILL", "target": "iv_run.py"})
+        
+        # win_7_conn.send_json({"cmd": "KILL", "target": "laser_control.py"})
+        # win_10_conn.send_json({"cmd": "KILL", "target": "iv_run.py"})
 
-        # num_of_params = len(work_flow)
-        # current_idx = 0
-        # expected_idx = 0
-        # while (current_idx < num_of_params):
-        #     if expected_idx == current_idx:
-        #         expected_idx += 1 # for sending params of next measurement
-        #         win_7_conn.send_json({"cmd": "RUN", "target": "laser_control.py"})
-        #         win_10_conn.send_json({"cmd": "RUN", "target": "iv_run.py"})
-        #         time.sleep(3)
-        #         win_10_iv_conn = Connection.connect(WIN_10_SERVER_IP, WIN_10_PORT_IV_RUN)
-        #         time.sleep(3)
-        #         current_params = change_params(params, work_flow[current_idx])
-        #         send_params(win_10_iv_conn, current_params)
+        num_of_params = len(work_flow)
+        current_idx = 0
+        expected_idx = 0
+        while (current_idx < num_of_params):
+            if expected_idx == current_idx:
+                expected_idx += 1 # for sending params of next measurement
+                win_7_conn.send_json({"cmd": "RUN", "target": "laser_control.py"})
+                win_10_conn.send_json({"cmd": "RUN", "target": "iv_run.py"})
+                time.sleep(3)
+                win_10_iv_conn = Connection.connect(WIN_10_SERVER_IP, WIN_10_PORT_IV_RUN)
+                time.sleep(3)
+                current_params = change_params(params, work_flow[current_idx])
+                send_params(win_10_iv_conn, current_params)
 
-        #     if listen_to_server(win_10_iv_conn):
-        #         current_idx += 1 # only increment when finish current measurement
-        #         win_7_conn.send_json({"cmd": "KILL", "target": "laser_control.py"})
-        #         win_10_conn.send_json({"cmd": "KILL", "target": "iv_run.py"})
-        # celebrate_animation()
+            if listen_to_server(win_10_iv_conn):
+                current_idx += 1 # only increment when finish current measurement
+                win_7_conn.send_json({"cmd": "KILL", "target": "laser_control.py"})
+                win_10_conn.send_json({"cmd": "KILL", "target": "iv_run.py"})
+        celebrate_animation()
     finally:
         print('test')
         # win_7_conn.send_json({"cmd": "KILL", "target": "laser_control.py"})
