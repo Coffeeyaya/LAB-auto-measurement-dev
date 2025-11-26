@@ -16,7 +16,7 @@ idvd_path = r'D:\kickstart\YunChen\IDVD\IDVD'
 time_path = r'D:\kickstart\YunChen\TIME\TIME'
 
 # act as client, connect to win 7 server
-WIN_7_SERVER_IP = "192.168.151.20"
+WIN_7_SERVER_IP = "192.168.151.178"
 WIN_7_PORT = 5001
 # act as server, accept mac client
 WIN_10_PORT = 6000
