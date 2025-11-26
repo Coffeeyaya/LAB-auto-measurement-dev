@@ -17,8 +17,8 @@ def init_AOTF():
         except gw.PyGetWindowException:
             pyautogui.click(win.left, win.top)
 
-    x = np.array([200, 270, 320])-10
-    y = np.linspace(190, 430, 8)
+    x = np.array([190, 270, 320])
+    y = np.linspace(193, 430, 8)
 
     fields = ["lambda", "power", "on"]
 
@@ -55,7 +55,7 @@ def get_power_edit_coord(power_coord):
 
 def get_power_ok_coord(power_coord):
     abs_x = power_coord[0] + 90
-    abs_y = power_coord[1] + 340
+    abs_y = power_coord[1] + 335
     return abs_x, abs_y
 
 def fill_box_no_ctrl_a(content):

@@ -7,6 +7,7 @@ from matplotlib.animation import FuncAnimation
 
 WIN_7_SERVER_IP = "192.168.151.178"
 WIN_7_PORT = 5000
+# WIN_7_PORT = 5001
 WIN_10_SERVER_IP = "192.168.137.233"
 WIN_10_PORT = 5000
 WIN_10_PORT_IV_RUN = 6000
