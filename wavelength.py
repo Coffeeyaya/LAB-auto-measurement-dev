@@ -13,7 +13,7 @@ x_axis = wavelength_power_arr[:, 0]
 y_axis = wavelength_power_arr[:, 1]
 
 params, _ = curve_fit(exp_func_shift, x_axis, y_axis, p0=(1, -0.01, 1))
-x_new = np.linspace(400, 700, 31)
+x_new = np.linspace(450, 680, 15)
 y_new = exp_func_shift(x_new, *params)
 
 plt.scatter(x_axis, y_axis, color='red', label='Original data')
