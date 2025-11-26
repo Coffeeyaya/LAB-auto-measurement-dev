@@ -54,9 +54,10 @@ def run_script(script_name: str):
 
     elif system == "Windows":
         proc = subprocess.Popen(
-            [python_executable, full_path],
-            creationflags=subprocess.CREATE_NEW_CONSOLE
-        )
+        ["conda", "run", "-n", "myenv", "python", full_path],
+        creationflags=subprocess.CREATE_NEW_CONSOLE
+    )
+
 
     else:  # Linux
         proc = subprocess.Popen(
