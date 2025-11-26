@@ -38,8 +38,8 @@ class LabControlUI(QWidget):
         main_layout = QVBoxLayout()
 
         # --- Fixed connection info ---
-        self.server_ip = "192.168.137.233"
-        self.server_port = 7000
+        self.server_ip = "192.168.50.101"
+        self.server_port = 6000
 
         # --- Parameter Section ---
         params_group = QGroupBox("Measurement Parameters")
