@@ -126,6 +126,11 @@ try:
             channel = 6
             power_values = ["30.5", "22.5", "16.8", "12.5", "9.3", "6.8", "5.3"] ### adjust this based on power measured
             time_dependent_power(conn, grid, channel, power_values, on_time=1, off_time=1)
+        elif cmd == "test" and laser_state != "test":
+            channel = 6
+            wavelength_power_arr = [("450", "115"), ("488", "77"), ("514", "34.4"), ("532", "33"),
+                                     ("600", "25.5"), ("633", "20.2"), ("660", "17"), ("680", "17")] ### adjust this based on power measured
+            time_dependent_wavelength(conn, grid, channel, wavelength_power_arr, on_time=1, off_time=3)    
     conn.close()
 finally:
     server_socket.close()
