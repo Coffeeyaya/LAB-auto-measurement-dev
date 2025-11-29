@@ -84,7 +84,7 @@ params = {
 
 work_flow = [
     {'measurement_index': '0', 'laser_function': 'wavelength'},
-    {'measurement_index': '1', 'laser_function': 'wavelength'}
+    # {'measurement_index': '1', 'laser_function': 'wavelength'}
     ]
 
 if __name__ == "__main__":

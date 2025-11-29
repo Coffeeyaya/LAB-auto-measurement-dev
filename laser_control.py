@@ -10,11 +10,14 @@ def time_dependent_wavelength(conn, grid, channel_arr, wavelength_arr, power_per
     global laser_state
     laser_state = "wavelength"
     conn.send("wavelength")
-    on_coord = get_coord(grid, channel, "on")
     for i in range(len(channel_arr)):
         channel = channel_arr[i]
         wavelength = wavelength_arr[i]
         power = power_percentage_arr[i]
+        # print(channel)
+        # print(wavelength)
+        # print(power)
+        on_coord = get_coord(grid, channel, "on")
         change_lambda_function(grid, channel, wavelength)
         change_power_function(grid, channel, power)
         # turn on
