@@ -14,6 +14,9 @@ def time_dependent_wavelength(conn, grid, channel_arr, wavelength_arr, power_per
         channel = channel_arr[i]
         wavelength = wavelength_arr[i]
         power = power_percentage_arr[i]
+        print(channel)
+        print(wavelength)
+        print(power)
         on_coord = get_coord(grid, channel, "on")
         change_lambda_function(grid, channel, wavelength)
         change_power_function(grid, channel, power)
@@ -38,15 +41,14 @@ channel_arr = []
 wavelength_arr = []
 power_percentage_arr = []
 for index, row in df.iterrows():
-    wavelength = row['wavelength_arr']
-    power_percentage = row['power_percentage_arr']
+    wavelength = str(row['wavelength_arr'])
+    power_percentage = str(row['power_percentage_arr'])
     channel = int(row['channel'])
     channel_arr.append(channel)
     wavelength_arr.append(wavelength)
     power_percentage_arr.append(power_percentage)
-print(channel_arr)
-print(wavelength_arr)
-print(power_percentage_arr)
+
+
 try:
     while True:
         try:
