@@ -2,15 +2,19 @@ import time
 import numpy as np
 from LabAuto.laser import init_AOTF, get_coord, change_power_function, move_and_click, change_lambda_function
 from LabAuto.network import create_server, Connection
+import pandas as pd
 
 laser_state = "OFF"
 
-def time_dependent_wavelength(conn, grid, channel, wavelength_power_arr, on_time=1, off_time=3):
+def time_dependent_wavelength(conn, grid, channel_arr, wavelength_arr, power_percentage_arr, on_time=10, off_time=10):
     global laser_state
     laser_state = "wavelength"
     conn.send("wavelength")
     on_coord = get_coord(grid, channel, "on")
-    for wavelength, power in wavelength_power_arr:
+    for i in range(len(channel_arr)):
+        channel = channel_arr[i]
+        wavelength = wavelength_arr[i]
+        power = power_percentage_arr[i]
         change_lambda_function(grid, channel, wavelength)
         change_power_function(grid, channel, power)
         # turn on
@@ -89,6 +93,20 @@ def multi_on_off(conn, grid, channel, power, on_time=1, off_time=1, peaks_num=20
 grid = init_AOTF()
 server_socket = create_server("0.0.0.0", 5001)
 conn, addr = Connection.accept(server_socket)
+
+
+df = pd.read_csv("wavelength_power.csv")
+channel_arr = []
+wavelength_arr = []
+power_percentage_arr = []
+for index, row in df.iterrows():
+    wavelength = row['wavelength_arr']
+    power_percentage = row['power_percentage_arr']
+    channel = int(row['channel'])
+    channel_arr.append(channel)
+    wavelength_arr.append(wavelength)
+    power_percentage_arr.append(power_percentage)
+
 try:   
     while True:
         try:
@@ -118,10 +136,7 @@ try:
             power = "17"
             multi_on_off(conn, grid, channel, power, on_time=1, off_time=1, peaks_num=3)
         elif cmd == "wavelength" and laser_state != "wavelength":
-            channel = 6
-            wavelength_power_arr = [("450", "115"), ("488", "77"), ("514", "34.4"), ("532", "33"),
-                                     ("600", "25.5"), ("633", "20.2"), ("660", "17"), ("680", "17")] ### adjust this based on power measured
-            time_dependent_wavelength(conn, grid, channel, wavelength_power_arr, on_time=1, off_time=3)
+            time_dependent_wavelength(conn, grid, channel_arr, wavelength_arr, power_percentage_arr, on_time=1, off_time=10)
         elif cmd == "power" and laser_state != "power":
             channel = 6
             power_values = ["30.5", "22.5", "16.8", "12.5", "9.3", "6.8", "5.3"] ### adjust this based on power measured

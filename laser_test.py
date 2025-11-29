@@ -6,12 +6,15 @@ import pandas as pd
 
 laser_state = "OFF"
 
-def time_dependent_wavelength(conn, grid, channel, wavelength_power_arr, on_time=3, off_time=3):
+def time_dependent_wavelength(conn, grid, channel_arr, wavelength_arr, power_percentage_arr, on_time=10, off_time=10):
     global laser_state
     laser_state = "wavelength"
     conn.send("wavelength")
     on_coord = get_coord(grid, channel, "on")
-    for wavelength, power in wavelength_power_arr:
+    for i in range(len(channel_arr)):
+        channel = channel_arr[i]
+        wavelength = wavelength_arr[i]
+        power = power_percentage_arr[i]
         change_lambda_function(grid, channel, wavelength)
         change_power_function(grid, channel, power)
         # turn on
@@ -25,27 +28,22 @@ def time_dependent_wavelength(conn, grid, channel, wavelength_power_arr, on_time
     laser_state = "DONE"
     conn.send("DONE")
 
-# def set_wavelength_power(grid, channel):
-#     global laser_state
-#     on_coord = get_coord(grid, channel, "on")
-#     for wavelength, power in wavelength_power_arr:
-#         change_lambda_function(grid, channel, wavelength)
-#         change_power_function(grid, channel, power)
-#         # turn on
-#         move_and_click(on_coord)
 
 grid = init_AOTF()
 server_socket = create_server("0.0.0.0", 5001)
 conn, addr = Connection.accept(server_socket)
 
 df = pd.read_csv("wavelength_power.csv")
-wavelength_power_arr = []
+channel_arr = []
+wavelength_arr = []
+power_percentage_arr = []
 for index, row in df.iterrows():
     wavelength = row['wavelength_arr']
-    power_percent = int(row['power_percentage_arr'])
-    wavelength_power_arr.append((wavelength, power_percent))
-# wavelength_power_arr = [("450", "115"), ("488", "77"), ("514", "34.4"), ("532", "33"),
-#                         ("600", "25.5"), ("633", "20.2"), ("660", "17"), ("680", "17")] ### adjust this based on power measured
+    power_percentage = row['power_percentage_arr']
+    channel = int(row['channel'])
+    channel_arr.append(channel)
+    wavelength_arr.append(wavelength)
+    power_percentage_arr.append(power_percentage)
 
 try:
     while True:
@@ -55,12 +53,8 @@ try:
         except ConnectionError:
             print("Client disconnected.")
             break # break only the inner loop
-
-        if cmd == "set":
-            pass
-        elif cmd == "test" and laser_state != "test":
-            channel = 6
-            time_dependent_wavelength(conn, grid, channel, wavelength_power_arr, on_time=3, off_time=3)    
+        if  cmd == "test" and laser_state != "test":
+            time_dependent_wavelength(conn, grid, channel_arr, wavelength_arr, power_percentage_arr, on_time=10, off_time=10)    
     conn.close()
 finally:
     server_socket.close()
