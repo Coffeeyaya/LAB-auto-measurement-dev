@@ -100,8 +100,8 @@ channel_arr = []
 wavelength_arr = []
 power_percentage_arr = []
 for index, row in df.iterrows():
-    wavelength = row['wavelength_arr']
-    power_percentage = row['power_percentage_arr']
+    wavelength = str(row['wavelength_arr'])
+    power_percentage = str(row['power_percentage_arr'])
     channel = int(row['channel'])
     channel_arr.append(channel)
     wavelength_arr.append(wavelength)
