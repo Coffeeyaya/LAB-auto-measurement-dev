@@ -44,7 +44,9 @@ for index, row in df.iterrows():
     channel_arr.append(channel)
     wavelength_arr.append(wavelength)
     power_percentage_arr.append(power_percentage)
-
+print(channel_arr)
+print(wavelength_arr)
+print(power_percentage_arr)
 try:
     while True:
         try:
