@@ -132,6 +132,9 @@ def TIME(mac_conn, laser_conn, material, device_number, measurement_index, laser
     # filename = filename_generator(material, device_number, measurement_type='time', condition=f'onoff-darkcurrent-{measurement_index}')
     # export_data(CSV_FOLDER, filename)
     # mac_conn.send_json({"cmd": "PROGRESS", "progress": "darkcurrent measurement finished"})
+def set_vg(vg_value):
+    change_idvd_vg_level(vg_value)
+    change_idvd_vg_level(vg_value)
 
 def main():
     # act as client, connect to laser computer (win 7)
@@ -155,6 +158,11 @@ def main():
     measurement_index = params.get("measurement_index", "0")
     laser_function = params.get("laser_function", "1_on_off")
     try:
+        vg_value = params.get("vg_value", "0")
+    except:
+        vg_value = "0"
+
+    try:
         rest_time = int(params.get("rest_time", "60"))
     except:
         rest_time = 5
@@ -176,6 +184,8 @@ def main():
         IDVD(mac_conn, laser_conn, material, device_number, measurement_index, vg_values=['3', '4', '5'], rest_time=rest_time)
     elif measurement_type == 'time':
         TIME(mac_conn, laser_conn, material, device_number, measurement_index, laser_function=laser_function, rest_time=rest_time, dark_time1=dark_time1, dark_time2=dark_time2)
+    elif measurement_type == 'set':
+        set_vg(vg_value)
     else:
         mac_conn.send_json({"cmd": "PROGRESS", "progress": "invalid measurement type"})
 
