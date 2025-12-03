@@ -74,9 +74,9 @@ def change_params(params, key_values_pairs):
 params = {
         "material": "mos2",
         "device_number": "7-8",
-        "measurement_type": "idvg",
+        "measurement_type": "set",
         "measurement_index": "0",
-        "laser_function": "wavelength",
+        "laser_function": "1_on_off",
         "rest_time": "1",
         "dark_time1": "1",
         "dark_time2": "1",
@@ -89,9 +89,16 @@ params = {
 # ]
 
 work_flow = [
-    {'measurement_index': '0', 'vg_value': '-2'},
-    {'measurement_index': '1', 'vg_value': '0'},
-    {'measurement_index': '2', 'vg_value': '2'}
+    {"measurement_type": "set", "vg_value": "-2"},
+    {"measurement_type": "time"},
+    {"measurement_type": "set", 'vg_value': '0'},
+    {"measurement_type": "time"},
+    {"measurement_type": "set", 'vg_value': '2'},
+    {"measurement_type": "time"},
+
+    # {'measurement_index': '0', 'vg_value': '-2'},
+    # {'measurement_index': '1', 'vg_value': '0'},
+    # {'measurement_index': '2', 'vg_value': '2'}
 ]
 
 if __name__ == "__main__":
