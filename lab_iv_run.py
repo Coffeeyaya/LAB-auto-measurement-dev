@@ -11,9 +11,9 @@ material = 'mos2'
 device_number = '1-1'
 measurement_index = '0'
 laser_function = 'wavelength'
-rest_time = '1'
-dark_time1 = '1'
-dark_time2 = '1'
+rest_time = 1
+dark_time1 = 1
+dark_time2 = 1
 
 # data saving folder
 CSV_FOLDER = Path(__file__).parent.parent / 'send_data'
