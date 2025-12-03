@@ -77,9 +77,9 @@ params = {
         "measurement_type": "idvg",
         "measurement_index": "0",
         "laser_function": "wavelength",
-        "rest_time": "60",
-        "dark_time1": "10",
-        "dark_time2": "10",
+        "rest_time": "1",
+        "dark_time1": "1",
+        "dark_time2": "1",
         "vg_value": "0"
     }
 

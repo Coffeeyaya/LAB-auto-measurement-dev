@@ -34,6 +34,7 @@ def TIME(laser_conn, material, device_number, measurement_index, laser_function,
     rest_time: time rested before measurement
     wait_time: start measurement ~ start illumination, stop illumination ~ end measurement
     '''
+    rest_time = int(rest_time)
     reset_mode = True
     get_window(r'Kick')
     if get_window(r'KickStart - TIME'):
