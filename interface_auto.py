@@ -9,7 +9,8 @@ WIN_7_SERVER_IP = "192.168.50.17"
 WIN_7_PORT = 5000
 # WIN_7_PORT = 5001
 WIN_10_SERVER_IP = "192.168.50.101"
-WIN_10_PORT = 5000
+# WIN_10_PORT = 5000 # if on mac
+WIN_10_PORT = 7000 # if on win10
 WIN_10_PORT_IV_RUN = 6000
 
 def celebrate_animation():
@@ -54,16 +55,8 @@ def listen_to_server(win_10_iv_conn):
     return False
     
 def send_params(win_10_iv_conn, params):
-    time.sleep(3)
+    time.sleep(1)
     win_10_iv_conn.send_json(params)
-
-def stop_script(win_7_conn, win_10_conn):
-    win_7_conn.send_json({"cmd": "KILL", "target": "laser_control.py"})
-    win_10_conn.send_json({"cmd": "KILL", "target": "iv_run.py"})
-    
-def run_script(win_7_conn, win_10_conn):
-    win_7_conn.send_json({"cmd": "RUN", "target": "laser_control.py"})
-    win_10_conn.send_json({"cmd": "RUN", "target": "iv_run.py"})
 
 def change_params(params, key_values_pairs):
     params_copy = params.copy()
@@ -73,32 +66,28 @@ def change_params(params, key_values_pairs):
 
 params = {
         "material": "mos2",
-        "device_number": "7-8",
-        "measurement_type": "set",
+        "device_number": "3-6",
+        "measurement_type": "time",
         "measurement_index": "0",
-        "laser_function": "1_on_off",
-        "rest_time": "1",
-        "dark_time1": "1",
-        "dark_time2": "1",
+        "laser_function": "wavelength",
+        "rest_time": "10",
+        "dark_time1": "10",
+        "dark_time2": "10",
         "vg_value": "0"
     }
 
 # work_flow = [
 #     {'measurement_index': '0'},
-#     {'measurement_type': 'time', 'laser_function': 'wavelength'}
+#     # {'measurement_type': 'time', 'laser_function': 'wavelength'}
 # ]
 
 work_flow = [
     {"measurement_type": "set", "vg_value": "-2"},
-    {"measurement_type": "time"},
-    {"measurement_type": "set", 'vg_value': '0'},
-    {"measurement_type": "time"},
-    {"measurement_type": "set", 'vg_value': '2'},
-    {"measurement_type": "time"},
-
-    # {'measurement_index': '0', 'vg_value': '-2'},
-    # {'measurement_index': '1', 'vg_value': '0'},
-    # {'measurement_index': '2', 'vg_value': '2'}
+    {"measurement_type": "time", "measurement_index": "0"},
+    {"measurement_type": "set", 'vg_value': "0"},
+    {"measurement_type": "time", "measurement_index": "1", 'rest_time': "10"},
+    {"measurement_type": "set", 'vg_value': "2"},
+    {"measurement_type": "time", "measurement_index": "2", 'rest_time': "10"},
 ]
 
 if __name__ == "__main__":

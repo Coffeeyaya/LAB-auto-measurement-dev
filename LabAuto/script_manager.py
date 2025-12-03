@@ -5,6 +5,8 @@ from LabAuto.network import create_server, Connection
 import signal
 import platform
 
+import threading
+
 processes = {}  # {script_name: subprocess.Popen}
 SERVER_SCRIPT_NAME = None  # will be set when needed
 
@@ -148,3 +150,48 @@ def run_server(host, port, csv_handler=None):
                     break
     finally:
         server_socket.close()
+
+
+def run_server_threading(host, port, csv_handler=None):
+    """Threaded TCP server that accepts multiple independent clients."""
+    server_socket = create_server(host, port)
+
+    print(f"[SERVER] Listening on {host}:{port}")
+
+    def client_thread(conn, addr):
+        print(f"[THREAD] Started for {addr}")
+
+        try:
+            if csv_handler is not None:
+                csv_handler(conn)
+            else:
+                should_quit = handle_client(conn)
+                if should_quit:
+                    print("[SERVER] QUIT received — shutting down server.")
+                    os._exit(0)   # Hard shutdown for safety; change if needed.
+
+        except ConnectionError:
+            print(f"[SERVER] Client {addr} disconnected.")
+
+        except Exception as e:
+            print(f"[SERVER] Exception in {addr}: {e}")
+
+        finally:
+            conn.close()
+            print(f"[THREAD] Closed connection for {addr}")
+
+    try:
+        while True:
+            conn, addr = Connection.accept(server_socket)
+            print(f"[SERVER] New client: {addr}")
+
+            t = threading.Thread(
+                target=client_thread,
+                args=(conn, addr),
+                daemon=True
+            )
+            t.start()
+
+    finally:
+        server_socket.close()
+        print("[SERVER] Socket closed.")
