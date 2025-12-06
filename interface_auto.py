@@ -108,7 +108,7 @@ work_flow_vg1 = [
 
 work_flow_vg2 = [
     {
-        "measurement_index": f"{i}",
+        "measurement_index": f"{i + 24}",
         "laser_function": f"wavelength,{wavelength_arr[i]}",
         "vg_value": get_vg_value(wavelength_arr[i], "0")
     }
@@ -117,7 +117,7 @@ work_flow_vg2 = [
 
 work_flow_vg3 = [
     {
-        "measurement_index": f"{i}",
+        "measurement_index": f"{i + 24*2}",
         "laser_function": f"wavelength,{wavelength_arr[i]}",
         "vg_value": get_vg_value(wavelength_arr[i], "2")
     }
