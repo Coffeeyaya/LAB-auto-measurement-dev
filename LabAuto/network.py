@@ -81,71 +81,70 @@ class Connection:
 
 
 
+import socket
+import json
+import time
 
-# ------------------------------------------------------------
-# ReconnectConnection — Auto-reconnecting wrapper
-# ------------------------------------------------------------
 class ReconnectConnection:
     """
-    A wrapper around Connection that automatically reconnects on error.
-    Call send_json() or receive_json() as usual.
-
-    - If the connection breaks (WiFi lost, MacBook sleeps, server resets),
-      it will retry until reconnected.
+    A TCP connection wrapper that automatically reconnects
+    whenever send/receive fails.
     """
 
     def __init__(self, host, port, retry_delay=2):
         self.host = host
         self.port = port
         self.retry_delay = retry_delay
-        self.conn = None  # underlying Connection object
+        self.sock = None
+        self._connect()
 
-    def _ensure_connection(self):
-        """
-        Ensure that self.conn exists and is connected.
-        If not, keep retrying until it succeeds.
-        """
-        while self.conn is None:
+    @classmethod
+    def connect(cls, host, port, retry_delay=2):
+        """Allow syntax: conn = ReconnectConnection.connect(host, port)"""
+        return cls(host, port, retry_delay)
+
+    def _connect(self):
+        """Attempt to connect until success."""
+        while True:
             try:
-                print(f"[RECONNECT] Trying {self.host}:{self.port}...")
-                self.conn = Connection.connect(self.host, self.port)
-                print("[RECONNECT] Success!")
-            except Exception as e:
-                print(f"[WARN] Connect failed: {e}. Retrying in {self.retry_delay}s.")
+                self.sock = socket.create_connection((self.host, self.port), timeout=5)
+                return
+            except OSError:
+                print(f"[ReconnectConnection] connection failed, retrying in {self.retry_delay}s...")
                 time.sleep(self.retry_delay)
 
-    # -------------------------------
-    # Send JSON with auto-reconnect
-    # -------------------------------
-    def send_json(self, obj):
-        self._ensure_connection()
-        try:
-            self.conn.send_json(obj)
-        except Exception:
-            print("[WARN] Send failed. Dropping connection and retrying...")
-            self.conn = None
-            time.sleep(self.retry_delay)
-            self.send_json(obj)
+    def send_json(self, data: dict):
+        """Send dictionary as JSON. Reconnect if it fails."""
+        while True:
+            try:
+                raw = (json.dumps(data) + "\n").encode()
+                self.sock.sendall(raw)
+                return
+            except OSError:
+                print("[ReconnectConnection] send failed — reconnecting…")
+                self._connect()
 
-    # -------------------------------
-    # Receive JSON with auto-reconnect
-    # -------------------------------
     def receive_json(self):
-        self._ensure_connection()
-        try:
-            return self.conn.receive_json()
-        except Exception:
-            print("[WARN] Receive failed. Dropping connection and retrying...")
-            self.conn = None
-            time.sleep(self.retry_delay)
-            return None  # Caller can interpret None as missing data
+        """Receive JSON line. Reconnect if necessary."""
+        buffer = ""
+        while True:
+            try:
+                chunk = self.sock.recv(4096)
+                if not chunk:
+                    raise OSError("connection closed")
 
-    # -------------------------------
-    # Graceful close
-    # -------------------------------
+                buffer += chunk.decode()
+
+                if "\n" in buffer:
+                    line, buffer = buffer.split("\n", 1)
+                    return json.loads(line)
+
+            except OSError:
+                print("[ReconnectConnection] receive failed — reconnecting…")
+                self._connect()
+
     def close(self):
-        if self.conn:
-            self.conn.close()
-        self.conn = None
-        print("[CLOSE] ReconnectConnection closed.")
-
+        try:
+            self.sock.close()
+        except:
+            pass
