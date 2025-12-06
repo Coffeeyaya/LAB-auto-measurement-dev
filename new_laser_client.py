@@ -2,7 +2,7 @@
 import time
 from LabAuto.network import Connection
 
-SERVER_IP = "192.168.50.101"  # lab computer IP
+SERVER_IP = "192.168.50.17"  # lab computer IP
 SERVER_PORT = 5001             # matches laser_control.py
 
 def main():

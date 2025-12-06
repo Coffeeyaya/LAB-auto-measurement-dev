@@ -21,6 +21,10 @@ WIN_7_PORT = 5001
 # act as server, accept mac client
 WIN_10_PORT = 6000
 
+def set_vg(vg_value):
+    change_idvd_vg_level(vg_value)
+    change_idvd_vg_level(vg_value)
+    
 def IDVG(mac_conn, laser_conn, material, device_number, measurement_index, rest_time=60):
     reset_mode = True
     get_window(r'Kick')
@@ -135,10 +139,6 @@ def TIME(mac_conn, laser_conn, material, device_number, measurement_index, laser
     # filename = filename_generator(material, device_number, measurement_type='time', condition=f'onoff-darkcurrent-{measurement_index}')
     # export_data(CSV_FOLDER, filename)
     # mac_conn.send_json({"cmd": "PROGRESS", "progress": "darkcurrent measurement finished"})
-
-def set_vg(vg_value):
-    change_idvd_vg_level(vg_value)
-    change_idvd_vg_level(vg_value)
 
 def main():
     # act as client, connect to laser computer (win 7)
