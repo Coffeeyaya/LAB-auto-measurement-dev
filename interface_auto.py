@@ -75,6 +75,30 @@ params = {
         "dark_time1": "1",
         "dark_time2": "1",
     }
+    
+# params = {
+#         "material": "mw",
+#         "device_number": "2-5",
+#         "measurement_type": "idvg",
+#         "measurement_index": "0",
+#         "laser_function": "wavelength",
+#         "vg_value": "None",
+#         "rest_time": "60",
+#         "dark_time1": "1",
+#         "dark_time2": "1",
+    # }
+
+params = {
+        "material": "mw",
+        "device_number": "2-5",
+        "measurement_type": "time",
+        "measurement_index": "0",
+        "laser_function": "wavelength",
+        "vg_value": "None",
+        "rest_time": "1",
+        "dark_time1": "1",
+        "dark_time2": "1",
+    }
 
 work_flow = [
     {'measurement_index': '0'},
@@ -124,7 +148,7 @@ work_flow_vg3 = [
     for i in range(len(wavelength_arr))
 ]
 
-# work_flow = work_flow_vg1 + work_flow_vg2 + work_flow_vg3
+work_flow = work_flow_vg1 + work_flow_vg2 + work_flow_vg3
 
 
 if __name__ == "__main__":
