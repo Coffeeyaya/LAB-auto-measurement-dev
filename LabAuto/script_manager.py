@@ -99,12 +99,10 @@ def kill_all_scripts():
     for name in list(processes.keys()):
         kill_script(name)
     return {"status": "ok", "message": "ALL_STOPPED"}
-
 def handle_client(conn: Connection):
     """
-    Handle a single client connection using JSON commands.
-    Works with run_script, kill_script, and kill_all_scripts from this module.
-    default_folder: the folder where the "script to be run" resides in
+    Handle a single TCP client connection.
+    QUIT ONLY closes this client, not the whole server.
     """
     try:
         while True:
@@ -113,23 +111,30 @@ def handle_client(conn: Connection):
             except ConnectionError:
                 break
 
+            if not data:
+                break
+
             cmd_type = data.get("cmd")
             target = data.get("target", "")
 
             if cmd_type == "RUN":
                 response = run_script(target)
+
             elif cmd_type == "KILL":
                 response = kill_script(target)
+
             elif cmd_type == "QUIT":
-                response = kill_all_scripts()
+                # Just stop THIS CLIENT, not the server
+                response = {"status": "ok", "message": "Client disconnected"}
                 conn.send_json(response)
-                return True
+                break    # <---- EXIT ONLY THIS CLIENT LOOP
+
             else:
                 response = {"status": "error", "message": "Invalid command"}
 
             conn.send_json(response)
+
     finally:
-        kill_all_scripts()
         conn.close()
 
 
