@@ -77,8 +77,8 @@ def change_params(params, key_values_pairs):
 #     }
 
 params = {
-        "material": "mw",
-        "device_number": "2-5",
+        "material": "mos2",
+        "device_number": "2-7",
         "measurement_type": "time",
         "measurement_index": "0",
         "laser_function": "wavelength",
@@ -113,7 +113,7 @@ work_flow_vg1 = [
     {
         "measurement_index": f"{i}",
         "laser_function": f"wavelength,{wavelength_arr[i]}",
-        "vg_value": get_vg_value(wavelength_arr[i], "-2")
+        "vg_value": get_vg_value(wavelength_arr[i], "-1")
     }
     for i in range(len(wavelength_arr))
 ]
@@ -131,7 +131,7 @@ work_flow_vg3 = [
     {
         "measurement_index": f"{i + 24*2}",
         "laser_function": f"wavelength,{wavelength_arr[i]}",
-        "vg_value": get_vg_value(wavelength_arr[i], "2")
+        "vg_value": get_vg_value(wavelength_arr[i], "1")
     }
     for i in range(len(wavelength_arr))
 ]
@@ -165,6 +165,7 @@ if __name__ == "__main__":
                 current_idx += 1 # only increment when finish current measurement
                 win_7_conn.send_json({"cmd": "KILL", "target": "laser_control.py"})
                 win_10_conn.send_json({"cmd": "KILL", "target": "iv_run.py"})
+                time.sleep(2)
         
     finally:
         # celebrate_animation()
