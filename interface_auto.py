@@ -65,21 +65,21 @@ def change_params(params, key_values_pairs):
     return params_copy
 
 params = {
-        "material": "mos2",
-        "device_number": "3-6",
-        "measurement_type": "time",
+        "material": "mw",
+        "device_number": "2-5",
+        "measurement_type": "idvg",
         "measurement_index": "0",
         "laser_function": "wavelength",
         "vg_value": "None",
-        "rest_time": "1",
+        "rest_time": "60",
         "dark_time1": "1",
         "dark_time2": "1",
     }
 
-# work_flow = [
-#     {'measurement_index': '0'},
-#     # {'measurement_type': 'time', 'laser_function': 'wavelength'}
-# ]
+work_flow = [
+    {'measurement_index': '0'},
+    # {'measurement_type': 'time', 'laser_function': 'wavelength'}
+]
 
 # steady state
 # work_flow = [
@@ -124,7 +124,7 @@ work_flow_vg3 = [
     for i in range(len(wavelength_arr))
 ]
 
-work_flow = work_flow_vg1 + work_flow_vg2 + work_flow_vg3
+# work_flow = work_flow_vg1 + work_flow_vg2 + work_flow_vg3
 
 
 if __name__ == "__main__":
