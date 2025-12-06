@@ -1,9 +1,9 @@
-# from LabAuto.network import Connection
-from LabAuto.network import ReconnectConnection
+from LabAuto.network import Connection
+# from LabAuto.network import ReconnectConnection
 import time
 
 def main():
-    conn = ReconnectConnection.connect("192.168.50.101", 5000)
+    conn = Connection.connect("192.168.50.101", 5000)
 
     menu = (
         "\n=== Command Menu ===\n"
