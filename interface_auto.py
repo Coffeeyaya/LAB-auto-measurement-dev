@@ -71,9 +71,9 @@ params = {
         "measurement_index": "0",
         "laser_function": "wavelength",
         "vg_value": "0",
-        "rest_time": "10",
-        "dark_time1": "10",
-        "dark_time2": "10",
+        "rest_time": "1",
+        "dark_time1": "1",
+        "dark_time2": "1",
     }
 
 # work_flow = [
