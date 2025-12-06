@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 laser_control.py
 
