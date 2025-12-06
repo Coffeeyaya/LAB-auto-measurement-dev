@@ -70,7 +70,7 @@ params = {
         "measurement_type": "time",
         "measurement_index": "0",
         "laser_function": "wavelength",
-        "vg_value": "0",
+        "vg_value": "None",
         "rest_time": "1",
         "dark_time1": "1",
         "dark_time2": "1",
@@ -82,18 +82,49 @@ params = {
 # ]
 
 # steady state
-work_flow = [
-    {"measurement_index": "0", "vg_value": "-2"},
-    {"measurement_index": "1", "vg_value": "0"},
-    {"measurement_index": "2", "vg_value": "2"}
-]
+# work_flow = [
+#     {"measurement_index": "0", "vg_value": "-2"},
+#     {"measurement_index": "1", "vg_value": "0"},
+#     {"measurement_index": "2", "vg_value": "2"}
+# ]
+
+def get_vg_value(wavelength, set_vg_value):
+    if int(wavelength) == 450:
+        return set_vg_value
+    else:
+        return "None"
 
 # transient
-wavelength_arr = np.linspace(450, 680, 24, dtype=int)
-wavelength_arr = wavelength_arr.astype(str)
-work_flow = [{"measurement_index": f"{i}", "laser_function": f"wavelength,{wavelength_arr[i]}"} for i in range(len(wavelength_arr))]
+wavelength_arr = np.linspace(450, 680, 24, dtype=int).astype(str)
 
+work_flow_vg1 = [
+    {
+        "measurement_index": f"{i}",
+        "laser_function": f"wavelength,{wavelength_arr[i]}",
+        "vg_value": get_vg_value(wavelength_arr[i], "-2")
+    }
+    for i in range(len(wavelength_arr))
+]
 
+work_flow_vg2 = [
+    {
+        "measurement_index": f"{i}",
+        "laser_function": f"wavelength,{wavelength_arr[i]}",
+        "vg_value": get_vg_value(wavelength_arr[i], "0")
+    }
+    for i in range(len(wavelength_arr))
+]
+
+work_flow_vg3 = [
+    {
+        "measurement_index": f"{i}",
+        "laser_function": f"wavelength,{wavelength_arr[i]}",
+        "vg_value": get_vg_value(wavelength_arr[i], "2")
+    }
+    for i in range(len(wavelength_arr))
+]
+
+work_flow = work_flow_vg1 + work_flow_vg2 + work_flow_vg3
 
 
 if __name__ == "__main__":
