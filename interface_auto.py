@@ -70,10 +70,10 @@ params = {
         "measurement_type": "time",
         "measurement_index": "0",
         "laser_function": "wavelength",
+        "vg_value": "0",
         "rest_time": "10",
         "dark_time1": "10",
         "dark_time2": "10",
-        "vg_value": "0"
     }
 
 # work_flow = [
@@ -81,14 +81,20 @@ params = {
 #     # {'measurement_type': 'time', 'laser_function': 'wavelength'}
 # ]
 
+# steady state
 work_flow = [
-    {"measurement_type": "set", "vg_value": "-2"},
-    {"measurement_type": "time", "measurement_index": "0"},
-    {"measurement_type": "set", 'vg_value': "0"},
-    {"measurement_type": "time", "measurement_index": "1", 'rest_time': "10"},
-    {"measurement_type": "set", 'vg_value': "2"},
-    {"measurement_type": "time", "measurement_index": "2", 'rest_time': "10"},
+    {"measurement_index": "0", "vg_value": "-2"},
+    {"measurement_index": "1", "vg_value": "0"},
+    {"measurement_index": "2", "vg_value": "2"}
 ]
+
+# transient
+wavelength_arr = np.linspace(450, 680, 24, dtype=int)
+wavelength_arr = wavelength_arr.astype(str)
+work_flow = [{"measurement_index": f"{i}", "laser_function": f"wavelength,{wavelength_arr[i]}"} for i in range(len(wavelength_arr))]
+
+
+
 
 if __name__ == "__main__":
     try:

@@ -101,7 +101,7 @@ def IDVD(mac_conn, laser_conn, material, device_number, measurement_index, vg_va
         time.sleep(rest_time)
     mac_conn.send_json({"cmd": "PROGRESS", "progress": "idvd finished"})
 
-def TIME(mac_conn, laser_conn, material, device_number, measurement_index, laser_function, rest_time=60, dark_time1=60, dark_time2=60):
+def TIME(mac_conn, laser_conn, material, device_number, measurement_index, laser_function, vg_value=None, rest_time=60, dark_time1=60, dark_time2=60):
     '''
     rest_time: time rested before measurement
     wait_time: start measurement ~ start illumination, stop illumination ~ end measurement
@@ -114,6 +114,9 @@ def TIME(mac_conn, laser_conn, material, device_number, measurement_index, laser
         mac_conn.send_json({"cmd": "PROGRESS", "progress": "change mode: time"})
         change_measurement_mode(time_path)
         time.sleep(3)
+    
+    if vg_value:
+        set_vg(vg_value)
 
     mac_conn.send_json({"cmd": "PROGRESS", "progress": f"wait {rest_time} s"})
     time.sleep(rest_time)
@@ -132,6 +135,7 @@ def TIME(mac_conn, laser_conn, material, device_number, measurement_index, laser
     # filename = filename_generator(material, device_number, measurement_type='time', condition=f'onoff-darkcurrent-{measurement_index}')
     # export_data(CSV_FOLDER, filename)
     # mac_conn.send_json({"cmd": "PROGRESS", "progress": "darkcurrent measurement finished"})
+
 def set_vg(vg_value):
     change_idvd_vg_level(vg_value)
     change_idvd_vg_level(vg_value)
@@ -159,6 +163,8 @@ def main():
     laser_function = params.get("laser_function", "1_on_off")
     try:
         vg_value = params.get("vg_value", "0")
+        if vg_value == "None":
+            vg_value = None
     except:
         vg_value = "0"
 
@@ -183,9 +189,9 @@ def main():
     elif measurement_type == 'idvd':
         IDVD(mac_conn, laser_conn, material, device_number, measurement_index, vg_values=['3', '4', '5'], rest_time=rest_time)
     elif measurement_type == 'time':
-        TIME(mac_conn, laser_conn, material, device_number, measurement_index, laser_function=laser_function, rest_time=rest_time, dark_time1=dark_time1, dark_time2=dark_time2)
-    elif measurement_type == 'set':
-        set_vg(vg_value)
+        TIME(mac_conn, laser_conn, material, device_number, measurement_index, laser_function=laser_function, vg_value=vg_value,
+              rest_time=rest_time, dark_time1=dark_time1, dark_time2=dark_time2)
+
     else:
         mac_conn.send_json({"cmd": "PROGRESS", "progress": "invalid measurement type"})
 

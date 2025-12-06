@@ -50,7 +50,7 @@ def time_dependent_power(conn, grid, channel, power_values, on_time=10, off_time
     laser_state = "DONE"
     conn.send("DONE")
 
-def single_on_off(conn, grid, channel, power, on_time=10, off_time=30):
+def single_on_off(conn, grid, channel, power, on_time=3, off_time=3):
     global laser_state
     laser_state = "1_on_off"
     conn.send("1_on_off")
@@ -138,12 +138,21 @@ try:
             channel = 6
             power = "17"
             multi_on_off(conn, grid, channel, power, on_time=1, off_time=1, peaks_num=3)
+        elif "wavelength," in cmd:
+            wavelength = cmd.split(',')[-1]
+            idx = wavelength_arr.index(wavelength)
+            power = power_percentage_arr[idx]
+            channel = channel_arr[idx]
+            single_on_off(conn, grid, channel, power, on_time=3, off_time=3)
+
         elif cmd == "wavelength" and laser_state != "wavelength":
             time_dependent_wavelength(conn, grid, channel_arr, wavelength_arr, power_percentage_arr, on_time=1, off_time=10)
-        elif cmd == "power" and laser_state != "power":
-            channel = 6
-            power_values = ["30.5", "22.5", "16.8", "12.5", "9.3", "6.8", "5.3"] ### adjust this based on power measured
-            time_dependent_power(conn, grid, channel, power_values, on_time=1, off_time=1)
+        
+            time_dependent_wavelength(conn, grid, channel_arr, wavelength_arr, power_percentage_arr, on_time=1, off_time=10)
+        # elif cmd == "power" and laser_state != "power":
+        #     channel = 6
+        #     power_values = ["30.5", "22.5", "16.8", "12.5", "9.3", "6.8", "5.3"] ### adjust this based on power measured
+        #     time_dependent_power(conn, grid, channel, power_values, on_time=1, off_time=1)
         # elif cmd == "test" and laser_state != "test":
         #     channel = 6
         #     wavelength_power_arr = [("450", "115"), ("488", "77"), ("514", "34.4"), ("532", "33"),
