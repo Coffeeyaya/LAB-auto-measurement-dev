@@ -166,9 +166,10 @@ def run_server_threading(host, port, csv_handler=None):
                 csv_handler(conn)
             else:
                 should_quit = handle_client(conn)
+
+                # DO NOT STOP THE SERVER
                 if should_quit:
-                    print("[SERVER] QUIT received — shutting down server.")
-                    os._exit(0)   # Hard shutdown for safety; change if needed.
+                    print("[SERVER] QUIT requested by client — closing only this thread.")
 
         except ConnectionError:
             print(f"[SERVER] Client {addr} disconnected.")
