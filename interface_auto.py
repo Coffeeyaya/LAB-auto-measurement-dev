@@ -9,8 +9,8 @@ WIN_7_SERVER_IP = "192.168.50.17"
 WIN_7_PORT = 5000
 # WIN_7_PORT = 5001
 WIN_10_SERVER_IP = "192.168.50.101"
-WIN_10_PORT = 5000 # if on mac
-# WIN_10_PORT = 7000 # if on win10
+# WIN_10_PORT = 5000 # if on mac
+WIN_10_PORT = 7000 # if on win10
 WIN_10_PORT_IV_RUN = 6000
 
 def celebrate_animation():
