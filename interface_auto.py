@@ -75,18 +75,6 @@ params = {
         "dark_time1": "1",
         "dark_time2": "1",
     }
-    
-# params = {
-#         "material": "mw",
-#         "device_number": "2-5",
-#         "measurement_type": "idvg",
-#         "measurement_index": "0",
-#         "laser_function": "wavelength",
-#         "vg_value": "None",
-#         "rest_time": "60",
-#         "dark_time1": "1",
-#         "dark_time2": "1",
-    # }
 
 params = {
         "material": "mw",
@@ -155,8 +143,8 @@ if __name__ == "__main__":
     # try:
     win_7_conn = Connection.connect(WIN_7_SERVER_IP, WIN_7_PORT)
     win_10_conn = Connection.connect(WIN_10_SERVER_IP, WIN_10_PORT)
-    win_7_conn.send_json({"cmd": "KILL", "target": "laser_control.py"})
-    win_10_conn.send_json({"cmd": "KILL", "target": "iv_run.py"})
+    # win_7_conn.send_json({"cmd": "KILL", "target": "laser_control.py"})
+    # win_10_conn.send_json({"cmd": "KILL", "target": "iv_run.py"})
     
     num_of_params = len(work_flow)
     current_idx = 0
