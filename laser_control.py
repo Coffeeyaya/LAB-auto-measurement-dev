@@ -162,5 +162,5 @@ try:
         #     time_dependent_wavelength(conn, grid, channel, wavelength_power_arr, on_time=1, off_time=3)    
     conn.close()
 finally:
-    # server_socket.close()
-    print('finish')
+    server_socket.close()
+    # print('finish')
