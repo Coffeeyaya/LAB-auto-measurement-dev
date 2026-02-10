@@ -17,3 +17,5 @@ keithley = rm.open_resource('GPIB0::26::INSTR')
 
 # Reset and Configure SMU A (DRAIN)
 keithley.write("smua.reset()")
+# Reset and Configure SMU B (gate)
+keithley.write("smub.reset()")
