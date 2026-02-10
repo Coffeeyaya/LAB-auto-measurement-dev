@@ -1,66 +1,65 @@
 import pyvisa
 import time
 
-# --- CONFIGURATION ---
-DRAIN_VOLTAGE = 1.0     # Volts
-GATE_HIGH = 1.0         # Volts
-GATE_LOW = -1.0         # Volts
-CYCLES = 3              # How many loops to run
-READINGS_PER_STEP = 5   # How many data points to print per voltage level
-
-# --- CONNECT ---
+# --- SETUP INSTRUMENT ---
 rm = pyvisa.ResourceManager()
-# Double check your address (GPIB0::26::INSTR or USB0::...)
-keithley = rm.open_resource('GPIB0::26::INSTR')
+# Double check your address
+keithley = rm.open_resource('GPIB0::26::INSTR') 
 
-print(f"Connected to: {keithley.query('*IDN?').strip()}")
+# === FIX 1: Set Timeout to 10 seconds (default is 2s, which is often too short) ===
+keithley.timeout = 10000 
+
+# === FIX 2: Define Termination Characters ===
+# This tells Python: "Stop listening when you see a new line (\n)"
+keithley.read_termination = '\n'
+keithley.write_termination = '\n'
 
 try:
-    # 1. SETUP
-    # Set data format to ASCII so it is readable
+    # === FIX 3: Force Abort & Clear ===
+    print("Resetting instrument state...")
+    keithley.write("abort")  # Stop any defined scripts running in the background
+    keithley.write("*CLS")   # Clear the error queue history
+    
+    # Check connection
+    idn = keithley.query("*IDN?")
+    print(f"Connected successfully to: {idn.strip()}")
+
+    # Check for hidden errors from previous attempts
+    # The 2600B stores errors in an internal queue. Let's read it.
+    error_count = int(float(keithley.query("print(errorqueue.count)")))
+    if error_count > 0:
+        print(f"WARNING: Found {error_count} old errors in the buffer:")
+        for _ in range(error_count):
+            err = keithley.query("print(errorqueue.next())")
+            print(f"  -> {err.strip()}")
+        keithley.write("errorqueue.clear()")
+    else:
+        print("No previous errors found.")
+
+    # --- RUN THE TEST ---
+    print("\nStarting simple measurement loop...")
+    
+    # Configure format
     keithley.write("format.data = format.ASCII")
-    
-    # Configure Drain (SMUA)
     keithley.write("smua.reset()")
-    keithley.write("smua.source.func = smua.OUTPUT_DCVOLTS")
     keithley.write("smua.source.output = smua.OUTPUT_ON")
-    keithley.write(f"smua.source.levelv = {DRAIN_VOLTAGE}")
-
-    # Configure Gate (SMUB)
-    keithley.write("smub.reset()")
-    keithley.write("smub.source.func = smua.OUTPUT_DCVOLTS")
-    keithley.write("smub.source.output = smua.OUTPUT_ON")
+    keithley.write("smua.source.levelv = 1.0")
     
-    print("\n--- STARTING MEASUREMENT ---")
-    print("Format: [Drain Current (A), Gate Current (A)]")
+    # Take 5 readings
+    for i in range(5):
+        # We query ONE thing at a time to be safe
+        current_str = keithley.query("print(smua.measure.i())")
+        print(f"Reading {i+1}: {current_str.strip()} A")
+        time.sleep(0.5)
 
-    for i in range(CYCLES):
-        
-        # --- STEP 1: GATE HIGH ---
-        print(f"\n[Cycle {i+1}] Setting Gate to {GATE_HIGH} V")
-        keithley.write(f"smub.source.levelv = {GATE_HIGH}")
-        time.sleep(0.1) # Stabilization time
-        
-        for _ in range(READINGS_PER_STEP):
-            # Query both currents
-            # The 'print' command sends the string back to Python
-            response = keithley.query("print(smua.measure.i(), smub.measure.i())")
-            print(f"  High: {response.strip()}")
-            time.sleep(0.2)
+    print("\nSuccess! Communication is fixed.")
 
-        # --- STEP 2: GATE LOW ---
-        print(f"\n[Cycle {i+1}] Setting Gate to {GATE_LOW} V")
-        keithley.write(f"smub.source.levelv = {GATE_LOW}")
-        time.sleep(0.1) # Stabilization time
-        
-        for _ in range(READINGS_PER_STEP):
-            response = keithley.query("print(smua.measure.i(), smub.measure.i())")
-            print(f"  Low : {response.strip()}")
-            time.sleep(0.2)
+except pyvisa.VisaIOError as e:
+    print("\nCRITICAL ERROR: Still timing out.")
+    print("1. Check if the 'REM' (Remote) light is on.")
+    print("2. Try turning the Keithley OFF and ON again.")
+    print(f"Details: {e}")
 
 finally:
-    # --- SAFETY SHUTDOWN ---
-    print("\nTest finished. Turning outputs OFF.")
     keithley.write("smua.source.output = smua.OUTPUT_OFF")
-    keithley.write("smub.source.output = smub.OUTPUT_OFF")
     keithley.close()
