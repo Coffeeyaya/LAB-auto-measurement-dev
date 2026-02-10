@@ -1,21 +1,20 @@
 import pyvisa
-import time
 
-# Connect to the instrument
 rm = pyvisa.ResourceManager()
-k = rm.open_resource("GPIB0::26::INSTR")  # adjust to your address
+k = rm.open_resource("GPIB0::26::INSTR")
 k.write_termination = "\n"
 k.read_termination = "\n"
 
-# Step 1: Hard reset the TSP engine
-k.write("abort")    # stop any running commands or scripts
-time.sleep(0.2)     # short delay to ensure abort completes
+# Step 2a: Verify basic TSP commands work
+print("1+1 =", k.query("print(1+1)"))  # Should output 2
 
-k.write("reset()")  # reset the SMU and TSP engine
-time.sleep(5)       # wait ~5 seconds for the instrument to fully reset
+# Step 2b: Check what scripts exist currently
+scripts = k.query("print(script.list())")
+print("Existing scripts:", scripts)
 
-# Optional: check basic functionality
-print(k.query("print(1+1)"))  # should return 2
+# Optional: delete all scripts for a completely clean slate
+k.write("script.delete(script.list())")
+scripts_after_delete = k.query("print(script.list())")
+print("Scripts after delete:", scripts_after_delete)
 
-# Close connection if done
 k.close()
