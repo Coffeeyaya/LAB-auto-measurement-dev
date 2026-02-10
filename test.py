@@ -1,7 +1,7 @@
 import pyvisa
 
 rm = pyvisa.ResourceManager()
-keithley = rm.open_resource('YOUR_VISA_ADDRESS_HERE')
+keithley = rm.open_resource('GPIB0::26::INSTR')
 
 # The TSP commands written in Lua
 tsp_commands = [
