@@ -5,71 +5,80 @@ import os
 
 # --- CONFIGURATION ---
 FILENAME = "live_measurements.csv"
-DRAIN_VOLTAGE = 1.0     # Volts
-GATE_HIGH = 1.0         # Volts
-GATE_LOW = -1.0         # Volts
-PULSE_WIDTH = 1.0       # Exact duration (Seconds)
-TOTAL_CYCLES = 5        # Number of loops
+DRAIN_VOLTAGE = 1.0
+GATE_HIGH = 1.0
+GATE_LOW = -1.0
+PULSE_WIDTH = 1.0
+TOTAL_CYCLES = 5
 
 # --- SETUP INSTRUMENT ---
 rm = pyvisa.ResourceManager()
-keithley = rm.open_resource('GPIB0::26::INSTR') 
+keithley = rm.open_resource('GPIB0::26::INSTR')
 
-# Stability Settings
-keithley.timeout = 10000 
+keithley.timeout = 10000
 keithley.read_termination = '\n'
 keithley.write_termination = '\n'
 
-print(f"--- STARTING RECORDER ---")
+print("--- STARTING RECORDER ---")
 print(f"Data file: {FILENAME}")
-print("You can now run 'plot.py' in a separate terminal.")
 
 try:
-    # 1. Initialize Hardware
+    # --- INITIALIZE ---
     keithley.write("abort")
     keithley.write("errorqueue.clear()")
     keithley.write("format.data = format.ASCII")
-    keithley.write("smua.reset(); smua.source.output = smua.OUTPUT_ON")
-    keithley.write("smub.reset(); smub.source.output = smua.OUTPUT_ON")
-    keithley.write(f"smua.source.levelv = {DRAIN_VOLTAGE}")
 
-    # 2. Open File
-    # 'w' mode overwrites the file each time you run the script
+    keithley.write("""
+        smua.reset()
+        smub.reset()
+
+        smua.source.func = smua.OUTPUT_DCVOLTS
+        smub.source.func = smub.OUTPUT_DCVOLTS
+
+        smua.source.limiti = 0.01
+        smub.source.limiti = 0.001
+
+        smua.measure.nplc = 0.01
+        smub.measure.nplc = 0.01
+
+        smua.source.levelv = {0}
+        smua.source.output = smua.OUTPUT_ON
+        smub.source.output = smub.OUTPUT_ON
+    """.format(DRAIN_VOLTAGE))
+
+    # --- OPEN CSV FILE ---
     with open(FILENAME, 'w', newline='') as f:
         writer = csv.writer(f)
-        writer.writerow(["Time", "V_Gate", "I_Drain", "I_Gate"])
-        f.flush() # Ensure header is written physically to disk
+        writer.writerow(["Time_s", "V_Gate_V", "I_Drain_A", "I_Gate_A"])
+        f.flush()
+        os.fsync(f.fileno())
 
         start_exp = time.time()
 
         for cycle in range(TOTAL_CYCLES):
-            for v_gate in [GATE_HIGH, GATE_LOW]:
-                
-                # --- CRITICAL TIMING SECTION ---
+            for v_gate in (GATE_HIGH, GATE_LOW):
+
                 keithley.write(f"smub.source.levelv = {v_gate}")
                 step_start = time.time()
+
                 print(f"Cycle {cycle+1}: Gate -> {v_gate} V")
-                
-                # Stay in this loop for exactly PULSE_WIDTH seconds
+
                 while (time.time() - step_start) < PULSE_WIDTH:
                     try:
-                        # Measure
-                        raw = keithley.query("print(smua.measure.i(), smub.measure.i())")
-                        vals = raw.strip().split()
-                        
-                        # Timestamp
+                        raw = keithley.query(
+                            "print(smua.measure.i(), smub.measure.i())"
+                        )
+                        i_drain, i_gate = map(float, raw.strip().split())
+
                         t_now = time.time() - start_exp
-                        
-                        # Save
-                        writer.writerow([t_now, v_gate, vals[0], vals[1]])
-                        
-                        # CRITICAL: Flush buffer so plot.py can see data immediately
-                        f.flush() 
-                        os.fsync(f.fileno()) 
-                        
-                    except ValueError:
+
+                        writer.writerow([t_now, v_gate, i_drain, i_gate])
+                        f.flush()
+                        os.fsync(f.fileno())
+
+                    except (ValueError, pyvisa.errors.VisaIOError):
                         pass
-                        
+
 finally:
     print("Recording finished. Turning outputs OFF.")
     keithley.write("smua.source.output = smua.OUTPUT_OFF")
