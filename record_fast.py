@@ -15,35 +15,31 @@ TOTAL_CYCLES = 5
 rm = pyvisa.ResourceManager()
 keithley = rm.open_resource('GPIB0::26::INSTR') 
 
-# 1. Connection Speed Settings
+# Stability Settings
 keithley.timeout = 10000 
 keithley.read_termination = '\n'
 keithley.write_termination = '\n'
 
-print("--- STARTING HIGH-SPEED RECORDER ---")
+print("--- STARTING DUAL-DISPLAY RECORDER ---")
 
 try:
-    # 2. SPEED OPTIMIZATION (The "Turbo" Button)
+    # 1. INITIALIZATION
     keithley.write("abort")
     keithley.write("errorqueue.clear()")
     
-    # Set NPLC to 0.01 (Fastest measurement)
-    # Default is 1.0. This makes it 100x faster.
-    keithley.write("smua.measure.nplc = 0.01")
-    keithley.write("smub.measure.nplc = 0.01")
+    # --- COMMAND 1: Set Display to Dual Mode (Split Screen) ---
+    # SMUA_SMUB means: Top half = SMU A, Bottom half = SMU B
+    keithley.write("display.screen = display.SMUA_SMUB") 
     
-    # Turn off Auto-Zero (Doubles speed)
-    keithley.write("smua.measure.autozero = smua.AUTOZERO_OFF")
-    keithley.write("smub.measure.autozero = smua.AUTOZERO_OFF")
+    # --- COMMAND 2: Enable Auto-Range (Measurement) ---
+    # This allows the instrument to switch ranges automatically (e.g., mA -> uA -> nA)
+    # consistent with the signal level.
+    keithley.write("smua.measure.autorangei = smua.AUTORANGE_ON")
+    keithley.write("smub.measure.autorangei = smua.AUTORANGE_ON")
     
-    # Turn off Auto-Range (Prevents delays from range switching)
-    # We lock it to the 2V range (assuming your signals are < 2V)
-    keithley.write("smua.source.rangev = 2")
-    keithley.write("smua.measure.rangei = 1e-3") # Set this to expected current range!
-    keithley.write("smub.source.rangev = 2")
-    
-    # Turn off Display (Saves CPU time on instrument)
-    keithley.write("display.screen = display.OFF")
+    # (Optional) Enable Source Auto-Range if you want the source to adapt too
+    keithley.write("smua.source.autorangev = smua.AUTORANGE_ON")
+    keithley.write("smub.source.autorangev = smua.AUTORANGE_ON")
 
     # Standard Setup
     keithley.write("format.data = format.ASCII")
@@ -55,7 +51,7 @@ try:
     keithley.write("smub.source.output = smua.OUTPUT_ON")
     keithley.write(f"smub.source.levelv = {GATE_HIGH}")
 
-    # 3. RECORDING LOOP
+    # 2. RECORDING LOOP
     with open(FILENAME, 'w', newline='') as f:
         writer = csv.writer(f)
         writer.writerow(["Time", "V_Gate", "I_Drain", "I_Gate"])
@@ -70,7 +66,7 @@ try:
                 step_start = time.time()
                 print(f"Cycle {cycle+1}: Gate {v_gate}V")
                 
-                # Fast Loop
+                # Loop for precise duration
                 while (time.time() - step_start) < PULSE_WIDTH:
                     try:
                         # Query Data
@@ -81,9 +77,6 @@ try:
                         
                         # Save
                         writer.writerow([t_now, v_gate, vals[0], vals[1]])
-                        
-                        # OPTIMIZED FLUSH: Only flush, don't force disk sync
-                        # This is much faster than os.fsync()
                         f.flush() 
                         
                     except ValueError:
@@ -93,5 +86,4 @@ finally:
     print("Finished. Turning outputs OFF.")
     keithley.write("smua.source.output = smua.OUTPUT_OFF")
     keithley.write("smub.source.output = smub.OUTPUT_OFF")
-    keithley.write("display.screen = display.ON") # Turn screen back on!
     keithley.close()
