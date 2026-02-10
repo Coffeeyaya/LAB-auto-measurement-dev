@@ -51,7 +51,7 @@ try:
         writer = csv.writer(f)
         writer.writerow(["Time_s", "V_Gate_V", "I_Drain_A", "I_Gate_A"])
         f.flush()
-        os.fsync(f.fileno())
+        # os.fsync(f.fileno())
 
         start_exp = time.time()
 
@@ -80,7 +80,12 @@ try:
                         pass
 
 finally:
-    print("Recording finished. Turning outputs OFF.")
+    print("Recording finished. Ramping sources to 0 V.")
+
+    keithley.write("smua.source.levelv = 0")
+    keithley.write("smub.source.levelv = 0")
+    time.sleep(0.2)  # allow settling
+
     keithley.write("smua.source.output = smua.OUTPUT_OFF")
     keithley.write("smub.source.output = smub.OUTPUT_OFF")
     keithley.close()
