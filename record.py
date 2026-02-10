@@ -1,6 +1,7 @@
 import pyvisa
 import csv
 import time
+import textwrap
 
 # ---------- CONFIG ----------
 FILENAME = "buffered_measurements.csv"
@@ -23,58 +24,56 @@ k.write_termination = "\n"
 try:
     print("Initializing instrument...")
 
-    tsp = f"""
-    abort
-    errorqueue.clear()
+    tsp = textwrap.dedent(f"""
+abort
+errorqueue.clear()
 
-    smua.reset()
-    smub.reset()
+smua.reset()
+smub.reset()
 
-    smua.source.func = smua.OUTPUT_DCVOLTS
-    smub.source.func = smub.OUTPUT_DCVOLTS
+smua.source.func = smua.OUTPUT_DCVOLTS
+smub.source.func = smub.OUTPUT_DCVOLTS
 
-    smua.source.limiti = 0.01
-    smub.source.limiti = 0.001
+smua.source.limiti = 0.01
+smub.source.limiti = 0.001
 
-    smua.measure.nplc = 0.01
-    smub.measure.nplc = 0.01
+smua.measure.nplc = 0.01
+smub.measure.nplc = 0.01
 
-    smua.source.levelv = {DRAIN_VOLTAGE}
-    smua.source.output = smua.OUTPUT_ON
-    smub.source.output = smub.OUTPUT_ON
+smua.source.levelv = {DRAIN_VOLTAGE}
+smua.source.output = smua.OUTPUT_ON
+smub.source.output = smub.OUTPUT_ON
 
-    smua.nvbuffer1.clear()
-    smub.nvbuffer1.clear()
-    smua.nvbuffer2.clear()    -- time buffer
+smua.nvbuffer1.clear()
+smub.nvbuffer1.clear()
 
-    dt_s = {DT}
-    npts = math.floor({PULSE_WIDTH} / dt_s)
+smua.nvbuffer1.timestamps = 1
+smub.nvbuffer1.timestamps = 1
 
-    t0 = timer.s()
+dt_s = {DT}
+npts = math.floor({PULSE_WIDTH} / dt_s)
 
-    for c = 1, {TOTAL_CYCLES} do
+for c = 1, {TOTAL_CYCLES} do
 
-        smub.source.levelv = {GATE_HIGH}
-        for i = 1, npts do
-            smua.measure.i(smua.nvbuffer1)
-            smub.measure.i(smub.nvbuffer1)
-            smua.nvbuffer2.append(timer.s() - t0)
-            delay(dt_s)
-        end
-
-        smub.source.levelv = {GATE_LOW}
-        for i = 1, npts do
-            smua.measure.i(smua.nvbuffer1)
-            smub.measure.i(smub.nvbuffer1)
-            smua.nvbuffer2.append(timer.s() - t0)
-            delay(dt_s)
-        end
-
+    smub.source.levelv = {GATE_HIGH}
+    for i = 1, npts do
+        smua.measure.i(smua.nvbuffer1)
+        smub.measure.i(smub.nvbuffer1)
+        delay(dt_s)
     end
 
-    smua.source.levelv = 0
-    smub.source.levelv = 0
-    """
+    smub.source.levelv = {GATE_LOW}
+    for i = 1, npts do
+        smua.measure.i(smua.nvbuffer1)
+        smub.measure.i(smub.nvbuffer1)
+        delay(dt_s)
+    end
+
+end
+
+smua.source.levelv = 0
+smub.source.levelv = 0
+""")
 
     k.write(tsp)
 
@@ -84,9 +83,17 @@ try:
 
     print("Downloading buffers...")
 
-    t = k.query("printbuffer(1, smua.nvbuffer2.n, smua.nvbuffer2)").split(',')
-    idrain = k.query("printbuffer(1, smua.nvbuffer1.n, smua.nvbuffer1.readings)").split(',')
-    igate = k.query("printbuffer(1, smub.nvbuffer1.n, smub.nvbuffer1.readings)").split(',')
+    t = k.query(
+        "printbuffer(1, smua.nvbuffer1.n, smua.nvbuffer1.timestamps)"
+    ).split(',')
+
+    idrain = k.query(
+        "printbuffer(1, smua.nvbuffer1.n, smua.nvbuffer1.readings)"
+    ).split(',')
+
+    igate = k.query(
+        "printbuffer(1, smub.nvbuffer1.n, smub.nvbuffer1.readings)"
+    ).split(',')
 
     with open(FILENAME, "w", newline="") as f:
         writer = csv.writer(f)
