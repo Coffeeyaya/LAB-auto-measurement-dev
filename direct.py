@@ -4,7 +4,7 @@ import csv
 import numpy as np
 
 # --- CONFIGURATION ---
-FILENAME = "direct_pulse_data.csv"
+FILENAME = "final_pulse_data.csv"
 DRAIN_V = 1.0       # Volts
 GATE_V = 1.0        # Volts
 PULSE_WIDTH = 1.0   # Seconds
@@ -17,25 +17,22 @@ keithley.timeout = TIMEOUT
 keithley.write_termination = '\n'
 keithley.read_termination = '\n'
 
-print("--- STARTING DIRECT CONTROL TEST ---")
+print("--- STARTING ONE-LINER TEST ---")
 
 try:
-    # 1. NUCLEAR RESET (Clear everything)
-    # We send these one by one to make sure the instrument is listening
+    # 1. SETUP (Send simple commands line-by-line)
+    # We set up the buffers and source settings first.
+    print("Configuring instrument...")
     keithley.write("abort")
-    keithley.write("*rst")
+    keithley.write("*rst") 
     keithley.write("errorqueue.clear()")
-    keithley.write("smua.reset()")
-    keithley.write("smub.reset()")
-    time.sleep(1.0) # Wait for reset to finish
+    time.sleep(0.5)
 
-    # 2. SETUP (Send commands line-by-line)
-    # This avoids "Syntax Error at line 1" because we aren't sending a block.
-    cmds = [
-        "format.data = format.ASCII",
+    setup_cmds = [
         "display.screen = display.SMUA_SMUB",
+        "format.data = format.ASCII",
         
-        # Setup SMU A (Drain)
+        # SMU A (Drain) Setup
         "smua.source.func = smua.OUTPUT_DCVOLTS",
         f"smua.source.levelv = {DRAIN_V}",
         "smua.source.output = smua.OUTPUT_ON",
@@ -44,7 +41,7 @@ try:
         "smua.nvbuffer1.clear()",
         "smua.nvbuffer1.appendmode = 1",
         
-        # Setup SMU B (Gate)
+        # SMU B (Gate) Setup
         "smub.source.func = smua.OUTPUT_DCVOLTS",
         f"smub.source.levelv = {GATE_V}",
         "smub.source.output = smua.OUTPUT_ON",
@@ -54,52 +51,49 @@ try:
         "smub.nvbuffer1.appendmode = 1"
     ]
 
-    print("Configuring instrument...")
-    for cmd in cmds:
+    for cmd in setup_cmds:
         keithley.write(cmd)
+        time.sleep(0.01) # Tiny safety delay
 
-    # 3. RUN THE LOOP (The Magic Part)
-    # We send the loop as a SINGLE, CLEAN STRING to avoid timing issues.
-    print(f"Executing {PULSE_WIDTH}s pulse...")
+    # 2. THE ONE-LINER (The Fix)
+    # We condense the entire 'while' loop into a single string.
+    # Lua allows this as long as we separate commands with spaces.
+    # There are NO newlines here, so the Keithley sees it as one command.
+    print(f"Sending {PULSE_WIDTH}s pulse...")
     
-    loop_code = f"""
-    timer.reset()
-    start_t = timer.measure.t()
-    while (timer.measure.t() - start_t) < {PULSE_WIDTH} do
-        smua.measure.i(smua.nvbuffer1)
-        smub.measure.i(smub.nvbuffer1)
-    end
-    print("DONE")
-    """
+    one_liner = (
+        f"timer.reset() "
+        f"start_t = timer.measure.t() "
+        f"while (timer.measure.t() - start_t) < {PULSE_WIDTH} do "
+        f"smua.measure.i(smua.nvbuffer1) "
+        f"smub.measure.i(smub.nvbuffer1) "
+        f"end "
+        f"print('DONE')"
+    )
     
-    # Send the loop code
-    keithley.write(loop_code)
+    # Send it!
+    keithley.write(one_liner)
 
-    # 4. WAIT FOR "DONE"
-    # We read continuously until we see "DONE". This ensures we stay in sync.
+    # 3. WAIT & SYNC
+    # Read until we see "DONE"
     response = keithley.read()
     if "DONE" not in response:
-        print(f"Warning: Unexpected response '{response}'")
+        print(f"Warning: Expected 'DONE', got '{response}'")
 
-    # 5. DOWNLOAD DATA
+    # 4. DOWNLOAD DATA
     print("Downloading data...")
-    
-    # Get Drain Data
     keithley.write("printbuffer(1, smua.nvbuffer1.n, smua.nvbuffer1)")
     raw_id = keithley.read()
     
-    # Get Gate Data
     keithley.write("printbuffer(1, smub.nvbuffer1.n, smub.nvbuffer1)")
     raw_ig = keithley.read()
 
-    # 6. SAVE TO CSV
+    # 5. SAVE
     data_id = np.fromstring(raw_id, sep=',')
     data_ig = np.fromstring(raw_ig, sep=',')
     num_pts = len(data_id)
-    
     print(f"Captured {num_pts} points.")
     
-    # Create Time Axis
     times = np.linspace(0, PULSE_WIDTH, num_pts)
     
     with open(FILENAME, 'w', newline='') as f:
@@ -111,19 +105,12 @@ try:
     print(f"SUCCESS! Saved to {FILENAME}")
 
 except Exception as e:
-    print(f"\nCRITICAL ERROR: {e}")
-    # Force read error queue to see what happened
-    try:
-        print("Last Instrument Error:", keithley.query("print(errorqueue.next())"))
-    except:
-        pass
+    print(f"\nERROR: {e}")
+    try: print("Instrument Error:", keithley.query("print(errorqueue.next())"))
+    except: pass
 
 finally:
-    # 7. SAFETY SHUTDOWN
-    print("Shutting down...")
-    try:
-        keithley.write("smua.source.output = 0")
-        keithley.write("smub.source.output = 0")
-    except:
-        pass
+    print("Resetting to 0V...")
+    keithley.write("smua.source.output = 0")
+    keithley.write("smub.source.output = 0")
     keithley.close()
