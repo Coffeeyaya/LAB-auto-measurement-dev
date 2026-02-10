@@ -1,91 +1,99 @@
 import pyvisa
-import time
 import csv
-import os
+import time
 
-# --- CONFIGURATION ---
-FILENAME = "live_measurements.csv"
+# ---------- CONFIG ----------
+FILENAME = "buffered_measurements.csv"
+
 DRAIN_VOLTAGE = 1.0
 GATE_HIGH = 1.0
 GATE_LOW = -1.0
+
+DT = 0.01            # sampling interval (s)
 PULSE_WIDTH = 1.0
 TOTAL_CYCLES = 5
 
-# --- SETUP INSTRUMENT ---
+# ---------- VISA ----------
 rm = pyvisa.ResourceManager()
-keithley = rm.open_resource('GPIB0::26::INSTR')
-
-keithley.timeout = 10000
-keithley.read_termination = '\n'
-keithley.write_termination = '\n'
-
-print("--- STARTING RECORDER ---")
-print(f"Data file: {FILENAME}")
+k = rm.open_resource("GPIB0::26::INSTR")
+k.timeout = 20000
+k.read_termination = "\n"
+k.write_termination = "\n"
 
 try:
-    # --- INITIALIZE ---
-    keithley.write("abort")
-    keithley.write("errorqueue.clear()")
-    keithley.write("format.data = format.ASCII")
+    print("Initializing instrument...")
 
-    keithley.write("""
-        smua.reset()
-        smub.reset()
+    # ---------- TSP PROGRAM ----------
+    tsp = f"""
+    abort
+    errorqueue.clear()
 
-        smua.source.func = smua.OUTPUT_DCVOLTS
-        smub.source.func = smub.OUTPUT_DCVOLTS
+    smua.reset()
+    smub.reset()
 
-        smua.source.limiti = 0.01
-        smub.source.limiti = 0.001
+    smua.source.func = smua.OUTPUT_DCVOLTS
+    smub.source.func = smub.OUTPUT_DCVOLTS
 
-        smua.measure.nplc = 0.01
-        smub.measure.nplc = 0.01
+    smua.source.limiti = 0.01
+    smub.source.limiti = 0.001
 
-        smua.source.levelv = {0}
-        smua.source.output = smua.OUTPUT_ON
-        smub.source.output = smub.OUTPUT_ON
-    """.format(DRAIN_VOLTAGE))
+    smua.measure.nplc = 0.01
+    smub.measure.nplc = 0.01
 
-    # --- OPEN CSV FILE ---
-    with open(FILENAME, 'w', newline='') as f:
+    smua.source.levelv = {DRAIN_VOLTAGE}
+    smua.source.output = smua.OUTPUT_ON
+    smub.source.output = smub.OUTPUT_ON
+
+    smua.nvbuffer1.clear()
+    smub.nvbuffer1.clear()
+    timebuffer.clear()
+
+    dt = {DT}
+    np = math.floor({PULSE_WIDTH} / dt)
+
+    t0 = timer.s()
+
+    for c = 1, {TOTAL_CYCLES} do
+        for _, vg in ipairs({{{GATE_HIGH}, {GATE_LOW}}}) do
+            smub.source.levelv = vg
+
+            for i = 1, np do
+                smua.measure.i(smua.nvbuffer1)
+                smub.measure.i(smub.nvbuffer1)
+                timebuffer.append(timer.s() - t0)
+                delay(dt)
+            end
+        end
+    end
+
+    smua.source.levelv = 0
+    smub.source.levelv = 0
+    """
+
+    k.write(tsp)
+
+    print("Running buffered measurement...")
+    time.sleep(TOTAL_CYCLES * 2 * PULSE_WIDTH + 1)
+
+    # ---------- READ BACK ----------
+    print("Downloading data...")
+
+    t = k.query("printbuffer(1, timebuffer.n, timebuffer)").split(',')
+    idrain = k.query("printbuffer(1, smua.nvbuffer1.n, smua.nvbuffer1.readings)").split(',')
+    igate = k.query("printbuffer(1, smub.nvbuffer1.n, smub.nvbuffer1.readings)").split(',')
+
+    # ---------- SAVE CSV ----------
+    with open(FILENAME, "w", newline="") as f:
         writer = csv.writer(f)
-        writer.writerow(["Time_s", "V_Gate_V", "I_Drain_A", "I_Gate_A"])
-        f.flush()
-        # os.fsync(f.fileno())
+        writer.writerow(["Time_s", "I_Drain_A", "I_Gate_A"])
 
-        start_exp = time.time()
+        for row in zip(t, idrain, igate):
+            writer.writerow(row)
 
-        for cycle in range(TOTAL_CYCLES):
-            for v_gate in (GATE_HIGH, GATE_LOW):
-
-                keithley.write(f"smub.source.levelv = {v_gate}")
-                step_start = time.time()
-
-                print(f"Cycle {cycle+1}: Gate -> {v_gate} V")
-
-                while (time.time() - step_start) < PULSE_WIDTH:
-                    try:
-                        raw = keithley.query(
-                            "print(smua.measure.i(), smub.measure.i())"
-                        )
-                        i_drain, i_gate = map(float, raw.strip().split())
-
-                        t_now = time.time() - start_exp
-
-                        writer.writerow([t_now, v_gate, i_drain, i_gate])
-                        f.flush()
-                        os.fsync(f.fileno())
-
-                    except (ValueError, pyvisa.errors.VisaIOError):
-                        pass
+    print(f"Saved {len(t)} points to {FILENAME}")
 
 finally:
-    print("Recording finished. Ramping sources to 0 V.")
-
-    keithley.write("smua.source.levelv = 0")
-    keithley.write("smub.source.levelv = 0")
-    time.sleep(0.2)  # allow settling
-
-    keithley.write("smua.source.output = smua.OUTPUT_OFF")
-    keithley.write("smub.source.output = smub.OUTPUT_OFF")
-    keithley.close()
+    print("Shutting down outputs.")
+    k.write("smua.source.output = smua.OUTPUT_OFF")
+    k.write("smub.source.output = smub.OUTPUT_OFF")
+    k.close()
