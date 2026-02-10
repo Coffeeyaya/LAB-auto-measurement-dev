@@ -9,21 +9,20 @@ DRAIN_VOLTAGE = 1.0
 GATE_HIGH = 1.0
 GATE_LOW = -1.0
 
-DT = 0.01            # sampling interval (s)
+DT = 0.01
 PULSE_WIDTH = 1.0
 TOTAL_CYCLES = 5
 
 # ---------- VISA ----------
 rm = pyvisa.ResourceManager()
 k = rm.open_resource("GPIB0::26::INSTR")
-k.timeout = 20000
+k.timeout = 30000
 k.read_termination = "\n"
 k.write_termination = "\n"
 
 try:
     print("Initializing instrument...")
 
-    # ---------- TSP PROGRAM ----------
     tsp = f"""
     abort
     errorqueue.clear()
@@ -46,24 +45,31 @@ try:
 
     smua.nvbuffer1.clear()
     smub.nvbuffer1.clear()
-    timebuffer.clear()
+    smua.nvbuffer2.clear()    -- time buffer
 
-    dt = {DT}
-    np = math.floor({PULSE_WIDTH} / dt)
+    dt_s = {DT}
+    npts = math.floor({PULSE_WIDTH} / dt_s)
 
     t0 = timer.s()
 
     for c = 1, {TOTAL_CYCLES} do
-        for _, vg in ipairs({{{GATE_HIGH}, {GATE_LOW}}}) do
-            smub.source.levelv = vg
 
-            for i = 1, np do
-                smua.measure.i(smua.nvbuffer1)
-                smub.measure.i(smub.nvbuffer1)
-                timebuffer.append(timer.s() - t0)
-                delay(dt)
-            end
+        smub.source.levelv = {GATE_HIGH}
+        for i = 1, npts do
+            smua.measure.i(smua.nvbuffer1)
+            smub.measure.i(smub.nvbuffer1)
+            smua.nvbuffer2.append(timer.s() - t0)
+            delay(dt_s)
         end
+
+        smub.source.levelv = {GATE_LOW}
+        for i = 1, npts do
+            smua.measure.i(smua.nvbuffer1)
+            smub.measure.i(smub.nvbuffer1)
+            smua.nvbuffer2.append(timer.s() - t0)
+            delay(dt_s)
+        end
+
     end
 
     smua.source.levelv = 0
@@ -72,28 +78,26 @@ try:
 
     k.write(tsp)
 
-    print("Running buffered measurement...")
-    time.sleep(TOTAL_CYCLES * 2 * PULSE_WIDTH + 1)
+    total_time = TOTAL_CYCLES * 2 * PULSE_WIDTH + 1
+    print(f"Running acquisition ({total_time:.1f} s)...")
+    time.sleep(total_time)
 
-    # ---------- READ BACK ----------
-    print("Downloading data...")
+    print("Downloading buffers...")
 
-    t = k.query("printbuffer(1, timebuffer.n, timebuffer)").split(',')
+    t = k.query("printbuffer(1, smua.nvbuffer2.n, smua.nvbuffer2)").split(',')
     idrain = k.query("printbuffer(1, smua.nvbuffer1.n, smua.nvbuffer1.readings)").split(',')
     igate = k.query("printbuffer(1, smub.nvbuffer1.n, smub.nvbuffer1.readings)").split(',')
 
-    # ---------- SAVE CSV ----------
     with open(FILENAME, "w", newline="") as f:
         writer = csv.writer(f)
         writer.writerow(["Time_s", "I_Drain_A", "I_Gate_A"])
-
         for row in zip(t, idrain, igate):
             writer.writerow(row)
 
     print(f"Saved {len(t)} points to {FILENAME}")
 
 finally:
-    print("Shutting down outputs.")
+    print("Turning outputs OFF.")
     k.write("smua.source.output = smua.OUTPUT_OFF")
     k.write("smub.source.output = smub.OUTPUT_OFF")
     k.close()
