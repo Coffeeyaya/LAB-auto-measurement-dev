@@ -1,6 +1,27 @@
-from pywinauto import Desktop
+import pyvisa
 
-# get all top-level windows
-windows = Desktop(backend="win32").windows()
-for w in windows:
-    print(w.window_text(), w.class_name())
+rm = pyvisa.ResourceManager()
+keithley = rm.open_resource('YOUR_VISA_ADDRESS_HERE')
+
+# The TSP commands written in Lua
+tsp_commands = [
+    "smua.reset()",
+    "smua.source.func = smua.OUTPUT_DCVOLTS",
+    "smua.source.autorangev = smua.AUTORANGE_ON",
+    "smua.source.output = smua.OUTPUT_ON",
+    
+    "smua.source.levelv = 1.0",
+    "delay(1)",                 # The instrument handles the 1s delay internally
+    
+    "smua.source.levelv = -1.0",
+    "delay(1)",                 # The instrument handles the 1s delay internally
+    
+    "smua.source.output = smua.OUTPUT_OFF"
+]
+
+# Send the commands line by line to be executed immediately
+for command in tsp_commands:
+    keithley.write(command)
+
+keithley.close()
+print("Sequence executed internally by the Keithley.")
