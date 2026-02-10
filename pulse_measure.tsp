@@ -1,5 +1,4 @@
--- pulse_measure.tsp
--- Keithley 2636B buffered pulsed measurement
+loadscript pulse_measure
 
 function run_pulse(
     vds, vgh, vgl,
@@ -53,3 +52,5 @@ function run_pulse(
     smua.source.levelv = 0
     smub.source.levelv = 0
 end
+
+endscript
