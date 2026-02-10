@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 import time
 import os
 
-FILENAME = "buffer_data.csv"
+FILENAME = "live_measurements.csv"
 
 # --- PLOT SETUP ---
 plt.ion()
