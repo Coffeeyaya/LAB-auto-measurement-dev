@@ -8,7 +8,7 @@ FILENAME = "keithley_measurements.csv"
 DRAIN_VOLTAGE = 1.0   # V
 GATE_HIGH = 1.0       # V
 GATE_LOW = -1.0       # V
-PULSE_WIDTH = 1.0     # s
+PULSE_WIDTH = 1.0     # seconds
 TOTAL_CYCLES = 5
 DT = 0.01             # sample interval in seconds
 
@@ -17,7 +17,7 @@ rm = pyvisa.ResourceManager()
 k = rm.open_resource("GPIB0::26::INSTR")  # adjust your address
 k.write_termination = "\n"
 k.read_termination = "\n"
-k.timeout = 30000  # 30s for buffered operations
+k.timeout = 30000  # 30 seconds for buffered operations
 
 # ---------- STEP 1: HARD RESET ----------
 print("Resetting instrument...")
@@ -67,15 +67,20 @@ tsp_lines = [
     "endscript"
 ]
 
+# Load the script safely with a short delay per line
 for line in tsp_lines:
     k.write(line)
+    time.sleep(0.05)  # 50 ms per line
+
+# Small delay after endscript to ensure registration
+time.sleep(1)
 
 # ---------- STEP 3: RUN MEASUREMENT ----------
 print("Running measurement...")
 k.write(f"pulse_measure.run_pulse({DRAIN_VOLTAGE},{GATE_HIGH},{GATE_LOW},{DT},{PULSE_WIDTH},{TOTAL_CYCLES})")
 
-# Wait enough time for full measurement
-total_time = TOTAL_CYCLES * 2 * PULSE_WIDTH + 2  # extra buffer
+# Wait long enough for the measurement to finish
+total_time = TOTAL_CYCLES * 2 * PULSE_WIDTH + 2  # 2-second buffer
 time.sleep(total_time)
 
 # ---------- STEP 4: DOWNLOAD BUFFERS ----------
@@ -98,4 +103,4 @@ k.write("smua.source.output = smua.OUTPUT_OFF")
 k.write("smub.source.output = smub.OUTPUT_OFF")
 
 k.close()
-print("Done.")
+print("Done. Measurement complete and saved.")
