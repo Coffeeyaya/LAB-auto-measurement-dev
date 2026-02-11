@@ -12,8 +12,7 @@ TOTAL_CYCLES = 5     # How many times to flip-flop
 
 # --- SETUP INSTRUMENT ---
 rm = pyvisa.ResourceManager()
-# Replace with your actual address (e.g., 'GPIB0::26::INSTR' or 'USB0::...')
-keithley = rm.open_resource('GPIB0::26::INSTR') 
+keithley = rm.open_resource("USB0::0x05E6::0x2636::4407529::INSTR")  # your USB address
 
 # Reset and Configure SMU A (DRAIN)
 keithley.write("smua.reset()")
