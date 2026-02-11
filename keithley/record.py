@@ -3,8 +3,6 @@ import time
 import csv
 
 # ---------------- CONFIG ----------------
-RESOURCE = "GPIB0::26::INSTR"
-
 DRAIN_VOLTAGE = 1.0
 VG_HIGH = 1.0
 VG_LOW = -1.0
@@ -15,7 +13,7 @@ CSV_FILE = "data.csv"
 # ---------------------------------------
 
 rm = pyvisa.ResourceManager()
-keithley = rm.open_resource(RESOURCE)
+keithley = rm.open_resource("USB0::0x05E6::0x2636::4407529::INSTR")  # your USB address
 
 keithley.timeout = 10000
 keithley.write_termination = "\n"
