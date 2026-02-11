@@ -35,8 +35,22 @@ except:
     exit()
 
 try:
-    # 1. SETUP (Fast Mode)
-    keithley.write("abort; *rst; *cls")
+    # --- 1. THE CLEANING BLOCK (Fixes Error -285) ---
+    print("Cleaning buffer...")
+    try:
+        keithley.clear() # Sends a low-level USB "Device Clear" signal
+    except:
+        pass
+        
+    # Read any junk left in the output buffer
+    try:
+        keithley.read() 
+    except:
+        pass # It's okay if there is nothing to read
+        
+    # NOW start your real setup
+    keithley.write("abort; *cls") # *cls deletes the old -285 error from memory
+    keithley.write("*rst")
     
     # Drain Setup
     keithley.write(f"smua.source.func=smua.OUTPUT_DCVOLTS; smua.source.levelv={DRAIN_V}")
