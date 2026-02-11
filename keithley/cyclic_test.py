@@ -3,9 +3,7 @@ import time
 import csv
 
 # --- CONFIGURATION ---
-# PASTE YOUR USB ID HERE:
 RESOURCE_ID = "USB0::0x05E6::0x2636::4407529::INSTR"
-
 FILENAME = "final_cycles.csv"
 DRAIN_V = 1.0       
 GATE_HIGH = 1.0     
@@ -31,7 +29,7 @@ try:
     # 1. SETUP (Fixed Range = Speed)
     keithley.write("abort; *rst; *cls")
     time.sleep(1.0)
-
+    # limit = compliance
     setup_cmds = [
         "format.data = format.ASCII",
         # Drain
@@ -58,7 +56,7 @@ try:
         keithley.write(f"smub.source.levelv = {GATE_HIGH}")
         for _ in range(POINTS_PER_PULSE):
             try:
-                keithley.write("print(smua.measure.i(), smub.measure.i())")
+                keithley.write("print(smua.measure.i(), smub.measure.i())") # not keithley.query(which is slow)
                 resp = keithley.read().replace('\t', ',').split(',')
                 if len(resp) >= 2:
                     data_log.append([time.time()-start_time, GATE_HIGH, float(resp[0]), float(resp[1])])
