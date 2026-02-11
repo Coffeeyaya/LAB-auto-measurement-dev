@@ -2,70 +2,102 @@ import pyvisa
 import time
 import csv
 
-# ---------- CONFIG ----------
-FILENAME = "keithley_gpiB_pulses.csv"
+# ---------------- CONFIG ----------------
+RESOURCE = "GPIB0::26::INSTR"
+
 DRAIN_VOLTAGE = 1.0
-GATE_HIGH = 1.0
-GATE_LOW = -1.0
-PULSE_WIDTH = 1.0       # seconds per pulse
-TOTAL_CYCLES = 5
-DT = 0.01               # target sample interval in seconds (~10ms)
+VG_HIGH = 1.0
+VG_LOW = -1.0
+VG_PERIOD = 10.0      # seconds
+TOTAL_TIME = 60.0     # seconds
 
-# ---------- CONNECT ----------
+ID_COMPLIANCE = 1e-3  # 1 mA
+IG_COMPLIANCE = 1e-6  # 1 µA
+
+CSV_FILE = "data.csv"
+# ---------------------------------------
+
 rm = pyvisa.ResourceManager()
-keithley = rm.open_resource("GPIB0::26::INSTR")  # replace with your GPIB address
-keithley.write_termination = '\n'
-keithley.read_termination = '\n'
+keithley = rm.open_resource(RESOURCE)
+
 keithley.timeout = 10000
+keithley.write_termination = "\n"
+keithley.read_termination = "\n"
 
-# ---------- RESET & CONFIGURE ----------
-keithley.write("smua.reset()")
-keithley.write("smub.reset()")
+try:
+    # ---------- INITIALIZE ----------
+    keithley.write("abort")
+    keithley.write("errorqueue.clear()")
 
-keithley.write(f"smua.source.func = smua.OUTPUT_DCVOLTS")
-keithley.write(f"smua.source.levelv = {DRAIN_VOLTAGE}")
-keithley.write("smua.source.output = smua.OUTPUT_ON")
+    keithley.write("smua.reset()")
+    keithley.write("smub.reset()")
 
-keithley.write(f"smub.source.func = smub.OUTPUT_DCVOLTS")
-keithley.write(f"smub.source.levelv = {GATE_LOW}")
-keithley.write("smub.source.output = smub.OUTPUT_ON")
+    # Drain (SMUA)
+    keithley.write("smua.source.func = smua.OUTPUT_DCVOLTS")
+    keithley.write(f"smua.source.levelv = {DRAIN_VOLTAGE}")
+    keithley.write(f"smua.source.limiti = {ID_COMPLIANCE}")
+    keithley.write("smua.source.output = smua.OUTPUT_ON")
 
-# ---------- OPEN CSV ----------
-with open(FILENAME, 'w', newline='') as f:
+    # Gate (SMUB)
+    keithley.write("smub.source.func = smub.OUTPUT_DCVOLTS")
+    keithley.write(f"smub.source.levelv = {VG_HIGH}")
+    keithley.write(f"smub.source.limiti = {IG_COMPLIANCE}")
+    keithley.write("smub.source.output = smub.OUTPUT_ON")
+
+    # Speed settings
+    keithley.write("smua.measure.nplc = 0.01")
+    keithley.write("smub.measure.nplc = 0.01")
+
+    keithley.write("smua.measure.autorangei = smua.AUTORANGE_ON")
+    keithley.write("smub.measure.autorangei = smub.AUTORANGE_ON")
+
+    print("Measurement started")
+
+    data = []
+    t0 = time.time()
+    next_switch = t0 + VG_PERIOD
+    vg = VG_HIGH
+
+    # ---------- MAIN LOOP ----------
+    while (time.time() - t0) < TOTAL_TIME:
+        now = time.time()
+
+        # Toggle gate
+        if now >= next_switch:
+            vg = VG_LOW if vg == VG_HIGH else VG_HIGH
+            keithley.write(f"smub.source.levelv = {vg}")
+            next_switch += VG_PERIOD
+            print(f"Gate switched to {vg:+.1f} V")
+
+        # One query, multiple values
+        raw = keithley.query(
+            "print(smua.measure.i(), smub.measure.i(), "
+            "smua.measure.t(), smub.measure.t())"
+        ).strip().split()
+
+        idrain = float(raw[0])
+        igate = float(raw[1])
+        t_ua = float(raw[2])
+        t_ub = float(raw[3])
+
+        data.append((t_ua, t_ub, vg, idrain, igate))
+
+    print("Measurement finished")
+
+finally:
+    # ---------- CLEANUP ----------
+    keithley.write("smua.source.levelv = 0")
+    keithley.write("smub.source.levelv = 0")
+    keithley.write("smua.source.output = smua.OUTPUT_OFF")
+    keithley.write("smub.source.output = smub.OUTPUT_OFF")
+    keithley.close()
+
+# ---------- SAVE DATA ----------
+with open(CSV_FILE, "w", newline="") as f:
     writer = csv.writer(f)
-    writer.writerow(["Time_s", "V_Gate", "I_Drain", "I_Gate"])
+    writer.writerow([
+        "t_smua_s", "t_smub_s", "Vg_V", "Id_A", "Ig_A"
+    ])
+    writer.writerows(data)
 
-    start_exp = time.time()
-
-    # ---------- PULSED MEASUREMENT LOOP ----------
-    for cycle in range(TOTAL_CYCLES):
-        for v_gate in [GATE_HIGH, GATE_LOW]:
-            # Set gate voltage at start of pulse
-            keithley.write(f"smub.source.levelv = {v_gate}")
-            step_start = time.time()
-            
-            # Loop for pulse duration
-            while (time.time() - step_start) < PULSE_WIDTH:
-                t_now = time.time() - start_exp
-                try:
-                    # Measure both currents in one query
-                    raw = keithley.query("print(smua.measure.i(), smub.measure.i())")
-                    idrain, igate = raw.strip().split()
-                except ValueError:
-                    idrain, igate = "NaN", "NaN"
-                
-                # Save to CSV
-                writer.writerow([t_now, v_gate, idrain, igate])
-                
-                # Delay to approximate DT
-                elapsed = time.time() - step_start
-                sleep_time = DT - (elapsed % DT)
-                if sleep_time > 0:
-                    time.sleep(sleep_time)
-
-# ---------- TURN OFF OUTPUTS ----------
-keithley.write("smua.source.output = smua.OUTPUT_OFF")
-keithley.write("smub.source.output = smub.OUTPUT_OFF")
-keithley.close()
-
-print(f"Pulse measurement complete. Data saved to {FILENAME}")
+print(f"Data saved to {CSV_FILE}")
