@@ -1,43 +1,46 @@
 import pyvisa
-import time
 
-# Connect to the instrument
 rm = pyvisa.ResourceManager()
-keithley = rm.open_resource("USB0::0x05E6::0x2636::4407529::INSTR")  # your USB address
+keithley = rm.open_resource("USB0::0x05E6::0x2636::4407529::INSTR")
 
-# Reset channels
-keithley.write("smua.reset()")
-keithley.write("smub.reset()")
+# TSP script: measure SMUA and SMUB current for 10 s with 0.1 s interval
+tsp_script = """
+smua.reset()
+smub.reset()
 
-# Configure SMUA
-keithley.write("smua.source.func = smua.OUTPUT_DCVOLTS")
-keithley.write("smua.source.levelv = 1")       # 1 V
-keithley.write("smua.source.output = smua.OUTPUT_ON")
+smua.source.func = smua.OUTPUT_DCVOLTS
+smua.source.levelv = 1
+smua.source.output = smua.OUTPUT_ON
 
-# Configure SMUB
-keithley.write("smub.source.func = smub.OUTPUT_DCVOLTS")
-keithley.write("smub.source.levelv = 1")       # 1 V
-keithley.write("smub.source.output = smub.OUTPUT_ON")
+smub.source.func = smub.OUTPUT_DCVOLTS
+smub.source.levelv = 1
+smub.source.output = smub.OUTPUT_ON
 
-# Prepare to store measurements
-measurements = []  # list of tuples: (time, i_a, i_b)
-duration = 10      # seconds
-interval = 0.5     # seconds between measurements
+local measurements = {}
+local dt = 0.1       -- 0.1 s interval
+local t_end = 10     -- total measurement time
+local t = 0
 
-start_time = time.time()
-while time.time() - start_time < duration:
-    current_time = time.time() - start_time
-    i_a = float(keithley.query("print(smua.measure.i())"))
-    i_b = float(keithley.query("print(smub.measure.i())"))
-    measurements.append((current_time, i_a, i_b))
-    print(f"{current_time:.2f} s - SMUA: {i_a:.6e} A, SMUB: {i_b:.6e} A")
-    time.sleep(interval)
+while t < t_end do
+    local i_a = smua.measure.i()
+    local i_b = smub.measure.i()
+    table.insert(measurements, {t, i_a, i_b})
+    t = t + dt
+    wait(dt)
+end
 
-# Turn off outputs
-keithley.write("smua.source.output = smua.OUTPUT_OFF")
-keithley.write("smub.source.output = smub.OUTPUT_OFF")
+smua.source.output = smua.OUTPUT_OFF
+smub.source.output = smub.OUTPUT_OFF
 
-# Optional: print all measurements
-print("\nAll measurements collected:")
-for t, a, b in measurements:
-    print(f"{t:.2f} s - SMUA: {a:.6e} A, SMUB: {b:.6e} A")
+return measurements
+"""
+
+# Send script to the instrument and execute
+keithley.write("tsp.execute = false")        # optional: stop auto-execution
+keithley.write(tsp_script)
+data = keithley.query("return measurements")
+
+# Print measurements
+print("Time (s) | SMUA (A) | SMUB (A)")
+for t, i_a, i_b in data:
+    print(f"{t:.2f} | {i_a:.6e} | {i_b:.6e}")
