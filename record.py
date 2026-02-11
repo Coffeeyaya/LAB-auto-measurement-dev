@@ -56,7 +56,7 @@ try:
     # ---------- MAIN LOOP ----------
     while (time.time() - t0) < TOTAL_TIME:
         now = time.time()
-
+        print(now)
         # Toggle gate every 10 s
         if now >= next_switch:
             vg = VG_LOW if vg == VG_HIGH else VG_HIGH
