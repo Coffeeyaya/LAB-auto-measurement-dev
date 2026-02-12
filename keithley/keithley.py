@@ -133,6 +133,7 @@ class Keithley2636B:
             # low Vg
             k.write(f"smub.source.levelv = {vg_low}")
             self.set_vg_phase(vg_low, points_per_phase)
+        
 
     # run measurement(includes measurement procedure)             
     def run(self):
@@ -140,6 +141,8 @@ class Keithley2636B:
         self.start_time = time.time()
         self.keithley.write(f"smua.source.levelv = {DRAIN_V}")
         self.gate_periodic(vg_high=GATE_HIGH, vg_low=GATE_LOW, points_per_phase=POINTS_PER_PHASE, cycle_numbers=CYCLE_NUMBERS)
+        self.keithley.write("smua.source.levelv = 0")
+        self.keithley.write("smub.source.levelv = 0")
         print("Done.")
     
     def shutdown(self):
