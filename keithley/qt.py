@@ -133,13 +133,24 @@ class MainWindow(QWidget):
             writer = csv.writer(f)
             writer.writerow([t, Vd, Vg, I_D, I_G])
 
-    # Stop everything
     def stop(self):
+        # Stop the worker thread
         self.worker.stop()
+        
+        # Optionally set voltages to 0
         self.k.set_Vd(0)
         self.k.set_Vg(0)
         self.k.shutdown()
-        self.close()
+        
+        # Disable buttons and spin boxes so user cannot change anymore
+        self.set_Vd_btn.setEnabled(False)
+        self.set_Vg_btn.setEnabled(False)
+        self.Vd_spin.setEnabled(False)
+        self.Vg_spin.setEnabled(False)
+        self.stop_btn.setEnabled(False)
+        
+        print("Measurement stopped. Figure remains visible.")
+
 
 
 # -------------------------------
