@@ -11,10 +11,10 @@ import os
 import threading
 
 class Keithley2636B:
-    def __init__(self, resource_id, filename, limiti_a=1e-3, limiti_b=1e-3,
+    def __init__(self, resource_id, limiti_a=1e-3, limiti_b=1e-3,
              rangei_a=1e-6, rangei_b=1e-6, nplc_a=1, nplc_b=1):
         self.resource_id = resource_id
-        self.filename = filename
+        # self.filename = filename
         self.limiti_a = limiti_a
         self.limiti_b = limiti_b
         self.rangei_a = rangei_a
