@@ -46,6 +46,23 @@ class MeasurementWorker(threading.Thread):
         self._stop_event.set()
         self.join()
 
+class VgPulseWorker(threading.Thread):
+    def __init__(self, keithley_instance, pulse_sequence):
+        super().__init__()
+        self.k = keithley_instance
+        self.sequence = pulse_sequence
+        self._stop_event = threading.Event()
+
+    def run(self):
+        for t_delay, vg in self.sequence:
+            if self._stop_event.is_set():
+                break
+            time.sleep(t_delay)
+            self.k.set_Vg(vg)
+
+    def stop(self):
+        self._stop_event.set()
+        self.join()
 
 class MainWindow(QMainWindow):
     def __init__(self, keithley_instance):
@@ -117,6 +134,14 @@ class MainWindow(QMainWindow):
 
     def set_vg(self):
         self.k.set_Vg(self.vg_spin.value())
+
+    def start_vg_pulse(self):
+        # Example pulse sequence: [(delay_sec, Vg)]
+        sequence = [(1.0, 1.0), (1.0, -1.0), (1.0, 0.0)]
+        if self.vg_pulse_worker and self.vg_pulse_worker.is_alive():
+            self.vg_pulse_worker.stop()
+        self.vg_pulse_worker = VgPulseWorker(self.k, sequence)
+        self.vg_pulse_worker.start()
 
     def stop_measurement(self):
         if self.meas_worker.is_alive():
