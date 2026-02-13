@@ -1,158 +1,146 @@
 import sys
 import time
-import random
 import csv
-from PyQt5.QtWidgets import (QApplication, QWidget, QVBoxLayout, QPushButton, 
-                             QLabel, QLineEdit, QHBoxLayout)
+from PyQt5.QtWidgets import (QApplication, QWidget, QVBoxLayout, QHBoxLayout,
+                             QPushButton, QDoubleSpinBox, QLabel)
 from PyQt5.QtCore import QThread, pyqtSignal
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
+import pyvisa
+from keithley import Keithley2636B
 
-# ---------------------------
-# Worker Thread
-# ---------------------------
-class MeasurementWorker(QThread):
-    new_data = pyqtSignal(float, float, float)  # t, voltage, current
 
-    def __init__(self):
+# --- Worker Thread ---
+class KeithleyWorker(QThread):
+    new_data = pyqtSignal(float, float, float, float, float)  # time, Vd, Vg, I_D, I_G
+
+    def __init__(self, keithley):
         super().__init__()
-        self.voltage = 0.0
+        self.k = keithley
         self.running = True
 
     def run(self):
         start_time = time.time()
         while self.running:
-            current = self.voltage * 0.1 + random.uniform(-0.01, 0.01)
+            I_D, I_G = self.k.measure()
             t = time.time() - start_time
-            self.new_data.emit(t, self.voltage, current)
-            self.msleep(500)
-
-    def set_voltage(self, v):
-        self.voltage = v
+            self.new_data.emit(t, self.k.Vd, self.k.Vg, I_D, I_G)
+            self.msleep(200)  # 5 Hz
 
     def stop(self):
         self.running = False
         self.wait()
 
 
-# ---------------------------
-# Main GUI
-# ---------------------------
+# --- PyQt5 GUI ---
 class MainWindow(QWidget):
-    def __init__(self):
+    def __init__(self, keithley):
         super().__init__()
-        self.setWindowTitle("Threaded Measurement with PyQt5")
+        self.setWindowTitle("Keithley Real-Time Control")
+        self.k = keithley
 
         # Layout
         layout = QVBoxLayout()
         self.setLayout(layout)
 
-        # Plot
-        self.figure = Figure(figsize=(6, 4))
+        # Matplotlib Figure
+        self.figure = Figure(figsize=(6,4))
         self.canvas = FigureCanvas(self.figure)
         layout.addWidget(self.canvas)
-        self.ax = self.figure.add_subplot(111)
-        self.line, = self.ax.plot([], [], 'b.-')
-        self.ax.set_xlabel("Time (s)")
-        self.ax.set_ylabel("Current (A)")
-        self.ax.grid(True)
+        self.ax1 = self.figure.add_subplot(211)
+        self.ax2 = self.figure.add_subplot(212, sharex=self.ax1)
+        self.line_id, = self.ax1.plot([], [], 'b.-', label='I_D')
+        self.line_ig, = self.ax2.plot([], [], 'r.-', label='I_G')
+        self.ax1.set_ylabel("I_D (A)")
+        self.ax2.set_ylabel("I_G (A)")
+        self.ax2.set_xlabel("Time (s)")
+        self.ax1.legend(); self.ax2.legend()
 
-        # Voltage controls
-        self.label = QLabel("Voltage: 0.0 V")
-        layout.addWidget(self.label)
+        # SpinBoxes for Vd and Vg
+        ctrl_layout = QHBoxLayout()
+        layout.addLayout(ctrl_layout)
 
-        hlayout = QHBoxLayout()
-        self.up_btn = QPushButton("+0.5V")
-        self.down_btn = QPushButton("-0.5V")
-        self.input_line = QLineEdit()
-        self.input_line.setPlaceholderText("Type voltage and press Enter")
-        hlayout.addWidget(self.up_btn)
-        hlayout.addWidget(self.down_btn)
-        hlayout.addWidget(self.input_line)
-        layout.addLayout(hlayout)
+        self.Vd_spin = QDoubleSpinBox()
+        self.Vd_spin.setRange(-10.0, 10.0)
+        self.Vd_spin.setSingleStep(0.1)
+        self.Vd_spin.setValue(self.k.Vd)
 
+        self.Vg_spin = QDoubleSpinBox()
+        self.Vg_spin.setRange(-10.0, 10.0)
+        self.Vg_spin.setSingleStep(0.1)
+        self.Vg_spin.setValue(self.k.Vg)
+
+        self.up_Vd = QPushButton("Vd +0.1")
+        self.down_Vd = QPushButton("Vd -0.1")
+        self.up_Vg = QPushButton("Vg +0.1")
+        self.down_Vg = QPushButton("Vg -0.1")
         self.stop_btn = QPushButton("Stop")
-        layout.addWidget(self.stop_btn)
 
-        # Data storage for CSV
-        self.times = []
-        self.currents = []
-        self.voltages = []
+        ctrl_layout.addWidget(QLabel("Vd:"))
+        ctrl_layout.addWidget(self.Vd_spin)
+        ctrl_layout.addWidget(self.up_Vd)
+        ctrl_layout.addWidget(self.down_Vd)
+        ctrl_layout.addWidget(QLabel("Vg:"))
+        ctrl_layout.addWidget(self.Vg_spin)
+        ctrl_layout.addWidget(self.up_Vg)
+        ctrl_layout.addWidget(self.down_Vg)
+        ctrl_layout.addWidget(self.stop_btn)
 
-        # Voltage value
-        self.voltage = 0.0
+        # Connect signals
+        self.Vd_spin.valueChanged.connect(self.k.set_Vd)
+        self.Vg_spin.valueChanged.connect(self.k.set_Vg)
+        self.up_Vd.clicked.connect(lambda: self.Vd_spin.setValue(self.Vd_spin.value()+0.1))
+        self.down_Vd.clicked.connect(lambda: self.Vd_spin.setValue(self.Vd_spin.value()-0.1))
+        self.up_Vg.clicked.connect(lambda: self.Vg_spin.setValue(self.Vg_spin.value()+0.1))
+        self.down_Vg.clicked.connect(lambda: self.Vg_spin.setValue(self.Vg_spin.value()-0.1))
+        self.stop_btn.clicked.connect(self.stop)
 
-        # Worker thread
-        self.worker = MeasurementWorker()
+        # Data storage
+        self.times, self.I_Ds, self.I_Gs = [], [], []
+
+        # CSV file
+        self.csv_file = "real_time_data.csv"
+        with open(self.csv_file, 'w', newline='') as f:
+            writer = csv.writer(f)
+            writer.writerow(["Time","Vd","Vg","I_D","I_G"])
+
+        # Start worker
+        self.worker = KeithleyWorker(self.k)
         self.worker.new_data.connect(self.update_plot)
         self.worker.start()
 
-        # Connect buttons and input
-        self.up_btn.clicked.connect(self.increase_voltage)
-        self.down_btn.clicked.connect(self.decrease_voltage)
-        self.input_line.returnPressed.connect(self.set_voltage_from_input)
-        self.stop_btn.clicked.connect(self.stop_measurement)
-
-        # CSV filename
-        self.filename = "measurement_data.csv"
-        # write header
-        with open(self.filename, 'w', newline='') as f:
-            writer = csv.writer(f)
-            writer.writerow(["Time", "Voltage", "Current"])
-
-    # ---------------------------
-    # Slot: update plot and save CSV
-    # ---------------------------
-    def update_plot(self, t, v, i):
+    def update_plot(self, t, Vd, Vg, I_D, I_G):
         self.times.append(t)
-        self.currents.append(i)
-        self.voltages.append(v)
+        self.I_Ds.append(I_D)
+        self.I_Gs.append(I_G)
 
-        # update line
-        self.line.set_data(self.times, self.currents)
-        self.ax.relim()
-        self.ax.autoscale_view()
+        # Update plot
+        self.line_id.set_data(self.times, self.I_Ds)
+        self.line_ig.set_data(self.times, self.I_Gs)
+        self.ax1.relim(); self.ax1.autoscale_view()
+        self.ax2.relim(); self.ax2.autoscale_view()
         self.canvas.draw()
 
-        # update label
-        self.label.setText(f"Voltage: {v:.2f} V")
-
-        # save to CSV
-        with open(self.filename, 'a', newline='') as f:
+        # Save CSV
+        with open(self.csv_file, 'a', newline='') as f:
             writer = csv.writer(f)
-            writer.writerow([t, v, i])
+            writer.writerow([t, Vd, Vg, I_D, I_G])
 
-    # ---------------------------
-    # Button actions
-    # ---------------------------
-    def increase_voltage(self):
-        self.voltage += 0.5
-        self.worker.set_voltage(self.voltage)
-
-    def decrease_voltage(self):
-        self.voltage -= 0.5
-        self.worker.set_voltage(self.voltage)
-
-    def set_voltage_from_input(self):
-        text = self.input_line.text()
-        try:
-            v = float(text)
-            self.voltage = v
-            self.worker.set_voltage(self.voltage)
-            self.input_line.clear()
-        except ValueError:
-            self.input_line.clear()  # invalid input
-
-    def stop_measurement(self):
+    def stop(self):
         self.worker.stop()
+        self.k.set_Vd(0)
+        self.k.set_Vg(0)
+        self.k.shutdown()
         self.close()
 
 
-# ---------------------------
-# Run App
-# ---------------------------
+# --- Run App ---
 if __name__ == "__main__":
+    RESOURCE_ID = "USB0::0x05E6::0x2636::4407529::INSTR"
+    keithley = Keithley2636B(RESOURCE_ID)
+    keithley.connect()
+
     app = QApplication(sys.argv)
-    window = MainWindow()
-    window.show()
+    win = MainWindow(keithley)
+    win.show()
     sys.exit(app.exec_())

@@ -26,6 +26,9 @@ class Keithley2636B:
         self.keithley = None
         self.start_time = None
 
+        self.Vd = 0.0  
+        self.Vg = 0.0  
+
     # connection
     def connect(self):
         try:
@@ -37,6 +40,29 @@ class Keithley2636B:
             print("Connected.")
         except Exception as e:
             raise RuntimeError(f"Connection failed: {e}")
+    
+    def set_Vd(self, v):
+        self.Vd = v
+        try:
+            self.keithley.write(f"smua.source.levelv = {v}")
+        except:
+            pass
+
+    def set_Vg(self, v):
+        self.Vg = v
+        try:
+            self.keithley.write(f"smub.source.levelv = {v}")
+        except:
+            pass
+
+    def measure(self):
+        try:
+            self.keithley.write("print(smua.measure.i(), smub.measure.i())")
+            resp = self.keithley.read().replace("\t", ",").split(",")
+            if len(resp) >= 2:
+                return float(resp[0]), float(resp[1])
+        except:
+            return 0.0, 0.0
         
     # clean error
     def clean_instrument(self):
@@ -170,6 +196,34 @@ class Keithley2636B:
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.shutdown()
+
+
+
+from PyQt5.QtCore import QThread, pyqtSignal, QMutex
+
+class KeithleyWorker(QThread):
+    new_data = pyqtSignal(float, float, float, float, float)  # t, Vd, Vg, I_D, I_G
+
+    def __init__(self, keithley):
+        super().__init__()
+        self.k = keithley
+        self.running = True
+        self.lock = QMutex()
+
+    def run(self):
+        start_time = time.time()
+        while self.running:
+            # Measure
+            I_D, I_G = self.k.measure()
+            t = time.time() - start_time
+            self.new_data.emit(t, self.k.Vd, self.k.Vg, I_D, I_G)
+            self.msleep(200)  # 5Hz update
+
+    def stop(self):
+        self.running = False
+        self.wait()
+
+
 
 if __name__ == "__main__":
     # Create an instance
