@@ -9,8 +9,9 @@ from matplotlib.figure import Figure
 import pyvisa
 from keithley import Keithley2636B
 
-
-# --- Worker Thread ---
+# -------------------------------
+# Worker Thread for Measurement
+# -------------------------------
 class KeithleyWorker(QThread):
     new_data = pyqtSignal(float, float, float, float, float)  # time, Vd, Vg, I_D, I_G
 
@@ -25,14 +26,16 @@ class KeithleyWorker(QThread):
             I_D, I_G = self.k.measure()
             t = time.time() - start_time
             self.new_data.emit(t, self.k.Vd, self.k.Vg, I_D, I_G)
-            self.msleep(100)  # 10 Hz
+            self.msleep(200)  # 5 Hz
 
     def stop(self):
         self.running = False
         self.wait()
 
 
-# --- PyQt5 GUI ---
+# -------------------------------
+# PyQt5 GUI
+# -------------------------------
 class MainWindow(QWidget):
     def __init__(self, keithley):
         super().__init__()
@@ -56,7 +59,7 @@ class MainWindow(QWidget):
         self.ax2.set_xlabel("Time (s)")
         self.ax1.legend(); self.ax2.legend()
 
-        # SpinBoxes for Vd and Vg
+        # Controls for Vd and Vg
         ctrl_layout = QHBoxLayout()
         layout.addLayout(ctrl_layout)
 
@@ -70,29 +73,21 @@ class MainWindow(QWidget):
         self.Vg_spin.setSingleStep(0.1)
         self.Vg_spin.setValue(self.k.Vg)
 
-        self.up_Vd = QPushButton("Vd +0.1")
-        self.down_Vd = QPushButton("Vd -0.1")
-        self.up_Vg = QPushButton("Vg +0.1")
-        self.down_Vg = QPushButton("Vg -0.1")
+        self.set_Vd_btn = QPushButton("Set Vd")
+        self.set_Vg_btn = QPushButton("Set Vg")
         self.stop_btn = QPushButton("Stop")
 
         ctrl_layout.addWidget(QLabel("Vd:"))
         ctrl_layout.addWidget(self.Vd_spin)
-        ctrl_layout.addWidget(self.up_Vd)
-        ctrl_layout.addWidget(self.down_Vd)
+        ctrl_layout.addWidget(self.set_Vd_btn)
         ctrl_layout.addWidget(QLabel("Vg:"))
         ctrl_layout.addWidget(self.Vg_spin)
-        ctrl_layout.addWidget(self.up_Vg)
-        ctrl_layout.addWidget(self.down_Vg)
+        ctrl_layout.addWidget(self.set_Vg_btn)
         ctrl_layout.addWidget(self.stop_btn)
 
         # Connect signals
-        self.Vd_spin.valueChanged.connect(self.k.set_Vd)
-        self.Vg_spin.valueChanged.connect(self.k.set_Vg)
-        self.up_Vd.clicked.connect(lambda: self.Vd_spin.setValue(self.Vd_spin.value()+0.1))
-        self.down_Vd.clicked.connect(lambda: self.Vd_spin.setValue(self.Vd_spin.value()-0.1))
-        self.up_Vg.clicked.connect(lambda: self.Vg_spin.setValue(self.Vg_spin.value()+0.1))
-        self.down_Vg.clicked.connect(lambda: self.Vg_spin.setValue(self.Vg_spin.value()-0.1))
+        self.set_Vd_btn.clicked.connect(self.apply_Vd)
+        self.set_Vg_btn.clicked.connect(self.apply_Vg)
         self.stop_btn.clicked.connect(self.stop)
 
         # Data storage
@@ -104,17 +99,29 @@ class MainWindow(QWidget):
             writer = csv.writer(f)
             writer.writerow(["Time","Vd","Vg","I_D","I_G"])
 
-        # Start worker
+        # Start worker thread
         self.worker = KeithleyWorker(self.k)
         self.worker.new_data.connect(self.update_plot)
         self.worker.start()
 
+    # Apply Set button values
+    def apply_Vd(self):
+        value = self.Vd_spin.value()
+        self.k.set_Vd(value)
+        print(f"Vd set to {value} V")
+
+    def apply_Vg(self):
+        value = self.Vg_spin.value()
+        self.k.set_Vg(value)
+        print(f"Vg set to {value} V")
+
+    # Update plot and CSV
     def update_plot(self, t, Vd, Vg, I_D, I_G):
         self.times.append(t)
         self.I_Ds.append(I_D)
         self.I_Gs.append(I_G)
 
-        # Update plot
+        # Plot update
         self.line_id.set_data(self.times, self.I_Ds)
         self.line_ig.set_data(self.times, self.I_Gs)
         self.ax1.relim(); self.ax1.autoscale_view()
@@ -126,6 +133,7 @@ class MainWindow(QWidget):
             writer = csv.writer(f)
             writer.writerow([t, Vd, Vg, I_D, I_G])
 
+    # Stop everything
     def stop(self):
         self.worker.stop()
         self.k.set_Vd(0)
@@ -134,15 +142,17 @@ class MainWindow(QWidget):
         self.close()
 
 
-# --- Run App ---
+# -------------------------------
+# Run Application
+# -------------------------------
 if __name__ == "__main__":
-    RESOURCE_ID = "USB0::0x05E6::0x2636::4407529::INSTR"
+    RESOURCE_ID = "USB0::0x05E6::0x2636::4407529::INSTR"  # Replace with your Keithley
     keithley = Keithley2636B(RESOURCE_ID)
     keithley.connect()
     keithley.clean_instrument()
     keithley.config()
 
     app = QApplication(sys.argv)
-    win = MainWindow(keithley)
-    win.show()
+    window = MainWindow(keithley)
+    window.show()
     sys.exit(app.exec_())
