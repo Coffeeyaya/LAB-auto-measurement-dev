@@ -1,173 +1,119 @@
-import sys
-import threading
+from PyQt5.QtCore import QThread, pyqtSignal
 import time
 import csv
-import os
-from keithley import Keithley2636B
+import threading
 
-from PyQt5.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout,
-                             QPushButton, QSpinBox, QLabel, QHBoxLayout, QDoubleSpinBox)
-from PyQt5.QtCore import pyqtSignal, QObject
+# -------------------------------
+# Measurement Worker using QThread
+# -------------------------------
+class MeasureWorker(QThread):
+    # Emit measurement data: time, Vg, Vd, Id, Ig
+    new_data = pyqtSignal(float, float, float, float, float)
 
-import matplotlib
-matplotlib.use('Qt5Agg')
-from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
-from matplotlib.figure import Figure
-
-
-class MeasurementWorker(threading.Thread):
-    def __init__(self, keithley_instance, interval=0.1):
+    def __init__(self, keithley, interval=0.1, csv_file="data.csv"):
         super().__init__()
-        self.k = keithley_instance
+        self.k = keithley
         self.interval = interval
-        self._stop_event = threading.Event()
-        self.start_time = time.time()
-        self.data = []
+        self.csv_file = csv_file
+        self._running = False
+        self.start_time = None
 
         # Prepare CSV
-        with open(self.k.filename, 'w', newline='') as f:
+        with open(self.csv_file, 'w', newline='') as f:
             writer = csv.writer(f)
-            writer.writerow(["Time", "V_Drain", "V_Gate", "I_Drain", "I_Gate"])
+            writer.writerow(["Time", "V_Gate", "V_Drain", "I_Drain", "I_Gate"])
 
     def run(self):
-        while not self._stop_event.is_set():
-            t = time.time() - self.start_time
-            I_drain, I_gate = self.k.measure()
-            self.data.append((t, self.k.Vd, self.k.Vg, I_drain, I_gate))
+        self._running = True
+        self.start_time = time.time()
 
-            # Write to CSV
-            with open(self.k.filename, 'a', newline='') as f:
-                writer = csv.writer(f)
-                writer.writerow([t, self.k.Vd, self.k.Vg, I_drain, I_gate])
-
+        while self._running:
+            t, Vg, Vd, Id, Ig = self.k.measure_once()  # implement measure_once in Keithley2636B
+            if Id is not None:
+                # Emit signal
+                self.new_data.emit(t, Vg, Vd, Id, Ig)
+                # Save to CSV
+                with open(self.csv_file, 'a', newline='') as f:
+                    writer = csv.writer(f)
+                    writer.writerow([t, Vg, Vd, Id, Ig])
             time.sleep(self.interval)
 
     def stop(self):
-        self._stop_event.set()
-        self.join()
+        self._running = False
+        self.wait()  # wait for thread to finish cleanly
 
-class VgPulseWorker(threading.Thread):
-    def __init__(self, keithley_instance, pulse_sequence):
-        super().__init__()
-        self.k = keithley_instance
-        self.sequence = pulse_sequence
-        self._stop_event = threading.Event()
+# -------------------------------
+# Vg Pulse Scheduler using threading.Thread
+# -------------------------------
+class VgPulseScheduler:
+    def __init__(self, keithley):
+        self.k = keithley
+        self._running = False
+        self._thread = None
 
-    def run(self):
-        for t_delay, vg in self.sequence:
-            if self._stop_event.is_set():
-                break
-            time.sleep(t_delay)
-            self.k.set_Vg(vg)
+    def start_periodic(self, high, low, period_s, duration_s=None):
+        """Run Vg pulses in a separate thread."""
+        if self._running:
+            return
+        self._running = True
+
+        def worker():
+            t_end = time.time() + duration_s if duration_s else float('inf')
+            while self._running and time.time() < t_end:
+                self.k.set_voltage(Vg=high)
+                time.sleep(period_s / 2)
+                if not self._running:
+                    break
+                self.k.set_voltage(Vg=low)
+                time.sleep(period_s / 2)
+
+        self._thread = threading.Thread(target=worker, daemon=True)
+        self._thread.start()
 
     def stop(self):
-        self._stop_event.set()
-        self.join()
+        self._running = False
+        if self._thread:
+            self._thread.join()
+            self._thread = None
 
-class MainWindow(QMainWindow):
-    def __init__(self, keithley_instance, filename):
-        super().__init__()
-        self.k = keithley_instance
-        self.meas_worker = MeasurementWorker(self.k)
-        self.vg_pulse_worker = None
-
-        self.setWindowTitle("Keithley Control")
-        self.setGeometry(100, 100, 800, 600)
-
-        # --- Central Widget ---
-        central = QWidget()
-        layout = QVBoxLayout()
-
-        # --- Spin boxes for Vd and Vg ---
-        self.vd_spin = QDoubleSpinBox()
-        self.vd_spin.setRange(-10.0, 10.0)
-        self.vd_spin.setSingleStep(0.1)
-        self.vd_spin.setValue(self.k.Vd)
-        self.vd_button = QPushButton("Set Vd")
-
-        self.vg_spin = QDoubleSpinBox()
-        self.vg_spin.setRange(-10.0, 10.0)
-        self.vg_spin.setSingleStep(0.1)
-        self.vg_spin.setValue(self.k.Vg)
-        self.vg_button = QPushButton("Set Vg")
-
-        spin_layout = QHBoxLayout()
-        spin_layout.addWidget(QLabel("Vd:")); spin_layout.addWidget(self.vd_spin); spin_layout.addWidget(self.vd_button)
-        spin_layout.addWidget(QLabel("Vg:")); spin_layout.addWidget(self.vg_spin); spin_layout.addWidget(self.vg_button)
-        layout.addLayout(spin_layout)
-
-        # --- Vg Pulse Button ---
-        self.pulse_button = QPushButton("Start Vg Pulse")
-        layout.addWidget(self.pulse_button)
-
-        # --- Stop Button ---
-        self.stop_button = QPushButton("Stop")
-        layout.addWidget(self.stop_button)
-
-        # --- Matplotlib Figure ---
-        self.fig = Figure(figsize=(8, 4))
-        self.canvas = FigureCanvas(self.fig)
-        layout.addWidget(self.canvas)
-        self.ax1 = self.fig.add_subplot(211)
-        self.ax2 = self.fig.add_subplot(212, sharex=self.ax1)
-        self.line_id, = self.ax1.plot([], [], 'b.-', label='I_Drain')
-        self.line_ig, = self.ax2.plot([], [], 'r.-', label='I_Gate')
-        self.ax1.set_ylabel('I_Drain'); self.ax2.set_ylabel('I_Gate'); self.ax2.set_xlabel('Time (s)')
-
-        central.setLayout(layout)
-        self.setCentralWidget(central)
-
-        # --- Connect buttons ---
-        self.vd_button.clicked.connect(self.set_vd)
-        self.vg_button.clicked.connect(self.set_vg)
-        self.pulse_button.clicked.connect(self.start_vg_pulse)
-        self.stop_button.clicked.connect(self.stop_measurement)
-
-        # --- Start measurement thread ---
-        self.meas_worker.start()
-
-        # --- Start plot timer ---
-        self.timer = self.startTimer(200)  # 200 ms
-
-    def set_vd(self):
-        self.k.set_Vd(self.vd_spin.value())
-
-    def set_vg(self):
-        self.k.set_Vg(self.vg_spin.value())
-
-    def start_vg_pulse(self):
-        # Example pulse sequence: [(delay_sec, Vg)]
-        sequence = [(1.0, 1.0), (1.0, -1.0), (1.0, 0.0)]
-        if self.vg_pulse_worker and self.vg_pulse_worker.is_alive():
-            self.vg_pulse_worker.stop()
-        self.vg_pulse_worker = VgPulseWorker(self.k, sequence)
-        self.vg_pulse_worker.start()
-
-    def stop_measurement(self):
-        if self.meas_worker.is_alive():
-            self.meas_worker.stop()
-        if self.vg_pulse_worker and self.vg_pulse_worker.is_alive():
-            self.vg_pulse_worker.stop()
-
-    def timerEvent(self, event):
-        # Update plot from worker data
-        data = self.meas_worker.data
-        if data:
-            t_vals = [x[0] for x in data]
-            i_d_vals = [x[3] for x in data]
-            i_g_vals = [x[4] for x in data]
-            self.line_id.set_data(t_vals, i_d_vals)
-            self.line_ig.set_data(t_vals, i_g_vals)
-            self.ax1.relim(); self.ax1.autoscale_view()
-            self.ax2.relim(); self.ax2.autoscale_view()
-            self.canvas.draw()
-
+# -------------------------------
+# Example Usage (Terminal)
+# -------------------------------
 if __name__ == "__main__":
+    # Assume you already have Keithley2636B instance
+    from keithley import Keithley2636B  # your existing class
     RESOURCE_ID = "USB0::0x05E6::0x2636::4407529::INSTR"
-    filename = "worker.csv"
-    app = QApplication(sys.argv)
-    k = Keithley2636B(RESOURCE_ID, filename=filename)
-    k.connect()
-    window = MainWindow(k, filename=filename)
-    window.show()
-    sys.exit(app.exec_())
+    keithley = Keithley2636B(RESOURCE_ID)
+    keithley.connect()
+    keithley.clean_instrument()
+    keithley.config()
+    keithley.set_voltage(Vd=1.0, Vg=0.0)
+
+    # Start measurement worker
+    measure_worker = MeasureWorker(keithley, interval=0.1, csv_file="data.csv")
+    measure_worker.new_data.connect(lambda t, Vg, Vd, Id, Ig: print(f"{t:.2f}s | Vg={Vg} | Vd={Vd} | Id={Id:.3e} | Ig={Ig:.3e}"))
+    measure_worker.start()
+
+    # Start periodic Vg pulse
+    pulse = VgPulseScheduler(keithley)
+    pulse.start_periodic(high=1.0, low=-1.0, period_s=2.0, duration_s=10.0)  # 2 s period, 10 s total
+
+    try:
+        while True:
+            cmd = input("Type 'stop' to end, or 'Vg <value>' / 'Vd <value>': ").strip()
+            if cmd.lower() == 'stop':
+                break
+            elif cmd.startswith('Vg'):
+                _, val = cmd.split()
+                keithley.set_voltage(Vg=float(val))
+            elif cmd.startswith('Vd'):
+                _, val = cmd.split()
+                keithley.set_voltage(Vd=float(val))
+    except KeyboardInterrupt:
+        pass
+    finally:
+        pulse.stop()
+        measure_worker.stop()
+        keithley.set_voltage(Vd=0, Vg=0)
+        keithley.shutdown()
+        print("Finished.")
