@@ -65,7 +65,7 @@ class VgPulseWorker(threading.Thread):
         self.join()
 
 class MainWindow(QMainWindow):
-    def __init__(self, keithley_instance):
+    def __init__(self, keithley_instance, filename):
         super().__init__()
         self.k = keithley_instance
         self.meas_worker = MeasurementWorker(self.k)
@@ -154,8 +154,8 @@ class MainWindow(QMainWindow):
         data = self.meas_worker.data
         if data:
             t_vals = [x[0] for x in data]
-            i_d_vals = [x[2] for x in data]
-            i_g_vals = [x[3] for x in data]
+            i_d_vals = [x[3] for x in data]
+            i_g_vals = [x[4] for x in data]
             self.line_id.set_data(t_vals, i_d_vals)
             self.line_ig.set_data(t_vals, i_g_vals)
             self.ax1.relim(); self.ax1.autoscale_view()
@@ -168,6 +168,6 @@ if __name__ == "__main__":
     app = QApplication(sys.argv)
     k = Keithley2636B(RESOURCE_ID, filename=filename)
     k.connect()
-    window = MainWindow(k)
+    window = MainWindow(k, filename=filename)
     window.show()
     sys.exit(app.exec_())
