@@ -155,7 +155,8 @@ class MainWindow(QWidget):
 # -------------------------------
 if __name__ == "__main__":
     RESOURCE_ID = "USB0::0x05E6::0x2636::4407529::INSTR"  # Replace with your Keithley
-    keithley = Keithley2636B(RESOURCE_ID)
+    filename = 'qt.csv'
+    keithley = Keithley2636B(RESOURCE_ID, filename=filename)
     keithley.connect()
     keithley.clean_instrument()
     keithley.config()
