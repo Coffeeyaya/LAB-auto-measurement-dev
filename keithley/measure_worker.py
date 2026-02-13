@@ -139,8 +139,9 @@ class MainWindow(QMainWindow):
 
 if __name__ == "__main__":
     RESOURCE_ID = "USB0::0x05E6::0x2636::4407529::INSTR"
+    filename = "worker.csv"
     app = QApplication(sys.argv)
-    k = Keithley2636B(RESOURCE_ID)
+    k = Keithley2636B(RESOURCE_ID, filename=filename)
     k.connect()
     window = MainWindow(k)
     window.show()
