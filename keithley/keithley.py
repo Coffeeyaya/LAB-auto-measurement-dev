@@ -197,34 +197,6 @@ class Keithley2636B:
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.shutdown()
 
-
-
-from PyQt5.QtCore import QThread, pyqtSignal, QMutex
-
-class KeithleyWorker(QThread):
-    new_data = pyqtSignal(float, float, float, float, float)  # t, Vd, Vg, I_D, I_G
-
-    def __init__(self, keithley):
-        super().__init__()
-        self.k = keithley
-        self.running = True
-        self.lock = QMutex()
-
-    def run(self):
-        start_time = time.time()
-        while self.running:
-            # Measure
-            I_D, I_G = self.k.measure()
-            t = time.time() - start_time
-            self.new_data.emit(t, self.k.Vd, self.k.Vg, I_D, I_G)
-            self.msleep(200)  # 5Hz update
-
-    def stop(self):
-        self.running = False
-        self.wait()
-
-
-
 if __name__ == "__main__":
     # Create an instance
     smu = Keithley2636B(RESOURCE_ID)
@@ -232,7 +204,7 @@ if __name__ == "__main__":
     # Connect and initialize
     smu.connect()
     smu.clean_instrument()
-    smu.config()  # optional: pass limiti_a, nplc_a, etc.
+    smu.config()
 
     # Run measurement
     smu.run()  # will use your global constants for gate/drain voltage, points, cycles

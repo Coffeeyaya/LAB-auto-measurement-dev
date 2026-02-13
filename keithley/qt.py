@@ -25,7 +25,7 @@ class KeithleyWorker(QThread):
             I_D, I_G = self.k.measure()
             t = time.time() - start_time
             self.new_data.emit(t, self.k.Vd, self.k.Vg, I_D, I_G)
-            self.msleep(200)  # 5 Hz
+            self.msleep(100)  # 10 Hz
 
     def stop(self):
         self.running = False
@@ -139,6 +139,8 @@ if __name__ == "__main__":
     RESOURCE_ID = "USB0::0x05E6::0x2636::4407529::INSTR"
     keithley = Keithley2636B(RESOURCE_ID)
     keithley.connect()
+    keithley.clean_instrument()
+    keithley.config()
 
     app = QApplication(sys.argv)
     win = MainWindow(keithley)
