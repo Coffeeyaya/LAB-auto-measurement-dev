@@ -1,119 +1,170 @@
-from PyQt5.QtCore import QThread, pyqtSignal
+import sys
 import time
 import csv
-import threading
+from PyQt5.QtCore import QThread, pyqtSignal
+from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QHBoxLayout, QLabel, QDoubleSpinBox, QPushButton
+from keithley2636b import Keithley2636B  # your Keithley class
+
+FILENAME = "shared_data.csv"
+MEASURE_INTERVAL = 0.1  # seconds
 
 # -------------------------------
-# Measurement Worker using QThread
+# QThread for continuous measurement
 # -------------------------------
-class MeasureWorker(QThread):
-    # Emit measurement data: time, Vg, Vd, Id, Ig
-    new_data = pyqtSignal(float, float, float, float, float)
+class MeasureThread(QThread):
+    new_data = pyqtSignal(float, float, float, float, float)  # time, Vd, Vg, Id, Ig
 
-    def __init__(self, keithley, interval=0.1, csv_file="data.csv"):
+    def __init__(self, keithley: Keithley2636B):
         super().__init__()
         self.k = keithley
-        self.interval = interval
-        self.csv_file = csv_file
-        self._running = False
-        self.start_time = None
-
-        # Prepare CSV
-        with open(self.csv_file, 'w', newline='') as f:
-            writer = csv.writer(f)
-            writer.writerow(["Time", "V_Gate", "V_Drain", "I_Drain", "I_Gate"])
+        self.running = True
 
     def run(self):
-        self._running = True
-        self.start_time = time.time()
-
-        while self._running:
-            t, Vg, Vd, Id, Ig = self.k.measure_once()  # implement measure_once in Keithley2636B
-            if Id is not None:
-                # Emit signal
-                self.new_data.emit(t, Vg, Vd, Id, Ig)
-                # Save to CSV
-                with open(self.csv_file, 'a', newline='') as f:
-                    writer = csv.writer(f)
-                    writer.writerow([t, Vg, Vd, Id, Ig])
-            time.sleep(self.interval)
+        start_time = time.time()
+        with open(FILENAME, 'w', newline='') as f:
+            writer = csv.writer(f)
+            writer.writerow(["Time", "V_Drain", "V_Gate", "I_Drain", "I_Gate"])
+            while self.running:
+                with self.k.lock:
+                    Vd = self.k.Vd
+                    Vg = self.k.Vg
+                Id, Ig = self.k.measure()
+                t = time.time() - start_time
+                writer.writerow([t, Vd, Vg, Id, Ig])
+                f.flush()
+                self.new_data.emit(t, Vd, Vg, Id, Ig)
+                time.sleep(MEASURE_INTERVAL)
 
     def stop(self):
-        self._running = False
-        self.wait()  # wait for thread to finish cleanly
+        self.running = False
+
 
 # -------------------------------
-# Vg Pulse Scheduler using threading.Thread
+# QThread for Vg pulses
 # -------------------------------
-class VgPulseScheduler:
-    def __init__(self, keithley):
+class PulseThread(QThread):
+    def __init__(self, keithley: Keithley2636B, pulse_sequence: list):
+        super().__init__()
         self.k = keithley
-        self._running = False
-        self._thread = None
+        self.pulse_sequence = pulse_sequence
+        self.running = True
 
-    def start_periodic(self, high, low, period_s, duration_s=None):
-        """Run Vg pulses in a separate thread."""
-        if self._running:
-            return
-        self._running = True
-
-        def worker():
-            t_end = time.time() + duration_s if duration_s else float('inf')
-            while self._running and time.time() < t_end:
-                self.k.set_voltage(Vg=high)
-                time.sleep(period_s / 2)
-                if not self._running:
+    def run(self):
+        while self.running:
+            for Vg, duration in self.pulse_sequence:
+                if not self.running:
                     break
-                self.k.set_voltage(Vg=low)
-                time.sleep(period_s / 2)
-
-        self._thread = threading.Thread(target=worker, daemon=True)
-        self._thread.start()
+                self.k.set_Vg(Vg)
+                t_end = time.time() + duration
+                while time.time() < t_end:
+                    if not self.running:
+                        break
+                    time.sleep(0.01)
 
     def stop(self):
-        self._running = False
-        if self._thread:
-            self._thread.join()
-            self._thread = None
+        self.running = False
+
 
 # -------------------------------
-# Example Usage (Terminal)
+# PyQt GUI
+# -------------------------------
+class KeithleyGUI(QWidget):
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle("Keithley 2636B Controller")
+
+        # Keithley instance
+        RESOURCE_ID = "USB0::0x05E6::0x2636::4407529::INSTR"
+        self.k = Keithley2636B(RESOURCE_ID)
+        self.k.connect()
+        self.k.clean_instrument()
+        self.k.config()
+        self.k.set_Vd(1.0)
+        self.k.set_Vg(0.0)
+
+        # Threads
+        self.measure_thread = MeasureThread(self.k)
+        self.pulse_thread = None
+
+        # UI Elements
+        layout = QVBoxLayout()
+
+        # Drain voltage control
+        h1 = QHBoxLayout()
+        h1.addWidget(QLabel("Vd (Drain)"))
+        self.spin_vd = QDoubleSpinBox()
+        self.spin_vd.setRange(0, 10)
+        self.spin_vd.setValue(self.k.Vd)
+        self.spin_vd.setSingleStep(0.1)
+        h1.addWidget(self.spin_vd)
+        self.btn_set_vd = QPushButton("Set Vd")
+        h1.addWidget(self.btn_set_vd)
+        layout.addLayout(h1)
+
+        # Gate voltage control
+        h2 = QHBoxLayout()
+        h2.addWidget(QLabel("Vg (Gate)"))
+        self.spin_vg = QDoubleSpinBox()
+        self.spin_vg.setRange(-10, 10)
+        self.spin_vg.setValue(self.k.Vg)
+        self.spin_vg.setSingleStep(0.1)
+        h2.addWidget(self.spin_vg)
+        self.btn_set_vg = QPushButton("Set Vg")
+        h2.addWidget(self.btn_set_vg)
+        layout.addLayout(h2)
+
+        # Start / Stop buttons
+        h3 = QHBoxLayout()
+        self.btn_start = QPushButton("Start Measurement")
+        self.btn_stop = QPushButton("Stop Measurement")
+        h3.addWidget(self.btn_start)
+        h3.addWidget(self.btn_stop)
+        layout.addLayout(h3)
+
+        self.setLayout(layout)
+
+        # Connect buttons
+        self.btn_set_vd.clicked.connect(self.set_vd)
+        self.btn_set_vg.clicked.connect(self.set_vg)
+        self.btn_start.clicked.connect(self.start_measurement)
+        self.btn_stop.clicked.connect(self.stop_measurement)
+
+    def set_vd(self):
+        val = self.spin_vd.value()
+        self.k.set_Vd(val)
+
+    def set_vg(self):
+        val = self.spin_vg.value()
+        self.k.set_Vg(val)
+
+    def start_measurement(self):
+        if not self.measure_thread.isRunning():
+            self.measure_thread.start()
+        # Example pulse sequence: alternate +1/-1 V every 1 s
+        if self.pulse_thread is None:
+            pulse_sequence = [(1.0, 1.0), (-1.0, 1.0)]
+            self.pulse_thread = PulseThread(self.k, pulse_sequence)
+            self.pulse_thread.start()
+
+    def stop_measurement(self):
+        self.measure_thread.stop()
+        if self.pulse_thread is not None:
+            self.pulse_thread.stop()
+        self.k.set_Vd(0.0)
+        self.k.set_Vg(0.0)
+
+    def closeEvent(self, event):
+        # Ensure threads are stopped
+        self.stop_measurement()
+        self.k.shutdown()
+        event.accept()
+
+
+# -------------------------------
+# Main
 # -------------------------------
 if __name__ == "__main__":
-    # Assume you already have Keithley2636B instance
-    from keithley import Keithley2636B  # your existing class
-    RESOURCE_ID = "USB0::0x05E6::0x2636::4407529::INSTR"
-    keithley = Keithley2636B(RESOURCE_ID)
-    keithley.connect()
-    keithley.clean_instrument()
-    keithley.config()
-    keithley.set_voltage(Vd=1.0, Vg=0.0)
-
-    # Start measurement worker
-    measure_worker = MeasureWorker(keithley, interval=0.1, csv_file="data.csv")
-    measure_worker.new_data.connect(lambda t, Vg, Vd, Id, Ig: print(f"{t:.2f}s | Vg={Vg} | Vd={Vd} | Id={Id:.3e} | Ig={Ig:.3e}"))
-    measure_worker.start()
-
-    # Start periodic Vg pulse
-    pulse = VgPulseScheduler(keithley)
-    pulse.start_periodic(high=1.0, low=-1.0, period_s=2.0, duration_s=10.0)  # 2 s period, 10 s total
-
-    try:
-        while True:
-            cmd = input("Type 'stop' to end, or 'Vg <value>' / 'Vd <value>': ").strip()
-            if cmd.lower() == 'stop':
-                break
-            elif cmd.startswith('Vg'):
-                _, val = cmd.split()
-                keithley.set_voltage(Vg=float(val))
-            elif cmd.startswith('Vd'):
-                _, val = cmd.split()
-                keithley.set_voltage(Vd=float(val))
-    except KeyboardInterrupt:
-        pass
-    finally:
-        pulse.stop()
-        measure_worker.stop()
-        keithley.set_voltage(Vd=0, Vg=0)
-        keithley.shutdown()
-        print("Finished.")
+    app = QApplication(sys.argv)
+    gui = KeithleyGUI()
+    gui.show()
+    sys.exit(app.exec_())
