@@ -8,27 +8,27 @@ import pyvisa
 import time
 import csv
 import os
-
-# --- CONFIGURATION ---
-RESOURCE_ID = "USB0::0x05E6::0x2636::4407529::INSTR"
-FILENAME = "shared_data.csv"
-DRAIN_V = 1.0       
-GATE_HIGH = 1.0     
-GATE_LOW = -1.0     
-POINTS_PER_PHASE = 30  
-CYCLE_NUMBERS = 5
+import threading
 
 class Keithley2636B:
-    def __init__(self, resource_id, filename="shared_data.csv"):
+    def __init__(self, resource_id, filename, limiti_a=1e-3, limiti_b=1e-3,
+             rangei_a=1e-6, rangei_b=1e-6, nplc_a=1, nplc_b=1):
         self.resource_id = resource_id
         self.filename = filename
+        self.limiti_a = limiti_a
+        self.limiti_b = limiti_b
+        self.rangei_a = rangei_a
+        self.rangei_b = rangei_b
+        self.nplc_a = nplc_a
+        self.nplc_b = nplc_b
         self.rm = None
         self.keithley = None
         self.start_time = None
+        self.Vd = 0.0
+        self.Vg = 0.0
 
-        self.Vd = 0.0  
-        self.Vg = 0.0  
-
+        self.lock = threading.Lock()
+ 
     # connection
     def connect(self):
         try:
@@ -40,31 +40,20 @@ class Keithley2636B:
             print("Connected.")
         except Exception as e:
             raise RuntimeError(f"Connection failed: {e}")
-    
-    def set_Vd(self, v):
-        self.Vd = v
-        
-        try:
-            self.keithley.write(f"smua.source.levelv = {v}")
-        except:
-            pass
 
-    def set_Vg(self, v):
-        self.Vg = v
-        try:
-            self.keithley.write(f"smub.source.levelv = {v}")
-        except:
-            pass
+    # initial settings before measurement
+    def config(self):
+        k = self.keithley
+        k.write("smua.source.func=smua.OUTPUT_DCVOLTS; smua.source.levelv=0")
+        k.write(f"smua.source.limiti={self.limiti_a}; smua.measure.rangei={self.rangei_a}")
+        k.write(f"smua.measure.nplc={self.nplc_a}; smua.measure.autorangei=0")
+        k.write("smua.source.output=1")
 
-    def measure(self):
-        try:
-            self.keithley.write("print(smua.measure.i(), smub.measure.i())")
-            resp = self.keithley.read().replace("\t", ",").split(",")
-            if len(resp) >= 2:
-                return float(resp[0]), float(resp[1])
-        except:
-            return 0.0, 0.0
-        
+        k.write("smub.source.func=smub.OUTPUT_DCVOLTS; smub.source.levelv=0")
+        k.write(f"smub.source.limiti={self.limiti_b}; smub.measure.rangei={self.rangei_b}")
+        k.write(f"smub.measure.nplc={self.nplc_b}; smub.measure.autorangei=0")
+        k.write("smub.source.output=1")
+
     # clean error
     def clean_instrument(self):
         print("Cleaning instrument...")
@@ -101,18 +90,32 @@ class Keithley2636B:
         except Exception as e:
             print(f"Warning during clean: {e}")
 
-    # initial settings before measurement
-    def config(self, limiti_a=1e-3, limiti_b=1e-3, rangei_a=1e-6, rangei_b=1e-6, nplc_a=1, nplc_b=1):
-        k = self.keithley
-        k.write("smua.source.func=smua.OUTPUT_DCVOLTS; smua.source.levelv=0")
-        k.write(f"smua.source.limiti={limiti_a}; smua.measure.rangei={rangei_a}")
-        k.write(f"smua.measure.nplc={nplc_a}; smua.measure.autorangei=0")
-        k.write("smua.source.output=1")
+    def set_Vd(self, v):
+        with self.lock:
+            self.Vd = v
+            
+            try:
+                self.keithley.write(f"smua.source.levelv = {v}")
+            except:
+                pass
 
-        k.write("smub.source.func=smub.OUTPUT_DCVOLTS; smub.source.levelv=0")
-        k.write(f"smub.source.limiti={limiti_b}; smub.measure.rangei={rangei_b}")
-        k.write(f"smub.measure.nplc={nplc_b}; smub.measure.autorangei=0")
-        k.write("smub.source.output=1")
+    def set_Vg(self, v):
+        with self.lock:
+            self.Vg = v
+            try:
+                self.keithley.write(f"smub.source.levelv = {v}")
+            except:
+                pass
+
+    def measure(self):
+        with self.lock:
+            try:
+                self.keithley.write("print(smua.measure.i(), smub.measure.i())")
+                resp = self.keithley.read().replace("\t", ",").split(",")
+                if len(resp) >= 2:
+                    return float(resp[0]), float(resp[1])
+            except:
+                return 0.0, 0.0
 
     # prepare csv file for saving data
     def prepare_file(self):
@@ -125,7 +128,7 @@ class Keithley2636B:
 
         with open(self.filename, 'w', newline='') as f:
             writer = csv.writer(f)
-            writer.writerow(["Time", "V_Gate", "I_Drain", "I_Gate"])
+            writer.writerow(["Time", "V_Drain", "V_Gate", "I_Drain", "I_Gate"])
 
     # set vg to a value, measure some points
     def set_vg_phase(self, gate_voltage, points_per_phase):
@@ -167,7 +170,6 @@ class Keithley2636B:
             k.write(f"smub.source.levelv = {vg_low}")
             self.set_vg_phase(vg_low, points_per_phase)
         
-
     # run measurement(includes measurement procedure)             
     def run(self):
         self.prepare_file()
@@ -181,6 +183,8 @@ class Keithley2636B:
     def shutdown(self):
         print("Shutting down...")
         try:
+            self.keithley.write("smua.source.levelv = 0")
+            self.keithley.write("smub.source.levelv = 0")
             self.keithley.write("smua.source.output = 0")
             self.keithley.write("smub.source.output = 0")
             self.keithley.close()
@@ -199,16 +203,21 @@ class Keithley2636B:
         self.shutdown()
 
 if __name__ == "__main__":
-    # Create an instance
-    smu = Keithley2636B(RESOURCE_ID)
+    RESOURCE_ID = "USB0::0x05E6::0x2636::4407529::INSTR"
+    FILENAME = "shared_data.csv"
+    DRAIN_V = 1.0       
+    GATE_HIGH = 1.0     
+    GATE_LOW = -1.0     
+    POINTS_PER_PHASE = 30  
+    CYCLE_NUMBERS = 5
 
-    # Connect and initialize
-    smu.connect()
-    smu.clean_instrument()
-    smu.config()
+    k = Keithley2636B(RESOURCE_ID)
+    k.connect()
+    k.clean_instrument()
+    k.config()
 
     # Run measurement
-    smu.run()  # will use your global constants for gate/drain voltage, points, cycles
+    k.run()  # will use your global constants for gate/drain voltage, points, cycles
 
     # Shutdown outputs safely
-    smu.shutdown()
+    k.shutdown()

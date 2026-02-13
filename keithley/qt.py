@@ -26,7 +26,7 @@ class KeithleyWorker(QThread):
             I_D, I_G = self.k.measure()
             t = time.time() - start_time
             self.new_data.emit(t, self.k.Vd, self.k.Vg, I_D, I_G)
-            self.msleep(200)  # 5 Hz
+            self.msleep(100)  # 10 Hz
 
     def stop(self):
         self.running = False
@@ -37,7 +37,7 @@ class KeithleyWorker(QThread):
 # PyQt5 GUI
 # -------------------------------
 class MainWindow(QWidget):
-    def __init__(self, keithley):
+    def __init__(self, keithley, filename):
         super().__init__()
         self.setWindowTitle("Keithley Real-Time Control")
         self.k = keithley
@@ -93,8 +93,8 @@ class MainWindow(QWidget):
         # Data storage
         self.times, self.I_Ds, self.I_Gs = [], [], []
 
-        # CSV file
-        self.csv_file = "real_time_data.csv"
+        # write csv file
+        self.csv_file = filename
         with open(self.csv_file, 'w', newline='') as f:
             writer = csv.writer(f)
             writer.writerow(["Time","Vd","Vg","I_D","I_G"])
@@ -128,7 +128,7 @@ class MainWindow(QWidget):
         self.ax2.relim(); self.ax2.autoscale_view()
         self.canvas.draw()
 
-        # Save CSV
+        # append to csv file
         with open(self.csv_file, 'a', newline='') as f:
             writer = csv.writer(f)
             writer.writerow([t, Vd, Vg, I_D, I_G])
@@ -148,7 +148,6 @@ class MainWindow(QWidget):
         self.Vd_spin.setEnabled(False)
         self.Vg_spin.setEnabled(False)
         self.stop_btn.setEnabled(False)
-
 
 
 # -------------------------------
