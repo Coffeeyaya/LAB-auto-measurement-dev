@@ -63,6 +63,12 @@ class MainWindow(QWidget):
         ctrl_layout = QHBoxLayout()
         layout.addLayout(ctrl_layout)
 
+        # display Vd and Vg
+        display_layout = QHBoxLayout()
+        layout.addLayout(display_layout)
+        display_layout.addWidget(self.Vd_display)
+        display_layout.addWidget(self.Vg_display)
+
         self.Vd_spin = QDoubleSpinBox()
         self.Vd_spin.setRange(-10.0, 10.0)
         self.Vd_spin.setSingleStep(0.1)
@@ -84,6 +90,10 @@ class MainWindow(QWidget):
         ctrl_layout.addWidget(self.Vg_spin)
         ctrl_layout.addWidget(self.set_Vg_btn)
         ctrl_layout.addWidget(self.stop_btn)
+
+        # Vd, Vg display
+        self.Vd_display = QLabel("Vd: 0.000 V")
+        self.Vg_display = QLabel("Vg: 0.000 V")
 
         # Connect signals
         self.set_Vd_btn.clicked.connect(self.apply_Vd)
@@ -131,6 +141,11 @@ class MainWindow(QWidget):
 
     # Update plot and CSV
     def update_plot(self, t, Vd, Vg, I_D, I_G):
+        # Update displays
+        self.Vd_display.setText(f"Vd: {Vd:.3f} V")
+        self.Vg_display.setText(f"Vg: {Vg:.3f} V")
+
+
         self.times.append(t)
         self.I_Ds.append(I_D)
         self.I_Gs.append(I_G)
