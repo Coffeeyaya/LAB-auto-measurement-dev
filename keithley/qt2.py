@@ -7,6 +7,8 @@ from PyQt5.QtWidgets import (QApplication, QWidget, QVBoxLayout, QHBoxLayout,
 from PyQt5.QtCore import QThread, pyqtSignal
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
+from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
+
 from keithley import Keithley2636B
 
 # -------------------------------
@@ -49,6 +51,11 @@ class MainWindow(QWidget):
         self.figure = Figure(figsize=(6,4))
         self.canvas = FigureCanvas(self.figure)
         layout.addWidget(self.canvas)
+
+        self.toolbar = NavigationToolbar(self.canvas, self)
+        layout.addWidget(self.toolbar)
+
+        
         self.ax1 = self.figure.add_subplot(211)
         self.ax2 = self.figure.add_subplot(212, sharex=self.ax1)
         self.line_id, = self.ax1.plot([], [], 'b.-', label='I_D')
@@ -136,9 +143,25 @@ class MainWindow(QWidget):
         self.I_Gs.append(I_G)
         self.line_id.set_data(self.times, self.I_Ds)
         self.line_ig.set_data(self.times, self.I_Gs)
-        self.ax1.relim(); self.ax1.autoscale_view()
-        self.ax2.relim(); self.ax2.autoscale_view()
+
+
+        # self.ax1.relim(); self.ax1.autoscale_view()
+        # self.ax2.relim(); self.ax2.autoscale_view()
+
+        if not self.ax1.get_autoscale_on():
+            pass
+        else:
+            self.ax1.relim()
+            self.ax1.autoscale_view()
+
+        if not self.ax2.get_autoscale_on():
+            pass
+        else:
+            self.ax2.relim()
+            self.ax2.autoscale_view()
+
         self.canvas.draw()
+
 
         with open(self.csv_file, 'a', newline='') as f:
             writer = csv.writer(f)
