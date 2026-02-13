@@ -87,8 +87,8 @@ class MainWindow(QWidget):
         ctrl_layout.addWidget(self.stop_btn)
 
         # Connect signals
-        self.Vd_spin.editingFinished.connect(self.k.set_Vd)
-        self.Vg_spin.editingFinished.connect(self.k.set_Vg)
+        self.Vd_spin.valueChanged.connect(self.k.set_Vd)
+        self.Vg_spin.valueChanged.connect(self.k.set_Vg)
         self.up_Vd.clicked.connect(lambda: self.Vd_spin.setValue(self.Vd_spin.value()+0.1))
         self.down_Vd.clicked.connect(lambda: self.Vd_spin.setValue(self.Vd_spin.value()-0.1))
         self.up_Vg.clicked.connect(lambda: self.Vg_spin.setValue(self.Vg_spin.value()+0.1))

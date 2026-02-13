@@ -43,6 +43,7 @@ class Keithley2636B:
     
     def set_Vd(self, v):
         self.Vd = v
+        
         try:
             self.keithley.write(f"smua.source.levelv = {v}")
         except:
