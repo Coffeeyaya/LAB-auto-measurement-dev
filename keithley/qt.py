@@ -148,8 +148,6 @@ class MainWindow(QWidget):
         self.Vd_spin.setEnabled(False)
         self.Vg_spin.setEnabled(False)
         self.stop_btn.setEnabled(False)
-        
-        print("Measurement stopped. Figure remains visible.")
 
 
 
