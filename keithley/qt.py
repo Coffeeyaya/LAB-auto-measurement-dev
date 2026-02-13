@@ -108,10 +108,11 @@ class MainWindow(QWidget):
 
         # Automatically start Vg pulse script
         sequence = [
-            (1.0, 3.0),
+            (-2, 3.0),
             (-1.0, 3.0),
-            (2.0, 3),
-            (0.0, 3),
+            (0.0, 3.0),
+            (1.0, 3.0),
+            (2.0, 3.0),
         ]
 
         self.k.start_vg_pulse(sequence)
