@@ -104,6 +104,19 @@ class MainWindow(QWidget):
         self.worker.new_data.connect(self.update_plot)
         self.worker.start()
 
+        self.worker.start()
+
+        # Automatically start Vg pulse script
+        sequence = [
+            (1.0, 1.0),
+            (-1.0, 1.0),
+            (2.0, 0.5),
+            (0.0, 2.0),
+        ]
+
+        self.k.start_vg_pulse(sequence)
+
+
     # Apply Set button values
     def apply_Vd(self):
         value = self.Vd_spin.value()
