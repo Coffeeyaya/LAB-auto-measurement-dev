@@ -3,7 +3,7 @@ import threading
 import time
 import csv
 import os
-from keithley import Keithley_2636B
+from keithley import Keithley2636B
 
 from PyQt5.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout,
                              QPushButton, QSpinBox, QLabel, QHBoxLayout, QDoubleSpinBox)
@@ -140,7 +140,7 @@ class MainWindow(QMainWindow):
 if __name__ == "__main__":
     RESOURCE_ID = "USB0::0x05E6::0x2636::4407529::INSTR"
     app = QApplication(sys.argv)
-    k = Keithley_2636B(RESOURCE_ID)
+    k = Keithley2636B(RESOURCE_ID)
     k.connect()
     window = MainWindow(k)
     window.show()
