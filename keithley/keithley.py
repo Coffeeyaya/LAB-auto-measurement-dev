@@ -117,6 +117,40 @@ class Keithley2636B:
             except:
                 return 0.0, 0.0
 
+
+    def start_vg_pulse(self, pulse_sequence):
+        """
+        pulse_sequence: list of tuples [(Vg1, duration1), (Vg2, duration2), ...]
+        It will loop through sequence until stop_vg_pulse() is called.
+        """
+        if hasattr(self, '_pulse_thread') and self._pulse_thread.is_alive():
+            print("Pulse thread already running")
+            return
+
+        self._pulse_running = True
+
+        def pulse_worker():
+            while self._pulse_running:
+                for Vg, duration in pulse_sequence:
+                    if not self._pulse_running:
+                        break
+                    self.set_Vg(Vg)
+                    t_end = time.time() + duration
+                    while time.time() < t_end:
+                        if not self._pulse_running:
+                            break
+                        time.sleep(0.01)
+
+        self._pulse_thread = threading.Thread(target=pulse_worker, daemon=True)
+        self._pulse_thread.start()
+        print("Vg pulse started")
+
+    def stop_vg_pulse(self):
+        self._pulse_running = False
+        if hasattr(self, '_pulse_thread'):
+            self._pulse_thread.join()
+            print("Vg pulse stopped")
+
     # prepare csv file for saving data
     def prepare_file(self):
 
@@ -204,20 +238,26 @@ class Keithley2636B:
 
 if __name__ == "__main__":
     RESOURCE_ID = "USB0::0x05E6::0x2636::4407529::INSTR"
-    FILENAME = "shared_data.csv"
-    DRAIN_V = 1.0       
-    GATE_HIGH = 1.0     
-    GATE_LOW = -1.0     
-    POINTS_PER_PHASE = 30  
-    CYCLE_NUMBERS = 5
-
     k = Keithley2636B(RESOURCE_ID)
     k.connect()
     k.clean_instrument()
     k.config()
 
-    # Run measurement
-    k.run()  # will use your global constants for gate/drain voltage, points, cycles
+    # Set initial voltages
+    k.set_Vd(1.0)
+    k.set_Vg(0.0)
 
-    # Shutdown outputs safely
+    # Start Vg pulse: alternate +1/-1 V every 1 second
+    pulse_seq = [(1.0, 1.0), (-1.0, 1.0)]
+    k.start_vg_pulse(pulse_seq)
+
+    # Let it run for 10 seconds
+    time.sleep(10)
+
+    # Stop pulse
+    k.stop_vg_pulse()
+
+    # Shutdown safely
+    k.set_Vd(0)
+    k.set_Vg(0)
     k.shutdown()
