@@ -64,6 +64,8 @@ class MainWindow(QWidget):
         layout.addLayout(ctrl_layout)
 
         # display Vd and Vg
+        self.Vd_display = QLabel("Vd: 0.000 V")
+        self.Vg_display = QLabel("Vg: 0.000 V")
         display_layout = QHBoxLayout()
         layout.addLayout(display_layout)
         display_layout.addWidget(self.Vd_display)
@@ -90,10 +92,6 @@ class MainWindow(QWidget):
         ctrl_layout.addWidget(self.Vg_spin)
         ctrl_layout.addWidget(self.set_Vg_btn)
         ctrl_layout.addWidget(self.stop_btn)
-
-        # Vd, Vg display
-        self.Vd_display = QLabel("Vd: 0.000 V")
-        self.Vg_display = QLabel("Vg: 0.000 V")
 
         # Connect signals
         self.set_Vd_btn.clicked.connect(self.apply_Vd)
