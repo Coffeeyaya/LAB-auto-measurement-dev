@@ -3,7 +3,7 @@ import time
 import csv
 from PyQt5.QtCore import QThread, pyqtSignal
 from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QHBoxLayout, QLabel, QDoubleSpinBox, QPushButton
-from keithley2636B import Keithley2636B  # your Keithley class
+from keithley import Keithley2636B  # your Keithley class
 
 FILENAME = "shared_data.csv"
 MEASURE_INTERVAL = 0.1  # seconds
