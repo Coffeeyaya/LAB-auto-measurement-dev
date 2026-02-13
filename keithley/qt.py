@@ -6,6 +6,8 @@ from PyQt5.QtWidgets import (QApplication, QWidget, QVBoxLayout, QHBoxLayout,
 from PyQt5.QtCore import QThread, pyqtSignal
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
+from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
+
 import pyvisa
 from keithley import Keithley2636B
 
@@ -148,8 +150,21 @@ class MainWindow(QWidget):
         # Plot update
         self.line_id.set_data(self.times, self.I_Ds)
         self.line_ig.set_data(self.times, self.I_Gs)
-        self.ax1.relim(); self.ax1.autoscale_view()
-        self.ax2.relim(); self.ax2.autoscale_view()
+        # self.ax1.relim(); self.ax1.autoscale_view()
+        # self.ax2.relim(); self.ax2.autoscale_view()
+        if not self.ax1.get_autoscale_on():
+            pass
+        else:
+            self.ax1.relim()
+            self.ax1.autoscale_view()
+
+        if not self.ax2.get_autoscale_on():
+            pass
+        else:
+            self.ax2.relim()
+            self.ax2.autoscale_view()
+
+        self.canvas.draw()
         self.canvas.draw()
 
         # append to csv file
