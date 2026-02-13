@@ -129,6 +129,9 @@ class MainWindow(QWidget):
             (1, 3.0),
             (2, 3.0),
             (3, 3.0),
+            (2, 3.0),
+            (1, 3.0),
+            (0, 3.0)
         ]
         self.k.set_Vd(1.0)
         self.k.start_vg_pulse(sequence)
