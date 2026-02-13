@@ -1,3 +1,9 @@
+'''
+test keithley version 2
+with class implementation
+run with plot.py
+combined to run.bat
+'''
 import pyvisa
 import time
 import csv

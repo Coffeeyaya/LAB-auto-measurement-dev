@@ -1,3 +1,7 @@
+'''
+test keithley version 0
+set Vd, Vg = 0
+'''
 import pyvisa
 import time
 import matplotlib.pyplot as plt

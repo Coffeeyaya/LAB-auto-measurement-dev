@@ -1,3 +1,8 @@
+'''
+test keithley version 2
+run with keithley.py
+combined to run.bat
+'''
 import matplotlib.pyplot as plt
 import pandas as pd
 import time
