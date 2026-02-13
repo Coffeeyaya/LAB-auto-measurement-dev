@@ -162,6 +162,6 @@ if __name__ == "__main__":
     keithley.config()
 
     app = QApplication(sys.argv)
-    window = MainWindow(keithley)
+    window = MainWindow(keithley, filename=filename)
     window.show()
     sys.exit(app.exec_())
