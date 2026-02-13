@@ -74,7 +74,7 @@ class MainWindow(QWidget):
         # Pulse controls
         pulse_layout = QHBoxLayout()
         layout.addLayout(pulse_layout)
-        self.pulse_input = QLineEdit("1.0,1.0;-1.0,1.0")  # default Vg,duration pairs
+        self.pulse_input = QLineEdit("1.0,5.0;-1.0,5.0")  # default Vg,duration pairs
         self.start_pulse_btn = QPushButton("Start Pulse")
         self.stop_pulse_btn = QPushButton("Stop Pulse")
         pulse_layout.addWidget(QLabel("Vg Pulse Seq (V,duration;s...):"))
