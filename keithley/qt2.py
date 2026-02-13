@@ -51,7 +51,7 @@ class MainWindow(QWidget):
         self.figure = Figure(figsize=(6,4))
         self.canvas = FigureCanvas(self.figure)
         layout.addWidget(self.canvas)
-
+        # matplotlib toolbar
         self.toolbar = NavigationToolbar(self.canvas, self)
         layout.addWidget(self.toolbar)
 
