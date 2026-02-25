@@ -56,9 +56,10 @@ class MainWindow(QWidget):
         self.canvas = FigureCanvas(self.figure)
         # matplotlib toolbar
         self.toolbar = NavigationToolbar(self.canvas, self)
-        layout.addWidget(self.toolbar)
 
         layout.addWidget(self.canvas)
+        layout.addWidget(self.toolbar)
+        
         self.ax1 = self.figure.add_subplot(211)
         self.ax2 = self.figure.add_subplot(212, sharex=self.ax1)
         self.line_id, = self.ax1.plot([], [], 'b.-', label='I_D')
@@ -119,8 +120,6 @@ class MainWindow(QWidget):
         # Start worker thread
         self.worker = KeithleyWorker(self.k)
         self.worker.new_data.connect(self.update_plot)
-        self.worker.start()
-
         self.worker.start()
 
         # Automatically start Vg pulse script
