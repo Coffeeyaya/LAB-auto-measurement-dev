@@ -1,29 +1,46 @@
 import pyvisa
+import time
+
+# Use the exact port we just verified
+AOTF_RESOURCE_ID = 'ASRL3::INSTR' 
 
 rm = pyvisa.ResourceManager()
-# Add the exact ASRL strings your computer printed out
-test_ports = ['ASRL3::INSTR', 'ASRL4::INSTR', 'ASRL5::INSTR']
 
-for port in test_ports:
-    try:
-        print(f"Testing {port}...")
-        aotf = rm.open_resource(port)
-        
-        # Set a short timeout so it doesn't hang long on the wrong ports
-        aotf.timeout = 2000 
-        aotf.write_termination = '\n'
-        aotf.read_termination = '\n'
-        
-        # Send the safe test command
-        aotf.write("DAU DIS")
-        
-        print(f"--> SUCCESS! {port} is your AOTF controller.")
+try:
+    print(f"Connecting to AOTF on {AOTF_RESOURCE_ID}...")
+    aotf = rm.open_resource(AOTF_RESOURCE_ID)
+    
+    # Standard serial communication settings
+    aotf.timeout = 2000
+    aotf.write_termination = '\n'
+    aotf.read_termination = '\n'
+    print("Connection open.")
+
+    # 1. Enable daughter card for direct command control
+    # CAUTION: Ensure pins 33-40 on the MDR connector are not floating!
+    aotf.write("DAU EN")
+    print("Direct control enabled. GUI settings are now ignored.")
+
+    # 2. Set Channel 0 to 90 MHz
+    # Command format: DDS F-p0 [channel] [frequency_in_MHz]
+    channel = 0
+    freq_mhz = 90.0
+    aotf.write(f"DDS F-p0 {channel} {freq_mhz}")
+    print(f"Channel {channel} frequency set to {freq_mhz} MHz.")
+
+    # Let it run for 3 seconds so you can verify the output
+    print("Holding for 3 seconds...")
+    time.sleep(3)
+
+    # 3. Disable direct control and return to default state
+    aotf.write("DAU DIS")
+    print("Direct control disabled. Control returned to GUI.")
+
+except Exception as e:
+    print(f"An error occurred: {e}")
+
+finally:
+    # Always close the port
+    if 'aotf' in locals():
         aotf.close()
-        break  # We found it, stop testing the others
-        
-    except Exception as e:
-        print(f"--> Failed on {port}. Moving to next...")
-        if 'aotf' in locals():
-            aotf.close()
-
-print("\nFinished testing.")
+        print("Connection safely closed.")
