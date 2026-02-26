@@ -8,87 +8,8 @@ import pygetwindow as gw
 import pyperclip
 import pyautogui
 
-   
-def get_lambda_edit_coord(lambda_coord):
-    abs_x = lambda_coord[0] + 370
-    abs_y = lambda_coord[1] + 40
-    return abs_x, abs_y
 
-def get_lambda_ok_coord(lambda_coord):
-    abs_x = lambda_coord[0] + 440
-    abs_y = lambda_coord[1] + 40
-    return abs_x, abs_y
-
-def get_power_edit_coord(power_coord):
-    abs_x = power_coord[0] + 90
-    abs_y = power_coord[1] + 300
-    return abs_x, abs_y
-
-def get_power_ok_coord(power_coord):
-    abs_x = power_coord[0] + 90
-    abs_y = power_coord[1] + 335
-    return abs_x, abs_y
-
-
-def move_window_to_origin(hwnd):
-    """
-    Grabs a window by its handle and forces it to screen coordinates (0, 0)
-    while keeping its original width and height intact.
-    """
-    # 1. Get the current dimensions of the popup so we don't accidentally squish it
-    rect = win32gui.GetWindowRect(hwnd)
-    width = rect[2] - rect[0]
-    height = rect[3] - rect[1]
-    
-    # 2. Move the window to X=0, Y=0
-    # The 'True' at the end tells Windows to redraw the window immediately
-    win32gui.MoveWindow(hwnd, 0, 0, width, height, True)
-    print("Popup successfully grabbed and moved to (0, 0).")
-
-
-def get_active_popup_hwnd(expected_title='popup wavelength slider.vi'):
-    """
-    Finds the popup window. If the popup steals focus when it spawns, 
-    GetForegroundWindow() will grab it immediately.
-    """
-    time.sleep(0.2) # Give the OS a moment to render the popup
-    
-    if expected_title:
-        popup_hwnd = win32gui.FindWindow(None, expected_title)
-    else:
-        # Fallback: Just grab whatever window just popped to the front
-        popup_hwnd = win32gui.GetForegroundWindow()
-    move_window_to_origin(popup_hwnd)
-    return popup_hwnd
-
-def change_lambda_truly_invisible(main_hwnd, grid, channel, new_lambda_value):
-    # 1. Double click the main grid to spawn the popup
-    lambda_x, lambda_y = grid[channel]["lambda"]
-    background_double_click(main_hwnd, lambda_x, lambda_y)
-    
-    # 2. Dynamically find the popup that just appeared
-    # NOTE: If the popup has a specific title (like "Edit" or "Value"), put it here.
-    popup_hwnd = get_active_popup_hwnd() 
-    window_title = win32gui.GetWindowText(popup_hwnd)
-    print(f"Successfully captured popup window: '{window_title}'")
-    
-    if popup_hwnd == main_hwnd or popup_hwnd == 0:
-        print("Error: Could not detect the popup window.")
-        return
-    
-    popup_edit_x, popup_edit_y = get_lambda_edit_coord([0,0])
-    move_window_to_origin(popup_hwnd)
-    background_double_click(popup_hwnd, popup_edit_x, popup_edit_y)
-    time.sleep(0.1)
-    
-    # 4. Inject the text invisibly
-    background_type(popup_hwnd, new_lambda_value)
-    time.sleep(0.1)
-    
-    popup_ok_x, popup_ok_y = get_lambda_ok_coord([0,0])
-    background_click(popup_hwnd, popup_ok_x, popup_ok_y)
-    time.sleep(0.1)
-
+### background functions
 def background_click(hwnd, x, y):
     """Sends an invisible left click to the window at relative x, y."""
     lparam = win32api.MAKELONG(int(x), int(y))
@@ -111,6 +32,102 @@ def background_type(hwnd, text):
     # Send 'Enter' key
     win32gui.SendMessage(hwnd, win32con.WM_KEYDOWN, win32con.VK_RETURN, 0)
     win32gui.SendMessage(hwnd, win32con.WM_KEYUP, win32con.VK_RETURN, 0)
+
+def move_window_to_origin(hwnd):
+    """
+    Grabs a window by its handle and forces it to screen coordinates (0, 0)
+    while keeping its original width and height intact.
+    """
+    # 1. Get the current dimensions of the popup so we don't accidentally squish it
+    rect = win32gui.GetWindowRect(hwnd)
+    width = rect[2] - rect[0]
+    height = rect[3] - rect[1]
+    
+    # 2. Move the window to X=0, Y=0
+    # The 'True' at the end tells Windows to redraw the window immediately
+    win32gui.MoveWindow(hwnd, 0, 0, width, height, True)
+    print("Popup successfully grabbed and moved to (0, 0).")
+
+# def get_active_popup_hwnd_title(expected_title=None):
+#     """
+#     Finds the popup window. If the popup steals focus when it spawns, 
+#     GetForegroundWindow() will grab it immediately.
+#     """
+#     time.sleep(0.2) # Give the OS a moment to render the popup
+    
+#     if expected_title:
+#         popup_hwnd = win32gui.FindWindow(None, expected_title)
+#     else:
+#         # Fallback: Just grab whatever window just popped to the front
+#         popup_hwnd = win32gui.GetForegroundWindow()
+#     move_window_to_origin(popup_hwnd)
+#     return popup_hwnd
+
+
+def get_active_popup_hwnd(main_hwnd):
+    """Waits for and captures the newly spawned popup window handle and title."""
+    time.sleep(0.3) # Give the GUI time to generate the window [cite: 606]
+    
+    popup_hwnd = win32gui.GetForegroundWindow()
+    
+    # Get the title text of the captured window
+    window_title = win32gui.GetWindowText(popup_hwnd)
+    
+    if popup_hwnd == main_hwnd or popup_hwnd == 0:
+        print(f"Warning: No new popup detected. Current active window: '{window_title}'")
+        return None
+    
+    print(f"Successfully captured popup window: '{window_title}'")
+    return popup_hwnd
+
+## relative coordinate to popup window
+def get_lambda_edit_coord(lambda_coord):
+    # abs_x = lambda_coord[0] + 370 
+    # abs_y = lambda_coord[1] + 40 
+    abs_x = lambda_coord[0] + 350 # 350
+    abs_y = lambda_coord[1] + 30 # 30
+    return abs_x, abs_y
+
+def get_lambda_ok_coord(lambda_coord):
+    # abs_x = lambda_coord[0] + 440
+    # abs_y = lambda_coord[1] + 40
+    abs_x = lambda_coord[0] + 430
+    abs_y = lambda_coord[1] + 30
+    return abs_x, abs_y
+
+def get_power_edit_coord(power_coord):
+    abs_x = power_coord[0] + 90
+    abs_y = power_coord[1] + 300
+    return abs_x, abs_y
+
+def get_power_ok_coord(power_coord):
+    abs_x = power_coord[0] + 90
+    abs_y = power_coord[1] + 335
+    return abs_x, abs_y
+
+
+def change_lambda(main_hwnd, grid, channel, new_lambda_value):
+    lambda_x, lambda_y = grid[channel]["lambda"]
+    background_click(main_hwnd, lambda_x, lambda_y)
+    popup_hwnd = get_active_popup_hwnd(main_hwnd) 
+    window_title = win32gui.GetWindowText(popup_hwnd)
+    print(f"Successfully captured popup window: '{window_title}'")
+    
+    if popup_hwnd == main_hwnd or popup_hwnd == 0:
+        print("Error: Could not detect the popup window.")
+        return
+    
+    popup_edit_x, popup_edit_y = get_lambda_edit_coord([0,0])
+    move_window_to_origin(popup_hwnd)
+    background_double_click(popup_hwnd, popup_edit_x, popup_edit_y)
+    time.sleep(0.5)
+    
+    background_type(popup_hwnd, new_lambda_value)
+    time.sleep(0.5)
+    
+    popup_ok_x, popup_ok_y = get_lambda_ok_coord([0,0])
+    background_click(popup_hwnd, popup_ok_x, popup_ok_y)
+    time.sleep(0.5)
 
 # --- 2. Your Grid Logic (Unchanged) ---
 
@@ -136,60 +153,9 @@ def init_AOTF_grid():
             grid[i][fields[j]] = (col_x, row_y)
     return grid
 
-
 def get_coord(grid, channel, field):
     coord = grid[channel][field]
     return coord
-
-# --- Background API Helpers ---
-def background_click(hwnd, x, y):
-    lparam = win32api.MAKELONG(int(x), int(y))
-    win32gui.SendMessage(hwnd, win32con.WM_LBUTTONDOWN, win32con.MK_LBUTTON, lparam)
-    time.sleep(0.05)
-    win32gui.SendMessage(hwnd, win32con.WM_LBUTTONUP, 0, lparam)
-
-def background_double_click(hwnd, x, y):
-    lparam = win32api.MAKELONG(int(x), int(y))
-    win32gui.SendMessage(hwnd, win32con.WM_LBUTTONDBLCLK, win32con.MK_LBUTTON, lparam)
-    time.sleep(0.05)
-    win32gui.SendMessage(hwnd, win32con.WM_LBUTTONUP, 0, lparam)
-
-def background_type(hwnd, text):
-    text_to_send = str(text)
-    for char in text_to_send:
-        win32gui.SendMessage(hwnd, win32con.WM_CHAR, ord(char), 0)
-        time.sleep(0.01)
-    win32gui.SendMessage(hwnd, win32con.WM_KEYDOWN, win32con.VK_RETURN, 0)
-    win32gui.SendMessage(hwnd, win32con.WM_KEYUP, win32con.VK_RETURN, 0)
-
-# --- Your Integrated Logic ---
-def change_lambda_invisible(hwnd, grid, channel, new_lambda_value):
-    '''
-    channel: int, AOTF output channels (0 ~ 7)
-    new_lambda_value: str, the new wavelength value (400 ~ 700)
-    '''
-    # 1. Base coordinates from your grid
-    lambda_x, lambda_y = grid[channel]["lambda"]
-
-    # 2. Invisible click to activate the channel field
-    background_click(hwnd, lambda_x, lambda_y)
-    time.sleep(0.5)
-
-    # 3. Calculate Edit Box coords using YOUR exact offsets
-    edit_x = lambda_x + 370
-    edit_y = lambda_y + 40
-    background_double_click(hwnd, edit_x, edit_y)
-    time.sleep(0.5)
-
-    # 4. Inject the text invisibly
-    background_type(hwnd, new_lambda_value)
-    time.sleep(0.5)
-
-    # 5. Calculate OK button coords using YOUR exact offsets
-    ok_x = lambda_x + 440
-    ok_y = lambda_y + 40
-    background_click(hwnd, ok_x, ok_y)
-    time.sleep(0.5)
 
 if __name__ == "__main__":
     grid = init_AOTF_grid()
@@ -198,9 +164,8 @@ if __name__ == "__main__":
     if hwnd == 0:
         print("Please open the AOTF Controller GUI first.")
     else:
-        
         # channel = 2
         # on_coord = get_coord(grid, channel, "on")
         # background_click(hwnd, on_coord[0], on_coord[1])
 
-        change_lambda_truly_invisible(hwnd, grid, 2, "500")
+        change_lambda(hwnd, grid, 2, "500")
