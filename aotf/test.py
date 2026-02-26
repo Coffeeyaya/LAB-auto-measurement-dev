@@ -197,7 +197,33 @@ def change_lambda(main_hwnd, grid, channel, new_lambda_value):
     popup_ok_x, popup_ok_y = get_lambda_ok_coord([0,0])
     background_click(popup_hwnd, popup_ok_x, popup_ok_y)
     time.sleep(0.5)
-
+def change_lambda2(main_hwnd, grid, channel, new_lambda_value):
+    # Get grid coordinates
+    lambda_x, lambda_y = grid[channel]["lambda"]
+    
+    # 1. Double click main grid to open popup (Invisible)
+    background_double_click(main_hwnd, lambda_x, lambda_y)
+    
+    # 2. Capture and Move the popup (Invisible)
+    popup_hwnd = get_active_popup_hwnd(main_hwnd)
+    if not popup_hwnd: return
+    move_window_to_origin(popup_hwnd)
+    
+    # 3. Double-click the edit box inside the popup (Invisible)
+    # This selects the old text so the paste overwrites it
+    popup_edit_x, popup_edit_y = get_lambda_edit_coord([0,0])
+    background_double_click(popup_hwnd, popup_edit_x, popup_edit_y)
+    time.sleep(0.3)
+    
+    # 4. Perform the Hybrid Paste
+    hybrid_fill_box(popup_hwnd, new_lambda_value)
+    
+    # 5. Click OK (Invisible)
+    # Note: If hybrid_fill_box already pressed Enter, the window might already be closed
+    time.sleep(0.5)
+    if win32gui.IsWindow(popup_hwnd):
+        popup_ok_x, popup_ok_y = get_lambda_ok_coord([0,0])
+        background_click(popup_hwnd, popup_ok_x, popup_ok_y)
 # --- 2. Your Grid Logic (Unchanged) ---
 
 def init_AOTF_grid():
@@ -237,4 +263,4 @@ if __name__ == "__main__":
         # on_coord = get_coord(grid, channel, "on")
         # background_click(hwnd, on_coord[0], on_coord[1])
 
-        change_lambda(hwnd, grid, 2, "500")
+        change_lambda2(hwnd, grid, 2, "400")
