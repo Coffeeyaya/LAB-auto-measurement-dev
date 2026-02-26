@@ -36,6 +36,9 @@ def background_double_click(hwnd, x, y):
 
 def background_type(hwnd, text):
     """Sends characters and Enter using PostMessage to prevent deadlocks."""
+    win32gui.PostMessage(hwnd, win32con.WM_KEYDOWN, win32con.VK_RETURN, 0)
+    time.sleep(0.05)
+    win32gui.PostMessage(hwnd, win32con.WM_KEYUP, win32con.VK_RETURN, 0)
     for char in str(text):
         win32gui.PostMessage(hwnd, win32con.WM_CHAR, ord(char), 0)
         time.sleep(0.05)
@@ -45,7 +48,7 @@ def background_type(hwnd, text):
     time.sleep(0.05)
     win32gui.PostMessage(hwnd, win32con.WM_KEYUP, win32con.VK_RETURN, 0)
     print(f"PostMessage sequence for '{text}' complete.")
-    
+
 def move_window_to_origin(hwnd):
     """
     Grabs a window by its handle and forces it to screen coordinates (0, 0)
