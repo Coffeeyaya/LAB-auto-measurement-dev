@@ -18,12 +18,15 @@ def background_click(hwnd, x, y):
     win32gui.SendMessage(hwnd, win32con.WM_LBUTTONUP, 0, lparam)
 
 def background_double_click(hwnd, x, y):
-    """Sends an invisible double click."""
+    """
+    Uses PostMessage instead of SendMessage to prevent the script 
+    from hanging when a modal popup opens.
+    """
     lparam = win32api.MAKELONG(int(x), int(y))
-    win32gui.SendMessage(hwnd, win32con.WM_LBUTTONDBLCLK, win32con.MK_LBUTTON, lparam)
+    # PostMessage returns immediately, so Python doesn't get stuck
+    win32gui.PostMessage(hwnd, win32con.WM_LBUTTONDBLCLK, win32con.MK_LBUTTON, lparam)
     time.sleep(0.05)
-    win32gui.SendMessage(hwnd, win32con.WM_LBUTTONUP, 0, lparam)
-
+    win32gui.PostMessage(hwnd, win32con.WM_LBUTTONUP, 0, lparam)
 # def background_type(hwnd, text):
 #     """Sends invisible keystrokes to the currently active text box."""
 #     for char in str(text):
