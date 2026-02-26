@@ -46,7 +46,7 @@ def move_window_to_origin(hwnd):
     print("Popup successfully grabbed and moved to (0, 0).")
 
 
-def get_active_popup_hwnd(expected_title=None):
+def get_active_popup_hwnd(expected_title='popup wavelength slider.vi'):
     """
     Finds the popup window. If the popup steals focus when it spawns, 
     GetForegroundWindow() will grab it immediately.
@@ -58,8 +58,7 @@ def get_active_popup_hwnd(expected_title=None):
     else:
         # Fallback: Just grab whatever window just popped to the front
         popup_hwnd = win32gui.GetForegroundWindow()
-        move_window_to_origin(popup_hwnd)
-        
+    move_window_to_origin(popup_hwnd)
     return popup_hwnd
 
 def change_lambda_truly_invisible(main_hwnd, grid, channel, new_lambda_value):
