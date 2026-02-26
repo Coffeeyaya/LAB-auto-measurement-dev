@@ -55,19 +55,20 @@ def background_paste(hwnd, text):
     pyperclip.copy(str(text))
     time.sleep(0.1)
     
-    # 2. Send the Paste message (WM_PASTE is 0x0302)
-    # This is the "cleanest" way to paste in the background
-    win32gui.PostMessage(hwnd, win32con.WM_PASTE, 0, 0)
-    time.sleep(0.2)
+    # # 2. Send the Paste message (WM_PASTE is 0x0302)
+    # # This is the "cleanest" way to paste in the background
+    # win32gui.PostMessage(hwnd, win32con.WM_PASTE, 0, 0)
+    # time.sleep(0.2)
     
-    # 3. If WM_PASTE is ignored, we send the Ctrl+V keystrokes as a backup
-    # VK_CONTROL = 0x11, 'V' = 0x56
-    win32gui.PostMessage(hwnd, win32con.WM_KEYDOWN, win32con.VK_CONTROL, 0)
-    win32gui.PostMessage(hwnd, win32con.WM_KEYDOWN, ord('V'), 0)
-    time.sleep(0.05)
-    win32gui.PostMessage(hwnd, win32con.WM_KEYUP, ord('V'), 0)
-    win32gui.PostMessage(hwnd, win32con.WM_KEYUP, win32con.VK_CONTROL, 0)
-    
+    # # 3. If WM_PASTE is ignored, we send the Ctrl+V keystrokes as a backup
+    # # VK_CONTROL = 0x11, 'V' = 0x56
+    # win32gui.PostMessage(hwnd, win32con.WM_KEYDOWN, win32con.VK_CONTROL, 0)
+    # win32gui.PostMessage(hwnd, win32con.WM_KEYDOWN, ord('V'), 0)
+    # time.sleep(0.05)
+    # win32gui.PostMessage(hwnd, win32con.WM_KEYUP, ord('V'), 0)
+    # win32gui.PostMessage(hwnd, win32con.WM_KEYUP, win32con.VK_CONTROL, 0)
+    pyautogui.hotkey("ctrl", "v")
+    pyautogui.press('enter')
     print(f"Paste command for '{text}' sent.")
 
 
