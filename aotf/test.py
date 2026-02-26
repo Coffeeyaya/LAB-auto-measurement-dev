@@ -97,3 +97,4 @@ if __name__ == "__main__":
         # change_lambda_background(hwnd, grid, channel=2, new_lambda_value="670")
         channel = 2
         on_coord = get_coord(grid, channel, "on")
+        background_click(hwnd, on_coord[0], on_coord[1])
