@@ -163,8 +163,8 @@ def change_lambda(main_hwnd, grid, channel, new_lambda_value):
     # background_type(popup_hwnd, new_lambda_value)
     # time.sleep(0.5)
 
-    background_paste(popup_hwnd, new_lambda_value)
-    time.sleep(0.5)
+    # background_paste(popup_hwnd, new_lambda_value)
+    # time.sleep(0.5)
     
     popup_ok_x, popup_ok_y = get_lambda_ok_coord([0,0])
     background_click(popup_hwnd, popup_ok_x, popup_ok_y)
