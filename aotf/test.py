@@ -13,7 +13,7 @@ import pyautogui
 def background_click(hwnd, x, y):
     """Sends an invisible left click to the window at relative x, y."""
     lparam = win32api.MAKELONG(int(x), int(y))
-    win32gui.PostMessage(hwnd, win32con.WM_LBUTTONDOWN, win32con.MK_LBUTTON, lparam)
+    win32gui.PostMessage(hwnd, win32con.WM_LBUTTONDOWN, win32con.MK_LBUTTON, lparam) # use PostMessage instead of SendMessage
     time.sleep(0.05)
     win32gui.PostMessage(hwnd, win32con.WM_LBUTTONUP, 0, lparam)
 
@@ -27,14 +27,6 @@ def background_double_click(hwnd, x, y):
     win32gui.PostMessage(hwnd, win32con.WM_LBUTTONDBLCLK, win32con.MK_LBUTTON, lparam)
     time.sleep(0.05)
     win32gui.PostMessage(hwnd, win32con.WM_LBUTTONUP, 0, lparam)
-# def background_type(hwnd, text):
-#     """Sends invisible keystrokes to the currently active text box."""
-#     for char in str(text):
-#         win32gui.SendMessage(hwnd, win32con.WM_CHAR, ord(char), 0)
-#         time.sleep(0.05)
-#     # Send 'Enter' key
-#     win32gui.SendMessage(hwnd, win32con.WM_KEYDOWN, win32con.VK_RETURN, 0)
-#     win32gui.SendMessage(hwnd, win32con.WM_KEYUP, win32con.VK_RETURN, 0)
 
 
 def background_type(hwnd, text):
@@ -237,60 +229,61 @@ import win32api
 import pyperclip
 import time
 
-def force_focus(hwnd):
-    """Bypasses Windows focus-stealing protections to ensure the popup is ready."""
-    if win32gui.GetForegroundWindow() != hwnd:
-        win32gui.ShowWindow(hwnd, win32con.SW_RESTORE)
-        win32gui.SetForegroundWindow(hwnd)
-        time.sleep(0.1)
+# def force_focus(hwnd):
+#     """Bypasses Windows focus-stealing protections to ensure the popup is ready."""
+#     if win32gui.GetForegroundWindow() != hwnd:
+#         win32gui.ShowWindow(hwnd, win32con.SW_RESTORE)
+#         win32gui.SetForegroundWindow(hwnd)
+#         time.sleep(0.1)
 
-def background_paste_aggressive(hwnd, text):
-    """Sends Ctrl+V messages directly to the handle's message queue."""
-    pyperclip.copy(str(text))
-    time.sleep(0.1)
+# def background_paste_aggressive(hwnd, text):
+#     """Sends Ctrl+V messages directly to the handle's message queue."""
+#     pyperclip.copy(str(text))
+#     time.sleep(0.1)
     
-    # 0x11 is CTRL, 0x56 is V
-    # Press CTRL
-    win32gui.PostMessage(hwnd, win32con.WM_KEYDOWN, win32con.VK_CONTROL, 0)
-    # Press V
-    win32gui.PostMessage(hwnd, win32con.WM_KEYDOWN, ord('V'), 0)
-    time.sleep(0.05)
-    # Release V
-    win32gui.PostMessage(hwnd, win32con.WM_KEYUP, ord('V'), 0)
-    # Release CTRL
-    win32gui.PostMessage(hwnd, win32con.WM_KEYUP, win32con.VK_CONTROL, 0)
+#     # 0x11 is CTRL, 0x56 is V
+#     # Press CTRL
+#     win32gui.PostMessage(hwnd, win32con.WM_KEYDOWN, win32con.VK_CONTROL, 0)
+#     # Press V
+#     win32gui.PostMessage(hwnd, win32con.WM_KEYDOWN, ord('V'), 0)
+#     time.sleep(0.05)
+#     # Release V
+#     win32gui.PostMessage(hwnd, win32con.WM_KEYUP, ord('V'), 0)
+#     # Release CTRL
+#     win32gui.PostMessage(hwnd, win32con.WM_KEYUP, win32con.VK_CONTROL, 0)
     
-    # Final 'Enter' to confirm
-    win32gui.PostMessage(hwnd, win32con.WM_KEYDOWN, win32con.VK_RETURN, 0)
-    time.sleep(0.05)
-    win32gui.PostMessage(hwnd, win32con.WM_KEYUP, win32con.VK_RETURN, 0)
+#     # Final 'Enter' to confirm
+#     win32gui.PostMessage(hwnd, win32con.WM_KEYDOWN, win32con.VK_RETURN, 0)
+#     time.sleep(0.05)
+#     win32gui.PostMessage(hwnd, win32con.WM_KEYUP, win32con.VK_RETURN, 0)
 
-def change_lambda3(main_hwnd, grid, channel, new_lambda_value):
-    lambda_x, lambda_y = grid[channel]["lambda"]
+# def change_lambda3(main_hwnd, grid, channel, new_lambda_value):
+#     lambda_x, lambda_y = grid[channel]["lambda"]
     
-    # 1. Open popup
-    background_double_click(main_hwnd, lambda_x, lambda_y)
+#     # 1. Open popup
+#     background_double_click(main_hwnd, lambda_x, lambda_y)
     
-    popup_hwnd = get_active_popup_hwnd(main_hwnd)
-    if not popup_hwnd: return
+#     popup_hwnd = get_active_popup_hwnd(main_hwnd)
+#     if not popup_hwnd: return
     
-    # 2. Grab and Force Focus
-    move_window_to_origin(popup_hwnd)
-    force_focus(popup_hwnd)
+#     # 2. Grab and Force Focus
+#     move_window_to_origin(popup_hwnd)
+#     force_focus(popup_hwnd)
     
-    # 3. Double click the edit box inside the popup to select old text
-    popup_edit_x, popup_edit_y = get_lambda_edit_coord([0,0])
-    background_double_click(popup_hwnd, popup_edit_x, popup_edit_y)
-    time.sleep(0.2)
+#     # 3. Double click the edit box inside the popup to select old text
+#     popup_edit_x, popup_edit_y = get_lambda_edit_coord([0,0])
+#     background_double_click(popup_hwnd, popup_edit_x, popup_edit_y)
+#     time.sleep(0.2)
     
-    # 4. Paste and Enter
-    background_paste_aggressive(popup_hwnd, new_lambda_value)
+#     # 4. Paste and Enter
+#     background_paste_aggressive(popup_hwnd, new_lambda_value)
     
-    # 5. Fallback: Click OK if window is still open
-    time.sleep(0.5)
-    if win32gui.IsWindow(popup_hwnd):
-        popup_ok_x, popup_ok_y = get_lambda_ok_coord([0,0])
-        background_click(popup_hwnd, popup_ok_x, popup_ok_y)
+#     # 5. Fallback: Click OK if window is still open
+#     time.sleep(0.5)
+#     if win32gui.IsWindow(popup_hwnd):
+#         popup_ok_x, popup_ok_y = get_lambda_ok_coord([0,0])
+#         background_click(popup_hwnd, popup_ok_x, popup_ok_y)
+
 def init_AOTF_grid():
     while True:
         try:
@@ -328,4 +321,4 @@ if __name__ == "__main__":
         # on_coord = get_coord(grid, channel, "on")
         # background_click(hwnd, on_coord[0], on_coord[1])
 
-        change_lambda3(hwnd, grid, 2, "400")
+        change_lambda(hwnd, grid, 2, "400")
