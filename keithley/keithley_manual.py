@@ -183,6 +183,18 @@ class MainWindow(QWidget):
         else:
             self.ax2.relim()
             self.ax2.autoscale_view()
+        ###
+        if not self.ax1_v.get_autoscale_on():
+            pass
+        else:
+            self.ax1_v.relim()
+            self.ax1_v.autoscale_view()
+
+        if not self.ax2_v.get_autoscale_on():
+            pass
+        else:
+            self.ax2_v.relim()
+            self.ax2_v.autoscale_view()
 
         self.canvas.draw()
 
