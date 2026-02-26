@@ -101,21 +101,41 @@ def move_window_to_origin(hwnd):
 #     return popup_hwnd
 
 
-def get_active_popup_hwnd(main_hwnd):
-    """Waits for and captures the newly spawned popup window handle and title."""
-    time.sleep(0.3) # Give the GUI time to generate the window [cite: 606]
+# def get_active_popup_hwnd(main_hwnd):
+#     """Waits for and captures the newly spawned popup window handle and title."""
+#     time.sleep(0.3) # Give the GUI time to generate the window [cite: 606]
     
-    popup_hwnd = win32gui.GetForegroundWindow()
+#     popup_hwnd = win32gui.GetForegroundWindow()
     
-    # Get the title text of the captured window
-    window_title = win32gui.GetWindowText(popup_hwnd)
+#     # Get the title text of the captured window
+#     window_title = win32gui.GetWindowText(popup_hwnd)
     
-    if popup_hwnd == main_hwnd or popup_hwnd == 0:
-        print(f"Warning: No new popup detected. Current active window: '{window_title}'")
-        return None
+#     if popup_hwnd == main_hwnd or popup_hwnd == 0:
+#         print(f"Warning: No new popup detected. Current active window: '{window_title}'")
+#         return None
     
-    print(f"Successfully captured popup window: '{window_title}'")
-    return popup_hwnd
+#     print(f"Successfully captured popup window: '{window_title}'")
+    # return popup_hwnd
+
+def get_active_popup_hwnd(title, timeout=3):
+    """
+    Specifically hunts for the LabVIEW 'popup wavelength slider.vi' window.
+    """
+    start_time = time.time()
+    while (time.time() - start_time) < timeout:
+        # Check by specific title
+        popup_hwnd = win32gui.FindWindow(None, title)
+        
+        if popup_hwnd != 0:
+            print(f"Captured LabVIEW popup: {win32gui.GetWindowText(popup_hwnd)}")
+            # Force it to (0,0) immediately to align with your grid math
+            move_window_to_origin(popup_hwnd)
+            return popup_hwnd
+        
+        time.sleep(0.1)
+    
+    print("Error: 'popup wavelength slider.vi' did not appear.")
+    return None
 
 ## relative coordinate to popup window
 def get_lambda_edit_coord(lambda_coord):
@@ -150,7 +170,7 @@ def get_power_ok_coord(power_coord):
 def change_lambda(main_hwnd, grid, channel, new_lambda_value):
     lambda_x, lambda_y = grid[channel]["lambda"]
     background_click(main_hwnd, lambda_x, lambda_y)
-    popup_hwnd = get_active_popup_hwnd(main_hwnd) 
+    popup_hwnd = get_active_popup_hwnd('popup wavelength slider.vi') 
     window_title = win32gui.GetWindowText(popup_hwnd)
     print(f"Successfully captured popup window: '{window_title}'")
     
@@ -179,7 +199,7 @@ def change_lambda(main_hwnd, grid, channel, new_lambda_value):
 def change_power(main_hwnd, grid, channel, new_power_value):
     power_x, power_y = grid[channel]["power"]
     background_click(main_hwnd, power_x, power_y)
-    popup_hwnd = get_active_popup_hwnd(main_hwnd) 
+    popup_hwnd = get_active_popup_hwnd('popup power slider.vi')
     window_title = win32gui.GetWindowText(popup_hwnd)
     print(f"Successfully captured popup window: '{window_title}'")
     
