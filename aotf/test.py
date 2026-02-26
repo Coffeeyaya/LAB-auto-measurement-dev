@@ -69,3 +69,13 @@ def change_lambda_background(hwnd, grid, channel, new_lambda_value):
     ok_x, ok_y = lambda_x + 440, lambda_y + 40
     background_click(hwnd, ok_x, ok_y)
     time.sleep(0.5)
+
+if __name__ == "__main__":
+    grid = init_AOTF_grid()
+    hwnd = win32gui.FindWindow(None, "AOTF Controller")
+
+    if hwnd == 0:
+        print("Please open the AOTF Controller GUI first.")
+    else:
+        # Change Channel 2 to 670nm in the background
+        change_lambda_background(hwnd, grid, channel=2, new_lambda_value="670")
