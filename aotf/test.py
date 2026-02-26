@@ -28,7 +28,7 @@ def background_type(hwnd, text):
     """Sends invisible keystrokes to the currently active text box."""
     for char in str(text):
         win32gui.SendMessage(hwnd, win32con.WM_CHAR, ord(char), 0)
-        time.sleep(0.01)
+        time.sleep(0.05)
     # Send 'Enter' key
     win32gui.SendMessage(hwnd, win32con.WM_KEYDOWN, win32con.VK_RETURN, 0)
     win32gui.SendMessage(hwnd, win32con.WM_KEYUP, win32con.VK_RETURN, 0)
