@@ -192,9 +192,11 @@ if __name__ == "__main__":
         print("Please open the AOTF Controller GUI first.")
     else:
 
-        change_lambda(hwnd, grid, 2, "400")
+        change_lambda(hwnd, grid, 2, "500")
         time.sleep(1)
-        change_power(hwnd, grid, 2, "10")
-        channel = 2
+        change_power(hwnd, grid, 2, "50")
+        channel = 4
         on_coord = get_coord(grid, channel, "on")
+        background_click(hwnd, on_coord[0], on_coord[1])
+        time.sleep(1)
         background_click(hwnd, on_coord[0], on_coord[1])
