@@ -4,6 +4,10 @@ import win32con
 import win32api
 import time
 
+import pygetwindow as gw
+import pyperclip
+import pyautogui
+
 # --- 1. The Win32 API Toolset ---
 
 def background_click(hwnd, x, y):
@@ -32,8 +36,17 @@ def background_type(hwnd, text):
 # --- 2. Your Grid Logic (Unchanged) ---
 
 def init_AOTF_grid():
-    # You no longer need to move the window to (0,0) with this method!
-    # The API calculates clicks relative to the window's top-left corner natively.
+    while True:
+        try:
+            win = gw.getWindowsWithTitle("AOTF Controller")
+            win = win[0]
+            win.restore()
+            win.moveTo(0, 0)
+            win.activate()
+            break
+        except gw.PyGetWindowException:
+            pyautogui.click(win.left, win.top)
+
     x = np.array([190, 270, 320])
     y = np.linspace(193, 430, 8)
     fields = ["lambda", "power", "on"]
@@ -44,6 +57,10 @@ def init_AOTF_grid():
             grid[i][fields[j]] = (col_x, row_y)
     return grid
 
+
+def get_coord(grid, channel, field):
+    coord = grid[channel][field]
+    return coord
 # --- 3. The Upgraded Function ---
 
 def change_lambda_background(hwnd, grid, channel, new_lambda_value):
@@ -77,5 +94,6 @@ if __name__ == "__main__":
     if hwnd == 0:
         print("Please open the AOTF Controller GUI first.")
     else:
-        # Change Channel 2 to 670nm in the background
-        change_lambda_background(hwnd, grid, channel=2, new_lambda_value="670")
+        # change_lambda_background(hwnd, grid, channel=2, new_lambda_value="670")
+        channel = 2
+        on_coord = get_coord(grid, channel, "on")
