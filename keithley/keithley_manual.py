@@ -62,8 +62,23 @@ class MainWindow(QWidget):
         self.ax2 = self.figure.add_subplot(212, sharex=self.ax1)
         self.line_id, = self.ax1.plot([], [], 'b.-', label='I_D')
         self.line_ig, = self.ax2.plot([], [], 'r.-', label='I_G')
-        self.line_vd, = self.ax1.plot([], [], 'b.o', label='V_D')
-        self.line_vg, = self.ax2.plot([], [], 'r.o', label='V_G')
+        
+        # ax1_v (Drain Voltage - Right Side)
+        self.ax1_v = self.ax1.twinx() 
+        self.ax1_v.set_ylabel('Drain Voltage (V)', color='lightblue')
+        self.ax1_v.tick_params(axis='y', labelcolor='lightblue')
+        # ax2_v (Gate Voltage - Right Side)
+        self.ax2_v = self.ax2.twinx()
+        self.ax2_v.set_ylabel('Gate Voltage (V)', color='lightcoral')
+        self.ax2_v.tick_params(axis='y', labelcolor='lightcoral')
+
+        # Voltage uses points ('o') and goes on the secondary axes (_v)
+        # alpha=0.3 makes the voltage dots slightly transparent so they don't hide the current line
+        self.line_vd, = self.ax1_v.plot([], [], 'bo', alpha=0.3, label='V_D')
+        self.line_vg, = self.ax2_v.plot([], [], 'ro', alpha=0.3, label='V_G')
+
+        ###
+
         self.ax1.set_ylabel("I_D (A)")
         self.ax2.set_ylabel("I_G (A)")
         self.ax2.set_xlabel("Time (s)")
