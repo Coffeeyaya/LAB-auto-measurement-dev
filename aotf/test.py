@@ -77,6 +77,8 @@ def hybrid_fill_box(hwnd, content):
     Uses background handles to ensure the window is ready, 
     then uses pyautogui to perform the physical paste.
     """
+    win32gui.SetForegroundWindow(hwnd)
+    time.sleep(0.1)
     pyautogui.press('enter')
     # 1. Prepare the clipboard
     pyperclip.copy(str(content))
