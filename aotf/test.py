@@ -70,6 +70,8 @@ def change_lambda_truly_invisible(main_hwnd, grid, channel, new_lambda_value):
     # 2. Dynamically find the popup that just appeared
     # NOTE: If the popup has a specific title (like "Edit" or "Value"), put it here.
     popup_hwnd = get_active_popup_hwnd() 
+    window_title = win32gui.GetWindowText(popup_hwnd)
+    print(f"Successfully captured popup window: '{window_title}'")
     
     if popup_hwnd == main_hwnd or popup_hwnd == 0:
         print("Error: Could not detect the popup window.")
