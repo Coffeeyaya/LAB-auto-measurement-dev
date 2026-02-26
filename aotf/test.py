@@ -1,0 +1,71 @@
+import numpy as np
+import win32gui
+import win32con
+import win32api
+import time
+
+# --- 1. The Win32 API Toolset ---
+
+def background_click(hwnd, x, y):
+    """Sends an invisible left click to the window at relative x, y."""
+    lparam = win32api.MAKELONG(int(x), int(y))
+    win32gui.SendMessage(hwnd, win32con.WM_LBUTTONDOWN, win32con.MK_LBUTTON, lparam)
+    time.sleep(0.05)
+    win32gui.SendMessage(hwnd, win32con.WM_LBUTTONUP, 0, lparam)
+
+def background_double_click(hwnd, x, y):
+    """Sends an invisible double click."""
+    lparam = win32api.MAKELONG(int(x), int(y))
+    win32gui.SendMessage(hwnd, win32con.WM_LBUTTONDBLCLK, win32con.MK_LBUTTON, lparam)
+    time.sleep(0.05)
+    win32gui.SendMessage(hwnd, win32con.WM_LBUTTONUP, 0, lparam)
+
+def background_type(hwnd, text):
+    """Sends invisible keystrokes to the currently active text box."""
+    for char in str(text):
+        win32gui.SendMessage(hwnd, win32con.WM_CHAR, ord(char), 0)
+        time.sleep(0.01)
+    # Send 'Enter' key
+    win32gui.SendMessage(hwnd, win32con.WM_KEYDOWN, win32con.VK_RETURN, 0)
+    win32gui.SendMessage(hwnd, win32con.WM_KEYUP, win32con.VK_RETURN, 0)
+
+# --- 2. Your Grid Logic (Unchanged) ---
+
+def init_AOTF_grid():
+    # You no longer need to move the window to (0,0) with this method!
+    # The API calculates clicks relative to the window's top-left corner natively.
+    x = np.array([190, 270, 320])
+    y = np.linspace(193, 430, 8)
+    fields = ["lambda", "power", "on"]
+    grid = {i: {} for i in range(len(y))}
+
+    for i, row_y in enumerate(y):
+        for j, col_x in enumerate(x):
+            grid[i][fields[j]] = (col_x, row_y)
+    return grid
+
+# --- 3. The Upgraded Function ---
+
+def change_lambda_background(hwnd, grid, channel, new_lambda_value):
+    '''
+    channel: int, AOTF output channels (0 ~ 7)
+    new_lambda_value: str, the new wavelength value (400 ~ 700)
+    '''
+    # 1. Click the main lambda box
+    lambda_x, lambda_y = grid[channel]["lambda"]
+    background_click(hwnd, lambda_x, lambda_y)
+    time.sleep(0.5)
+
+    # 2. Double click the edit box (using your offsets)
+    edit_x, edit_y = lambda_x + 370, lambda_y + 40
+    background_double_click(hwnd, edit_x, edit_y)
+    time.sleep(0.5)
+
+    # 3. Type the new value and press Enter invisibly
+    background_type(hwnd, new_lambda_value)
+    time.sleep(0.5)
+
+    # 4. Click OK (using your offsets)
+    ok_x, ok_y = lambda_x + 440, lambda_y + 40
+    background_click(hwnd, ok_x, ok_y)
+    time.sleep(0.5)
