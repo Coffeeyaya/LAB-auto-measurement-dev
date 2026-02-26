@@ -303,4 +303,5 @@ if __name__ == "__main__":
         # background_click(hwnd, on_coord[0], on_coord[1])
 
         change_lambda(hwnd, grid, 2, "400")
+        time.sleep(1)
         change_power(hwnd, grid, 2, "10")
