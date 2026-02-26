@@ -72,6 +72,28 @@ def background_paste(hwnd, text):
     print(f"Paste command for '{text}' sent.")
 
 
+def hybrid_fill_box(hwnd, content):
+    """
+    Uses background handles to ensure the window is ready, 
+    then uses pyautogui to perform the physical paste.
+    """
+    # 1. Prepare the clipboard
+    pyperclip.copy(str(content))
+    
+    # 2. Ensure the popup window is actually focused
+    # This is critical for pyautogui to work
+    win32gui.SetForegroundWindow(hwnd)
+    time.sleep(0.1)
+    
+    # 3. Perform the paste
+    # We use a slight delay between keys to ensure the GUI registers them
+    pyautogui.hotkey('ctrl', 'v')
+    time.sleep(0.2)
+    
+    # 4. Press Enter to commit the change
+    pyautogui.press('enter')
+    print(f"Pasted '{content}' and pressed Enter via PyAutoGUI.")
+
 def move_window_to_origin(hwnd):
     """
     Grabs a window by its handle and forces it to screen coordinates (0, 0)
@@ -160,6 +182,8 @@ def change_lambda(main_hwnd, grid, channel, new_lambda_value):
     move_window_to_origin(popup_hwnd)
     background_double_click(popup_hwnd, popup_edit_x, popup_edit_y)
     time.sleep(0.5)
+
+    hybrid_fill_box(popup_hwnd, new_lambda_value)
     
     # background_type(popup_hwnd, new_lambda_value)
     # time.sleep(0.5)
