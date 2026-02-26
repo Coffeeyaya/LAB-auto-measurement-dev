@@ -8,19 +8,6 @@ import pygetwindow as gw
 import pyperclip
 import pyautogui
 
-
-
-import win32api
-import win32gui
-import win32con
-import time
-
-import win32gui
-import win32con
-import win32api
-import time
-
-
    
 def get_lambda_edit_coord(lambda_coord):
     abs_x = lambda_coord[0] + 370
@@ -42,6 +29,23 @@ def get_power_ok_coord(power_coord):
     abs_y = power_coord[1] + 335
     return abs_x, abs_y
 
+
+def move_window_to_origin(hwnd):
+    """
+    Grabs a window by its handle and forces it to screen coordinates (0, 0)
+    while keeping its original width and height intact.
+    """
+    # 1. Get the current dimensions of the popup so we don't accidentally squish it
+    rect = win32gui.GetWindowRect(hwnd)
+    width = rect[2] - rect[0]
+    height = rect[3] - rect[1]
+    
+    # 2. Move the window to X=0, Y=0
+    # The 'True' at the end tells Windows to redraw the window immediately
+    win32gui.MoveWindow(hwnd, 0, 0, width, height, True)
+    print("Popup successfully grabbed and moved to (0, 0).")
+
+
 def get_active_popup_hwnd(expected_title=None):
     """
     Finds the popup window. If the popup steals focus when it spawns, 
@@ -54,6 +58,7 @@ def get_active_popup_hwnd(expected_title=None):
     else:
         # Fallback: Just grab whatever window just popped to the front
         popup_hwnd = win32gui.GetForegroundWindow()
+        move_window_to_origin(popup_hwnd)
         
     return popup_hwnd
 
@@ -134,11 +139,6 @@ def init_AOTF_grid():
 def get_coord(grid, channel, field):
     coord = grid[channel][field]
     return coord
-# --- 3. The Upgraded Function ---
-import time
-import win32gui
-import win32con
-import win32api
 
 # --- Background API Helpers ---
 def background_click(hwnd, x, y):
