@@ -9,6 +9,9 @@ import pyperclip
 import pyautogui
 
 
+# popup power slider.vi
+# popup wavelength slider.vi
+
 ### background functions
 def background_click(hwnd, x, y):
     """Sends an invisible left click to the window at relative x, y."""
@@ -139,7 +142,7 @@ def get_power_edit_coord(power_coord):
 def get_power_ok_coord(power_coord):
     # abs_x = power_coord[0] + 90 # 80
     # abs_y = power_coord[1] + 335 # 330
-    abs_x = power_coord[0] + 75 # 80
+    abs_x = power_coord[0] + 80 # 80
     abs_y = power_coord[1] + 330 # 330
     return abs_x, abs_y
 
