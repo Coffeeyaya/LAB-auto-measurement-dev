@@ -24,15 +24,29 @@ def background_double_click(hwnd, x, y):
     time.sleep(0.05)
     win32gui.SendMessage(hwnd, win32con.WM_LBUTTONUP, 0, lparam)
 
+# def background_type(hwnd, text):
+#     """Sends invisible keystrokes to the currently active text box."""
+#     for char in str(text):
+#         win32gui.SendMessage(hwnd, win32con.WM_CHAR, ord(char), 0)
+#         time.sleep(0.05)
+#     # Send 'Enter' key
+#     win32gui.SendMessage(hwnd, win32con.WM_KEYDOWN, win32con.VK_RETURN, 0)
+#     win32gui.SendMessage(hwnd, win32con.WM_KEYUP, win32con.VK_RETURN, 0)
+
+
 def background_type(hwnd, text):
-    """Sends invisible keystrokes to the currently active text box."""
+    """Sends invisible keystrokes and a robust Enter key signal."""
     for char in str(text):
+        # WM_CHAR is excellent for the numbers themselves
         win32gui.SendMessage(hwnd, win32con.WM_CHAR, ord(char), 0)
         time.sleep(0.05)
-    # Send 'Enter' key
-    win32gui.SendMessage(hwnd, win32con.WM_KEYDOWN, win32con.VK_RETURN, 0)
-    win32gui.SendMessage(hwnd, win32con.WM_KEYUP, win32con.VK_RETURN, 0)
-
+    
+    # Send hardware-level ENTER key events to confirm the value
+    # Some LabVIEW GUIs require both the message and the specific virtual key signal
+    win32gui.PostMessage(hwnd, win32con.WM_KEYDOWN, win32con.VK_RETURN, 0)
+    time.sleep(0.05)
+    win32gui.PostMessage(hwnd, win32con.WM_KEYUP, win32con.VK_RETURN, 0)
+    print(f"Typed {text} and sent Enter signal.")
 def move_window_to_origin(hwnd):
     """
     Grabs a window by its handle and forces it to screen coordinates (0, 0)
