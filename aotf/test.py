@@ -34,20 +34,45 @@ def background_double_click(hwnd, x, y):
 #     win32gui.SendMessage(hwnd, win32con.WM_KEYUP, win32con.VK_RETURN, 0)
 
 
-def background_type(hwnd, text):
-    """Sends characters and Enter using PostMessage to prevent deadlocks."""
-    win32gui.PostMessage(hwnd, win32con.WM_KEYDOWN, win32con.VK_RETURN, 0)
-    time.sleep(0.05)
-    win32gui.PostMessage(hwnd, win32con.WM_KEYUP, win32con.VK_RETURN, 0)
-    for char in str(text):
-        win32gui.PostMessage(hwnd, win32con.WM_CHAR, ord(char), 0)
-        time.sleep(0.05)
+# def background_type(hwnd, text):
+#     """Sends characters and Enter using PostMessage to prevent deadlocks."""
+#     win32gui.PostMessage(hwnd, win32con.WM_KEYDOWN, win32con.VK_RETURN, 0)
+#     time.sleep(0.05)
+#     win32gui.PostMessage(hwnd, win32con.WM_KEYUP, win32con.VK_RETURN, 0)
+#     for char in str(text):
+#         win32gui.PostMessage(hwnd, win32con.WM_CHAR, ord(char), 0)
+#         time.sleep(0.05)
     
-    # Send Enter signal via PostMessage
-    win32gui.PostMessage(hwnd, win32con.WM_KEYDOWN, win32con.VK_RETURN, 0)
+#     # Send Enter signal via PostMessage
+#     win32gui.PostMessage(hwnd, win32con.WM_KEYDOWN, win32con.VK_RETURN, 0)
+#     time.sleep(0.05)
+#     win32gui.PostMessage(hwnd, win32con.WM_KEYUP, win32con.VK_RETURN, 0)
+#     print(f"PostMessage sequence for '{text}' complete.")
+
+def background_paste(hwnd, text):
+    """
+    Copies text to clipboard and sends a background Paste command 
+    directly to the window handle.
+    """
+    # 1. Put the new value on the clipboard
+    pyperclip.copy(str(text))
+    time.sleep(0.1)
+    
+    # 2. Send the Paste message (WM_PASTE is 0x0302)
+    # This is the "cleanest" way to paste in the background
+    win32gui.PostMessage(hwnd, win32con.WM_PASTE, 0, 0)
+    time.sleep(0.2)
+    
+    # 3. If WM_PASTE is ignored, we send the Ctrl+V keystrokes as a backup
+    # VK_CONTROL = 0x11, 'V' = 0x56
+    win32gui.PostMessage(hwnd, win32con.WM_KEYDOWN, win32con.VK_CONTROL, 0)
+    win32gui.PostMessage(hwnd, win32con.WM_KEYDOWN, ord('V'), 0)
     time.sleep(0.05)
-    win32gui.PostMessage(hwnd, win32con.WM_KEYUP, win32con.VK_RETURN, 0)
-    print(f"PostMessage sequence for '{text}' complete.")
+    win32gui.PostMessage(hwnd, win32con.WM_KEYUP, ord('V'), 0)
+    win32gui.PostMessage(hwnd, win32con.WM_KEYUP, win32con.VK_CONTROL, 0)
+    
+    print(f"Paste command for '{text}' sent.")
+
 
 def move_window_to_origin(hwnd):
     """
@@ -138,8 +163,8 @@ def change_lambda(main_hwnd, grid, channel, new_lambda_value):
     background_double_click(popup_hwnd, popup_edit_x, popup_edit_y)
     time.sleep(0.5)
     
-    # background_type(popup_hwnd, new_lambda_value)
-    # time.sleep(0.5)
+    background_paste(popup_hwnd, new_lambda_value)
+    time.sleep(0.5)
     
     # popup_ok_x, popup_ok_y = get_lambda_ok_coord([0,0])
     # background_click(popup_hwnd, popup_ok_x, popup_ok_y)
