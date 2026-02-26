@@ -29,7 +29,7 @@ class KeithleyWorker(QThread):
         while self.running:
             I_D, I_G = self.k.measure()
             t = time.time() - start_time
-            self.new_data.emit(t, self.k.Vd, self.k.Vg, I_D, I_G)
+            self.new_data.emit(t, I_D, I_G, self.k.Vd, self.k.Vg)
             self.msleep(100)  # 10 Hz
 
     def stop(self):
@@ -99,13 +99,13 @@ class MainWindow(QWidget):
         self.stop_pulse_btn.clicked.connect(self.stop_pulse)
 
         # Data storage
-        self.times, self.I_Ds, self.I_Gs = [], [], []
+        self.times, self.I_Ds, self.I_Gs, self.V_Ds, self.V_Gs = [], [], [], [], []
 
         # CSV file
         self.csv_file = filename
         with open(self.csv_file, 'w', newline='') as f:
             writer = csv.writer(f)
-            writer.writerow(["Time","Vd","Vg","I_D","I_G"])
+            writer.writerow(["Time","I_D","I_G","V_D","V_G"])
 
         # Start worker thread
         self.worker = KeithleyWorker(self.k)
@@ -139,12 +139,17 @@ class MainWindow(QWidget):
         self.k.stop_vg_pulse()
 
     # Update plot and CSV
-    def update_plot(self, t, Vd, Vg, I_D, I_G):
+    def update_plot(self, t, I_D, I_G, V_D, V_G):
         self.times.append(t)
         self.I_Ds.append(I_D)
         self.I_Gs.append(I_G)
+        self.V_Ds.append(V_D)
+        self.V_Gs.append(V_G)
+
         self.line_id.set_data(self.times, self.I_Ds)
         self.line_ig.set_data(self.times, self.I_Gs)
+        self.line_id.set_data(self.times, self.V_Ds)
+        self.line_ig.set_data(self.times, self.V_Gs)
 
 
         # self.ax1.relim(); self.ax1.autoscale_view()
@@ -167,7 +172,7 @@ class MainWindow(QWidget):
 
         with open(self.csv_file, 'a', newline='') as f:
             writer = csv.writer(f)
-            writer.writerow([t,Vd,Vg,I_D,I_G])
+            writer.writerow([t,I_D,I_G,V_D,V_G])
 
     # Stop everything
     def stop(self):
