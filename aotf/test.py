@@ -201,7 +201,7 @@ def change_power(main_hwnd, grid, channel, new_power_value):
     time.sleep(0.5)
     
     popup_ok_x, popup_ok_y = get_power_ok_coord([0,0])
-    background_click(popup_hwnd, popup_ok_x, popup_ok_y)
+    background_double_click(popup_hwnd, popup_ok_x, popup_ok_y)
     time.sleep(0.5)
 
 # --- 2. Your Grid Logic (Unchanged) ---
