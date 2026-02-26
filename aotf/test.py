@@ -135,28 +135,58 @@ def get_coord(grid, channel, field):
     coord = grid[channel][field]
     return coord
 # --- 3. The Upgraded Function ---
+import time
+import win32gui
+import win32con
+import win32api
 
-def change_lambda_background(hwnd, grid, channel, new_lambda_value):
+# --- Background API Helpers ---
+def background_click(hwnd, x, y):
+    lparam = win32api.MAKELONG(int(x), int(y))
+    win32gui.SendMessage(hwnd, win32con.WM_LBUTTONDOWN, win32con.MK_LBUTTON, lparam)
+    time.sleep(0.05)
+    win32gui.SendMessage(hwnd, win32con.WM_LBUTTONUP, 0, lparam)
+
+def background_double_click(hwnd, x, y):
+    lparam = win32api.MAKELONG(int(x), int(y))
+    win32gui.SendMessage(hwnd, win32con.WM_LBUTTONDBLCLK, win32con.MK_LBUTTON, lparam)
+    time.sleep(0.05)
+    win32gui.SendMessage(hwnd, win32con.WM_LBUTTONUP, 0, lparam)
+
+def background_type(hwnd, text):
+    text_to_send = str(text)
+    for char in text_to_send:
+        win32gui.SendMessage(hwnd, win32con.WM_CHAR, ord(char), 0)
+        time.sleep(0.01)
+    win32gui.SendMessage(hwnd, win32con.WM_KEYDOWN, win32con.VK_RETURN, 0)
+    win32gui.SendMessage(hwnd, win32con.WM_KEYUP, win32con.VK_RETURN, 0)
+
+# --- Your Integrated Logic ---
+def change_lambda_invisible(hwnd, grid, channel, new_lambda_value):
     '''
     channel: int, AOTF output channels (0 ~ 7)
     new_lambda_value: str, the new wavelength value (400 ~ 700)
     '''
-    # 1. Click the main lambda box
+    # 1. Base coordinates from your grid
     lambda_x, lambda_y = grid[channel]["lambda"]
+
+    # 2. Invisible click to activate the channel field
     background_click(hwnd, lambda_x, lambda_y)
     time.sleep(0.5)
 
-    # 2. Double click the edit box (using your offsets)
-    edit_x, edit_y = lambda_x + 370, lambda_y + 40
+    # 3. Calculate Edit Box coords using YOUR exact offsets
+    edit_x = lambda_x + 370
+    edit_y = lambda_y + 40
     background_double_click(hwnd, edit_x, edit_y)
     time.sleep(0.5)
 
-    # 3. Type the new value and press Enter invisibly
+    # 4. Inject the text invisibly
     background_type(hwnd, new_lambda_value)
     time.sleep(0.5)
 
-    # 4. Click OK (using your offsets)
-    ok_x, ok_y = lambda_x + 440, lambda_y + 40
+    # 5. Calculate OK button coords using YOUR exact offsets
+    ok_x = lambda_x + 440
+    ok_y = lambda_y + 40
     background_click(hwnd, ok_x, ok_y)
     time.sleep(0.5)
 
@@ -172,4 +202,4 @@ if __name__ == "__main__":
         # on_coord = get_coord(grid, channel, "on")
         # background_click(hwnd, on_coord[0], on_coord[1])
 
-        change_lambda_truly_invisible(hwnd, grid, 2, "500")
+        change_lambda_invisible(hwnd, grid, 2, "500")
