@@ -218,7 +218,7 @@ def change_power(main_hwnd, grid, channel, new_power_value):
     # time.sleep(0.5)
 
     background_paste(popup_hwnd, new_power_value) # works !
-    time.sleep(0.5)
+    time.sleep(1)
     
     popup_ok_x, popup_ok_y = get_power_ok_coord([0,0])
     background_double_click(popup_hwnd, popup_ok_x, popup_ok_y)
