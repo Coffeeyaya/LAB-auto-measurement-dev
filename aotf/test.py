@@ -35,22 +35,17 @@ def background_double_click(hwnd, x, y):
 
 
 def background_type(hwnd, text):
-    """Sends keystrokes using PostMessage to avoid hanging on modal popups."""
-    # 1. Send the numbers
+    """Sends characters and Enter using PostMessage to prevent deadlocks."""
     for char in str(text):
         win32gui.PostMessage(hwnd, win32con.WM_CHAR, ord(char), 0)
         time.sleep(0.05)
     
-    # 2. Send the ENTER key with the hardware Scan Code (0x1C)
-    # The 'lParam' 0x001C0001 tells the app this was a real keyboard press
-    ENTER_SCAN_CODE = 0x001C0001 
-    
-    win32gui.PostMessage(hwnd, win32con.WM_KEYDOWN, win32con.VK_RETURN, ENTER_SCAN_CODE)
+    # Send Enter signal via PostMessage
+    win32gui.PostMessage(hwnd, win32con.WM_KEYDOWN, win32con.VK_RETURN, 0)
     time.sleep(0.05)
-    win32gui.PostMessage(hwnd, win32con.WM_KEYUP, win32con.VK_RETURN, 0xC01C0001)
+    win32gui.PostMessage(hwnd, win32con.WM_KEYUP, win32con.VK_RETURN, 0)
+    print(f"PostMessage sequence for '{text}' complete.")
     
-    print(f"Typed {text} and posted Enter signal.")
-
 def move_window_to_origin(hwnd):
     """
     Grabs a window by its handle and forces it to screen coordinates (0, 0)
