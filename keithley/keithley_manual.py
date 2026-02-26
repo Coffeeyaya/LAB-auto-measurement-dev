@@ -74,8 +74,8 @@ class MainWindow(QWidget):
 
         # Voltage uses points ('o') and goes on the secondary axes (_v)
         # alpha=0.3 makes the voltage dots slightly transparent so they don't hide the current line
-        self.line_vd, = self.ax1_v.plot([], [], 'bo', alpha=0.3, label='V_D')
-        self.line_vg, = self.ax2_v.plot([], [], 'ro', alpha=0.3, label='V_G')
+        self.line_vd, = self.ax1_v.plot([], [], 'g.-', alpha=0.3, label='V_D')
+        self.line_vg, = self.ax2_v.plot([], [], 'k.-', alpha=0.3, label='V_G')
 
         ###
 
