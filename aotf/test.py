@@ -41,20 +41,21 @@ def background_paste(hwnd, text):
     time.sleep(0.1)
     
     # modify this in the future so that it can paste without interfere
-    # # 2. Send the Paste message (WM_PASTE is 0x0302)
-    # # This is the "cleanest" way to paste in the background
-    # win32gui.PostMessage(hwnd, win32con.WM_PASTE, 0, 0)
-    # time.sleep(0.2)
+    # 2. Send the Paste message (WM_PASTE is 0x0302)
+    # This is the "cleanest" way to paste in the background
+    win32gui.PostMessage(hwnd, win32con.WM_PASTE, 0, 0)
+    time.sleep(0.2)
     
-    # # 3. If WM_PASTE is ignored, we send the Ctrl+V keystrokes as a backup
-    # # VK_CONTROL = 0x11, 'V' = 0x56
-    # win32gui.PostMessage(hwnd, win32con.WM_KEYDOWN, win32con.VK_CONTROL, 0)
-    # win32gui.PostMessage(hwnd, win32con.WM_KEYDOWN, ord('V'), 0)
-    # time.sleep(0.05)
-    # win32gui.PostMessage(hwnd, win32con.WM_KEYUP, ord('V'), 0)
-    # win32gui.PostMessage(hwnd, win32con.WM_KEYUP, win32con.VK_CONTROL, 0)
-    pyautogui.hotkey("ctrl", "v")
-    pyautogui.press('enter')
+    # 3. If WM_PASTE is ignored, we send the Ctrl+V keystrokes as a backup
+    # VK_CONTROL = 0x11, 'V' = 0x56
+    win32gui.PostMessage(hwnd, win32con.WM_KEYDOWN, win32con.VK_CONTROL, 0)
+    win32gui.PostMessage(hwnd, win32con.WM_KEYDOWN, ord('V'), 0)
+    time.sleep(0.05)
+    win32gui.PostMessage(hwnd, win32con.WM_KEYUP, ord('V'), 0)
+    win32gui.PostMessage(hwnd, win32con.WM_KEYUP, win32con.VK_CONTROL, 0)
+    
+    # pyautogui.hotkey("ctrl", "v")
+    # pyautogui.press('enter')
     print(f"Paste command for '{text}' sent.")
 
 
@@ -74,9 +75,6 @@ def move_window_to_origin(hwnd):
     print("Popup successfully grabbed and moved to (0, 0).")
 
 def get_active_popup_hwnd(title, timeout=3):
-    """
-    Specifically hunts for the LabVIEW 'popup wavelength slider.vi' window.
-    """
     start_time = time.time()
     while (time.time() - start_time) < timeout:
         # Check by specific title
