@@ -13,9 +13,9 @@ import pyautogui
 def background_click(hwnd, x, y):
     """Sends an invisible left click to the window at relative x, y."""
     lparam = win32api.MAKELONG(int(x), int(y))
-    win32gui.SendMessage(hwnd, win32con.WM_LBUTTONDOWN, win32con.MK_LBUTTON, lparam)
+    win32gui.PostMessage(hwnd, win32con.WM_LBUTTONDOWN, win32con.MK_LBUTTON, lparam)
     time.sleep(0.05)
-    win32gui.SendMessage(hwnd, win32con.WM_LBUTTONUP, 0, lparam)
+    win32gui.PostMessage(hwnd, win32con.WM_LBUTTONUP, 0, lparam)
 
 def background_double_click(hwnd, x, y):
     """
@@ -200,6 +200,7 @@ def change_lambda(main_hwnd, grid, channel, new_lambda_value):
     popup_ok_x, popup_ok_y = get_lambda_ok_coord([0,0])
     background_click(popup_hwnd, popup_ok_x, popup_ok_y)
     time.sleep(0.5)
+
 def change_lambda2(main_hwnd, grid, channel, new_lambda_value):
     # Get grid coordinates
     lambda_x, lambda_y = grid[channel]["lambda"]
