@@ -35,18 +35,26 @@ def background_double_click(hwnd, x, y):
 
 
 def background_type(hwnd, text):
-    """Sends invisible keystrokes and a robust Enter key signal."""
+    """A more aggressive typing function for stubborn LabVIEW popups."""
+    # 1. Clear any existing text first (sending backspaces)
+    for _ in range(10):
+        win32gui.SendMessage(hwnd, win32con.WM_KEYDOWN, win32con.VK_BACK, 0)
+    
+    # 2. Type the new value
     for char in str(text):
-        # WM_CHAR is excellent for the numbers themselves
         win32gui.SendMessage(hwnd, win32con.WM_CHAR, ord(char), 0)
         time.sleep(0.05)
     
-    # Send hardware-level ENTER key events to confirm the value
-    # Some LabVIEW GUIs require both the message and the specific virtual key signal
-    win32gui.PostMessage(hwnd, win32con.WM_KEYDOWN, win32con.VK_RETURN, 0)
+    # 3. Send the ENTER signal 3 different ways
+    # Way A: The Character
+    win32gui.SendMessage(hwnd, win32con.WM_CHAR, win32con.VK_RETURN, 0)
+    # Way B: The Virtual Key Down/Up
+    win32api.SendMessage(hwnd, win32con.WM_KEYDOWN, win32con.VK_RETURN, 0)
     time.sleep(0.05)
-    win32gui.PostMessage(hwnd, win32con.WM_KEYUP, win32con.VK_RETURN, 0)
+    win32api.SendMessage(hwnd, win32con.WM_KEYUP, win32con.VK_RETURN, 0)
+    
     print(f"Typed {text} and sent Enter signal.")
+    
 def move_window_to_origin(hwnd):
     """
     Grabs a window by its handle and forces it to screen coordinates (0, 0)
