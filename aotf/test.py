@@ -29,17 +29,17 @@ def background_double_click(hwnd, x, y):
     win32gui.PostMessage(hwnd, win32con.WM_LBUTTONUP, 0, lparam)
 
 
-def background_type(hwnd, text):
-    """Sends characters and Enter using PostMessage to prevent deadlocks."""
-    for char in str(text):
-        win32gui.PostMessage(hwnd, win32con.WM_CHAR, ord(char), 0)
-        time.sleep(0.05)
+# def background_type(hwnd, text):
+#     """Sends characters and Enter using PostMessage to prevent deadlocks."""
+#     for char in str(text):
+#         win32gui.PostMessage(hwnd, win32con.WM_CHAR, ord(char), 0)
+#         time.sleep(0.05)
     
-    # Send Enter signal via PostMessage
-    win32gui.PostMessage(hwnd, win32con.WM_KEYDOWN, win32con.VK_RETURN, 0)
-    time.sleep(0.05)
-    win32gui.PostMessage(hwnd, win32con.WM_KEYUP, win32con.VK_RETURN, 0)
-    print(f"PostMessage sequence for '{text}' complete.")
+#     # Send Enter signal via PostMessage
+#     win32gui.PostMessage(hwnd, win32con.WM_KEYDOWN, win32con.VK_RETURN, 0)
+#     time.sleep(0.05)
+#     win32gui.PostMessage(hwnd, win32con.WM_KEYUP, win32con.VK_RETURN, 0)
+#     print(f"PostMessage sequence for '{text}' complete.")
 
 def background_paste(hwnd, text):
     """
@@ -171,7 +171,6 @@ def change_lambda(main_hwnd, grid, channel, new_lambda_value):
     popup_ok_x, popup_ok_y = get_lambda_ok_coord([0,0])
     background_click(popup_hwnd, popup_ok_x, popup_ok_y)
     time.sleep(0.5)
-
 
 
 def change_power(main_hwnd, grid, channel, new_power_value):
