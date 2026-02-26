@@ -8,7 +8,80 @@ import pygetwindow as gw
 import pyperclip
 import pyautogui
 
-# --- 1. The Win32 API Toolset ---
+
+
+import win32api
+import win32gui
+import win32con
+import time
+
+import win32gui
+import win32con
+import win32api
+import time
+
+
+   
+def get_lambda_edit_coord(lambda_coord):
+    abs_x = lambda_coord[0] + 370
+    abs_y = lambda_coord[1] + 40
+    return abs_x, abs_y
+
+def get_lambda_ok_coord(lambda_coord):
+    abs_x = lambda_coord[0] + 440
+    abs_y = lambda_coord[1] + 40
+    return abs_x, abs_y
+
+def get_power_edit_coord(power_coord):
+    abs_x = power_coord[0] + 90
+    abs_y = power_coord[1] + 300
+    return abs_x, abs_y
+
+def get_power_ok_coord(power_coord):
+    abs_x = power_coord[0] + 90
+    abs_y = power_coord[1] + 335
+    return abs_x, abs_y
+
+def get_active_popup_hwnd(expected_title=None):
+    """
+    Finds the popup window. If the popup steals focus when it spawns, 
+    GetForegroundWindow() will grab it immediately.
+    """
+    time.sleep(0.2) # Give the OS a moment to render the popup
+    
+    if expected_title:
+        popup_hwnd = win32gui.FindWindow(None, expected_title)
+    else:
+        # Fallback: Just grab whatever window just popped to the front
+        popup_hwnd = win32gui.GetForegroundWindow()
+        
+    return popup_hwnd
+
+def change_lambda_truly_invisible(main_hwnd, grid, channel, new_lambda_value):
+    # 1. Double click the main grid to spawn the popup
+    lambda_x, lambda_y = grid[channel]["lambda"]
+    background_double_click(main_hwnd, lambda_x, lambda_y)
+    
+    # 2. Dynamically find the popup that just appeared
+    # NOTE: If the popup has a specific title (like "Edit" or "Value"), put it here.
+    popup_hwnd = get_active_popup_hwnd() 
+    
+    if popup_hwnd == main_hwnd or popup_hwnd == 0:
+        print("Error: Could not detect the popup window.")
+        return
+    
+    popup_edit_x, popup_edit_y = get_lambda_edit_coord([0,0])
+    
+    background_click(popup_hwnd, popup_edit_x, popup_edit_y)
+    time.sleep(0.1)
+    
+    # 4. Inject the text invisibly
+    background_type(popup_hwnd, new_lambda_value)
+    time.sleep(0.1)
+    
+    popup_ok_x, popup_ok_y = get_lambda_ok_coord([0,0])
+    background_click(popup_hwnd, popup_ok_x, popup_ok_y)
+    time.sleep(0.1)
 
 def background_click(hwnd, x, y):
     """Sends an invisible left click to the window at relative x, y."""
@@ -94,7 +167,9 @@ if __name__ == "__main__":
     if hwnd == 0:
         print("Please open the AOTF Controller GUI first.")
     else:
-        # change_lambda_background(hwnd, grid, channel=2, new_lambda_value="670")
-        channel = 2
-        on_coord = get_coord(grid, channel, "on")
-        background_click(hwnd, on_coord[0], on_coord[1])
+        
+        # channel = 2
+        # on_coord = get_coord(grid, channel, "on")
+        # background_click(hwnd, on_coord[0], on_coord[1])
+
+        change_lambda_truly_invisible(hwnd, grid, 2, 500)
