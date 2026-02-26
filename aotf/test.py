@@ -204,4 +204,4 @@ if __name__ == "__main__":
         # on_coord = get_coord(grid, channel, "on")
         # background_click(hwnd, on_coord[0], on_coord[1])
 
-        change_lambda_invisible(hwnd, grid, 2, "500")
+        change_lambda_truly_invisible(hwnd, grid, 2, "500")
