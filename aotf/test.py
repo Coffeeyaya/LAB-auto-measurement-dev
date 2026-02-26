@@ -130,13 +130,17 @@ def get_lambda_ok_coord(lambda_coord):
     return abs_x, abs_y
 
 def get_power_edit_coord(power_coord):
-    abs_x = power_coord[0] + 90
-    abs_y = power_coord[1] + 300
+    # abs_x = power_coord[0] + 90 # 80
+    # abs_y = power_coord[1] + 300 # 300
+    abs_x = power_coord[0] + 80 # 80
+    abs_y = power_coord[1] + 300 # 300
     return abs_x, abs_y
 
 def get_power_ok_coord(power_coord):
-    abs_x = power_coord[0] + 90
-    abs_y = power_coord[1] + 335
+    # abs_x = power_coord[0] + 90 # 80
+    # abs_y = power_coord[1] + 335 # 330
+    abs_x = power_coord[0] + 80 # 80
+    abs_y = power_coord[1] + 330 # 330
     return abs_x, abs_y
 
 
