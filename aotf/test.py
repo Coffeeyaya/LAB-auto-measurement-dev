@@ -54,7 +54,7 @@ def background_type(hwnd, text):
     win32api.SendMessage(hwnd, win32con.WM_KEYUP, win32con.VK_RETURN, 0)
     
     print(f"Typed {text} and sent Enter signal.")
-    
+
 def move_window_to_origin(hwnd):
     """
     Grabs a window by its handle and forces it to screen coordinates (0, 0)
@@ -190,4 +190,4 @@ if __name__ == "__main__":
         # on_coord = get_coord(grid, channel, "on")
         # background_click(hwnd, on_coord[0], on_coord[1])
 
-        change_lambda(hwnd, grid, 2, "500")
+        change_lambda(hwnd, grid, 2, 500)
