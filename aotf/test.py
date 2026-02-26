@@ -67,31 +67,6 @@ def background_paste(hwnd, text):
     print(f"Paste command for '{text}' sent.")
 
 
-def hybrid_fill_box(hwnd, content):
-    """
-    Uses background handles to ensure the window is ready, 
-    then uses pyautogui to perform the physical paste.
-    """
-    win32gui.SetForegroundWindow(hwnd)
-    time.sleep(0.1)
-    pyautogui.press('enter')
-    # 1. Prepare the clipboard
-    pyperclip.copy(str(content))
-    
-    # 2. Ensure the popup window is actually focused
-    # This is critical for pyautogui to work
-    win32gui.SetForegroundWindow(hwnd)
-    time.sleep(0.1)
-    
-    # 3. Perform the paste
-    # We use a slight delay between keys to ensure the GUI registers them
-    pyautogui.hotkey('ctrl', 'v')
-    time.sleep(0.2)
-    
-    # 4. Press Enter to commit the change
-    pyautogui.press('enter')
-    print(f"Pasted '{content}' and pressed Enter via PyAutoGUI.")
-
 def move_window_to_origin(hwnd):
     """
     Grabs a window by its handle and forces it to screen coordinates (0, 0)
@@ -186,40 +161,43 @@ def change_lambda(main_hwnd, grid, channel, new_lambda_value):
     # background_type(popup_hwnd, new_lambda_value)
     # time.sleep(0.5)
 
-    background_paste(popup_hwnd, new_lambda_value)
+    background_paste(popup_hwnd, new_lambda_value) # works !
     time.sleep(0.5)
     
     popup_ok_x, popup_ok_y = get_lambda_ok_coord([0,0])
     background_click(popup_hwnd, popup_ok_x, popup_ok_y)
     time.sleep(0.5)
 
-def change_lambda2(main_hwnd, grid, channel, new_lambda_value):
-    # Get grid coordinates
-    lambda_x, lambda_y = grid[channel]["lambda"]
+
+
+def change_power(main_hwnd, grid, channel, new_power_value):
+    power_x, power_y = grid[channel]["power"]
+    background_click(main_hwnd, power_x, power_y)
+    popup_hwnd = get_active_popup_hwnd(main_hwnd) 
+    window_title = win32gui.GetWindowText(popup_hwnd)
+    print(f"Successfully captured popup window: '{window_title}'")
     
-    # 1. Double click main grid to open popup (Invisible)
-    background_double_click(main_hwnd, lambda_x, lambda_y)
+    if popup_hwnd == main_hwnd or popup_hwnd == 0:
+        print("Error: Could not detect the popup window.")
+        return
     
-    # 2. Capture and Move the popup (Invisible)
-    popup_hwnd = get_active_popup_hwnd(main_hwnd)
-    if not popup_hwnd: return
+    popup_edit_x, popup_edit_y = get_power_edit_coord([0,0])
     move_window_to_origin(popup_hwnd)
-    
-    # 3. Double-click the edit box inside the popup (Invisible)
-    # This selects the old text so the paste overwrites it
-    popup_edit_x, popup_edit_y = get_lambda_edit_coord([0,0])
     background_double_click(popup_hwnd, popup_edit_x, popup_edit_y)
-    time.sleep(0.3)
-    
-    # 4. Perform the Hybrid Paste
-    hybrid_fill_box(popup_hwnd, new_lambda_value)
-    
-    # 5. Click OK (Invisible)
-    # Note: If hybrid_fill_box already pressed Enter, the window might already be closed
     time.sleep(0.5)
-    if win32gui.IsWindow(popup_hwnd):
-        popup_ok_x, popup_ok_y = get_lambda_ok_coord([0,0])
-        background_click(popup_hwnd, popup_ok_x, popup_ok_y)
+
+    # hybrid_fill_box(popup_hwnd, new_power_value)
+    
+    # background_type(popup_hwnd, new_power_value)
+    # time.sleep(0.5)
+
+    background_paste(popup_hwnd, new_power_value) # works !
+    time.sleep(0.5)
+    
+    popup_ok_x, popup_ok_y = get_power_ok_coord([0,0])
+    background_click(popup_hwnd, popup_ok_x, popup_ok_y)
+    time.sleep(0.5)
+
 # --- 2. Your Grid Logic (Unchanged) ---
 
 
@@ -322,3 +300,4 @@ if __name__ == "__main__":
         # background_click(hwnd, on_coord[0], on_coord[1])
 
         change_lambda(hwnd, grid, 2, "400")
+        change_power(hwnd, grid, 2, "10")
