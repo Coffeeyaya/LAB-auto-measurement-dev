@@ -31,19 +31,6 @@ def background_double_click(hwnd, x, y):
     time.sleep(0.05)
     win32gui.PostMessage(hwnd, win32con.WM_LBUTTONUP, 0, lparam)
 
-
-# def background_type(hwnd, text):
-#     """Sends characters and Enter using PostMessage to prevent deadlocks."""
-#     for char in str(text):
-#         win32gui.PostMessage(hwnd, win32con.WM_CHAR, ord(char), 0)
-#         time.sleep(0.05)
-    
-#     # Send Enter signal via PostMessage
-#     win32gui.PostMessage(hwnd, win32con.WM_KEYDOWN, win32con.VK_RETURN, 0)
-#     time.sleep(0.05)
-#     win32gui.PostMessage(hwnd, win32con.WM_KEYUP, win32con.VK_RETURN, 0)
-#     print(f"PostMessage sequence for '{text}' complete.")
-
 def background_paste(hwnd, text):
     """
     Copies text to clipboard and sends a background Paste command 
@@ -53,6 +40,7 @@ def background_paste(hwnd, text):
     pyperclip.copy(str(text))
     time.sleep(0.1)
     
+    # modify this in the future so that it can paste without interfere
     # # 2. Send the Paste message (WM_PASTE is 0x0302)
     # # This is the "cleanest" way to paste in the background
     # win32gui.PostMessage(hwnd, win32con.WM_PASTE, 0, 0)
@@ -85,38 +73,6 @@ def move_window_to_origin(hwnd):
     win32gui.MoveWindow(hwnd, 0, 0, width, height, True)
     print("Popup successfully grabbed and moved to (0, 0).")
 
-# def get_active_popup_hwnd_title(expected_title=None):
-#     """
-#     Finds the popup window. If the popup steals focus when it spawns, 
-#     GetForegroundWindow() will grab it immediately.
-#     """
-#     time.sleep(0.2) # Give the OS a moment to render the popup
-    
-#     if expected_title:
-#         popup_hwnd = win32gui.FindWindow(None, expected_title)
-#     else:
-#         # Fallback: Just grab whatever window just popped to the front
-#         popup_hwnd = win32gui.GetForegroundWindow()
-#     move_window_to_origin(popup_hwnd)
-#     return popup_hwnd
-
-
-# def get_active_popup_hwnd(main_hwnd):
-#     """Waits for and captures the newly spawned popup window handle and title."""
-#     time.sleep(0.3) # Give the GUI time to generate the window [cite: 606]
-    
-#     popup_hwnd = win32gui.GetForegroundWindow()
-    
-#     # Get the title text of the captured window
-#     window_title = win32gui.GetWindowText(popup_hwnd)
-    
-#     if popup_hwnd == main_hwnd or popup_hwnd == 0:
-#         print(f"Warning: No new popup detected. Current active window: '{window_title}'")
-#         return None
-    
-#     print(f"Successfully captured popup window: '{window_title}'")
-    # return popup_hwnd
-
 def get_active_popup_hwnd(title, timeout=3):
     """
     Specifically hunts for the LabVIEW 'popup wavelength slider.vi' window.
@@ -134,7 +90,7 @@ def get_active_popup_hwnd(title, timeout=3):
         
         time.sleep(0.1)
     
-    print("Error: 'popup wavelength slider.vi' did not appear.")
+    print(f"Error: '{title}' did not appear.")
     return None
 
 ## relative coordinate to popup window
