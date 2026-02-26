@@ -39,41 +39,10 @@ def background_paste(hwnd, text):
     # 1. Put the new value on the clipboard
     pyperclip.copy(str(text))
     time.sleep(0.1)
-    
-    # modify this in the future so that it can paste without interfere
-    # 2. Send the Paste message (WM_PASTE is 0x0302)
-    # This is the "cleanest" way to paste in the background
-    win32gui.PostMessage(hwnd, win32con.WM_PASTE, 0, 0)
-    time.sleep(0.2)
-    
-    # 3. If WM_PASTE is ignored, we send the Ctrl+V keystrokes as a backup
-    # VK_CONTROL = 0x11, 'V' = 0x56
-    win32gui.PostMessage(hwnd, win32con.WM_KEYDOWN, win32con.VK_CONTROL, 0)
-    win32gui.PostMessage(hwnd, win32con.WM_KEYDOWN, ord('V'), 0)
-    time.sleep(0.05)
-    win32gui.PostMessage(hwnd, win32con.WM_KEYUP, ord('V'), 0)
-    win32gui.PostMessage(hwnd, win32con.WM_KEYUP, win32con.VK_CONTROL, 0)
-
-    # pyautogui.hotkey("ctrl", "v")
-    # pyautogui.press('enter')
+    pyautogui.hotkey("ctrl", "v")
+    pyautogui.press('enter')
     print(f"Paste command for '{text}' sent.")
 
-
-def background_set_text(hwnd, text):
-    """
-    Directly sets the text of the window/control without using the clipboard.
-    This is the most 'invisible' method possible.
-    """
-    # WM_SETTEXT = 0x000C
-    # This command tells the window: 'Your internal string is now this.'
-    win32gui.SendMessage(hwnd, win32con.WM_SETTEXT, 0, str(text))
-    time.sleep(0.1)
-    
-    # LabVIEW often needs an 'Enter' to realize the text has changed
-    win32gui.PostMessage(hwnd, win32con.WM_KEYDOWN, win32con.VK_RETURN, 0)
-    time.sleep(0.05)
-    win32gui.PostMessage(hwnd, win32con.WM_KEYUP, win32con.VK_RETURN, 0)
-    print(f"Direct text set to '{text}' complete.")
 
 def move_window_to_origin(hwnd):
     """
@@ -158,8 +127,7 @@ def change_lambda(main_hwnd, grid, channel, new_lambda_value):
     # background_type(popup_hwnd, new_lambda_value)
     # time.sleep(0.5)
 
-    # background_paste(popup_hwnd, new_lambda_value) # works !
-    background_set_text(popup_hwnd, new_lambda_value) # works !
+    background_paste(popup_hwnd, new_lambda_value) # works !
     time.sleep(0.5)
     
     popup_ok_x, popup_ok_y = get_lambda_ok_coord([0,0])
