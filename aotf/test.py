@@ -76,7 +76,7 @@ def change_lambda_truly_invisible(main_hwnd, grid, channel, new_lambda_value):
         return
     
     popup_edit_x, popup_edit_y = get_lambda_edit_coord([0,0])
-    
+    move_window_to_origin(popup_hwnd)
     background_double_click(popup_hwnd, popup_edit_x, popup_edit_y)
     time.sleep(0.1)
     
