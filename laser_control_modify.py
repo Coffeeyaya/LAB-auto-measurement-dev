@@ -1,5 +1,6 @@
 import time
-from LabAuto.laser import init_AOTF, get_coord, change_power_function, move_and_click
+# from LabAuto.laser import init_AOTF, get_coord, change_power_function, move_and_click
+from LabAuto.laser_bg import init_AOTF, get_coord, change_power_function, move_and_click
 from LabAuto.network import create_server, Connection
 
 def run_laser_server(host="0.0.0.0", port=5001):
@@ -35,7 +36,7 @@ def run_laser_server(host="0.0.0.0", port=5001):
                         
                         if target_state == "ON" and current_state != "ON":
                             print(f"Turning LIGHT ON (Ch: {channel}, Pwr: {power})")
-                            # change_power_function(grid, channel, power)
+                            change_power_function(grid, channel, power)
                             time.sleep(1)
                             
                             on_coord = get_coord(grid, channel, "on")
