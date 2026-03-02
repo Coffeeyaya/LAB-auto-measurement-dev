@@ -106,7 +106,7 @@ def get_power_ok_coord(power_coord):
     return abs_x, abs_y
 
 
-def change_lambda(main_hwnd, grid, channel, new_lambda_value):
+def change_lambda_function(main_hwnd, grid, channel, new_lambda_value):
     lambda_x, lambda_y = grid[channel]["lambda"]
     background_click(main_hwnd, lambda_x, lambda_y)
     popup_hwnd = get_active_popup_hwnd('popup wavelength slider.vi') 
@@ -135,7 +135,7 @@ def change_lambda(main_hwnd, grid, channel, new_lambda_value):
     time.sleep(0.5)
 
 
-def change_power(main_hwnd, grid, channel, new_power_value):
+def change_power_function(main_hwnd, grid, channel, new_power_value):
     power_x, power_y = grid[channel]["power"]
     background_click(main_hwnd, power_x, power_y)
     popup_hwnd = get_active_popup_hwnd('popup power slider.vi')
@@ -185,16 +185,16 @@ def get_coord(grid, channel, field):
     return coord
 
 if __name__ == "__main__":
-    grid = init_AOTF_grid()
+    grid = init_AOTF()
     hwnd = win32gui.FindWindow(None, "AOTF Controller")
 
     if hwnd == 0:
         print("Please open the AOTF Controller GUI first.")
     else:
 
-        change_lambda(hwnd, grid, 4, "500")
+        change_lambda_function(hwnd, grid, 4, "500")
         time.sleep(1)
-        change_power(hwnd, grid, 4, "50")
+        change_power_function(hwnd, grid, 4, "50")
         channel = 4
         on_coord = get_coord(grid, channel, "on")
         background_click(hwnd, on_coord[0], on_coord[1])
