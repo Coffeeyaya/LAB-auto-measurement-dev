@@ -63,14 +63,14 @@ class SweepWorker(QThread):
                 if I_D is not None:
                     t = time.time() - start_time
                     # Emit to the Transient Graph continuously
-                    self.transient_data.emit(t, self.Vd, vg, I_D, I_G)
+                    self.transient_data.emit(t, self.k.Vd, vg, I_D, I_G)
                     last_Id = I_D # Keep track of the most recent value
                     last_Ig = I_G # Keep track of the most recent value
 
             # --- THE STEADY STATE EMIT ---
             # Once the time is up, emit the very last measured value to the Id-Vg graph
             if last_Id is not None and self.running:
-                self.steady_data.emit(t, self.Vd, vg, last_Id, last_Ig)
+                self.steady_data.emit(t, self.k.Vd, vg, last_Id, last_Ig)
                 
         self.sweep_finished.emit()
                 
