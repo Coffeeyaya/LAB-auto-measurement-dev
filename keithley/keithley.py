@@ -90,6 +90,15 @@ class Keithley2636B:
         except Exception as e:
             print(f"Warning during clean: {e}")
 
+    def enable_output(self, smu_char, state):
+        """
+        Turns output ON (True) or OFF (False).
+        """
+        smu = f"smu{smu_char.lower()}"
+        # The instrument accepts '1' for ON and '0' for OFF
+        val = "1" if state else "0"
+        self.inst.write(f"{smu}.source.output = {val}")
+        
     def set_Vd(self, v):
         with self.lock:
             self.Vd = v

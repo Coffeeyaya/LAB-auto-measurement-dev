@@ -115,7 +115,7 @@ class MainWindow(QWidget):
         self.csv_file = filename
         with open(self.csv_file, 'w', newline='') as f:
             writer = csv.writer(f)
-            writer.writerow(["Time","Vd","Vg","I_D","I_G"])
+            writer.writerow(["Time","V_D","V_G","I_D","I_G"])
 
         # Start worker thread
         self.worker = KeithleyWorker(self.k)
