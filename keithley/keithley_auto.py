@@ -194,7 +194,7 @@ class MainWindow(QWidget):
         
         # 2. Get the new filename and initialize the data pipeline
         self.filename = self.filename_input.text()
-        self._setup_data_pipeline(self.filename) # This conveniently resets self.times, self.I_Ds, etc., to empty!
+        self._setup_data_pipeline() # This conveniently resets self.times, self.I_Ds, etc., to empty!
         
         # 3. Create NEW line objects for this specific run
         # Matplotlib will automatically color-cycle these new lines so they stand out
@@ -275,7 +275,7 @@ class MainWindow(QWidget):
         
         # Stop Keithley pulse thread
         self.k.stop_vg_pulse()
-        
+
         self.k.shutdown() # This will zero V, turn off output, and close PyVISA
         event.accept()
 
