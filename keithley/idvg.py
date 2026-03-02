@@ -11,8 +11,8 @@ FILENAME = "idvg_curve.csv"
 V_D = 1.0         # Constant Drain Voltage
 GATE_START = -2.0     # Starting Gate Voltage (Usually OFF state)
 GATE_STOP = 2.0       # Ending Gate Voltage (Usually ON state)
-STEPS = 101            # Number of points (41 points from -2 to +2 = 0.1V steps)
-SETTLE_DELAY = 0.1    # Time to wait after changing Vg before measuring (seconds)
+STEPS = 41            # Number of points (41 points from -2 to +2 = 0.1V steps)
+SETTLE_DELAY = 0.01    # Time to wait after changing Vg before measuring (seconds)
 
 # Generate the array of voltage points to step through
 vg_points = np.linspace(GATE_START, GATE_STOP, STEPS)
