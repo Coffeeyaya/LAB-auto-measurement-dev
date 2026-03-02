@@ -10,42 +10,48 @@ from matplotlib.figure import Figure
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
 
 from keithley import Keithley2636B # Ensure your class has set_Vd, set_Vg, and measure
-
+import os
 # -------------------------------
 # Worker Thread for Sweep
 # -------------------------------
 class SweepWorker(QThread):
-    # Emits: Vg, I_D, I_G
     new_data = pyqtSignal(float, float, float)  
     sweep_finished = pyqtSignal()
 
-    def __init__(self, keithley, vg_points, settle_delay):
+    # ADD 'do_deplete' to the arguments
+    def __init__(self, keithley, vg_points, settle_delay, do_deplete=False):
         super().__init__()
         self.k = keithley
         self.vg_points = vg_points
         self.settle_delay = settle_delay
+        self.do_deplete = do_deplete # Store the boolean
         self.running = True
 
     def run(self):
+        # --- DEPLETION PHASE ---
+        if self.do_deplete and self.running:
+            print("Depleting at -1V for 5 seconds...")
+            self.k.set_Vg(-1.0)
+            
+            # We break the 5 seconds into small chunks. 
+            # This allows the user to click "Abort" DURING the 5 second wait!
+            for _ in range(50): 
+                if not self.running: break
+                time.sleep(0.1)
+                
+        # --- SWEEP PHASE ---
         for vg in self.vg_points:
             if not self.running:
-                break # Stop immediately if user clicks abort
+                break 
                 
-            # 1. Set Voltage
             self.k.set_Vg(vg)
-            
-            # 2. Wait for settling
             time.sleep(self.settle_delay)
-            
-            # 3. Measure
             I_D, I_G = self.k.measure()
             
-            # 4. Send to GUI
             if I_D is not None:
                 self.new_data.emit(vg, I_D, I_G)
                 
         self.sweep_finished.emit()
-
     def stop(self):
         self.running = False
         self.wait()
@@ -53,7 +59,7 @@ class SweepWorker(QThread):
 # -------------------------------
 # PyQt5 GUI
 # -------------------------------
-import os # Add this to your imports at the top
+
 
 class IdVgWindow(QWidget):
     def __init__(self, keithley, filename):
@@ -126,9 +132,7 @@ class IdVgWindow(QWidget):
         self.deplete_button.setCheckable(True)  # Makes it toggleable
         self.deplete_button.clicked.connect(self.toggle_value)
 
-        layout = QVBoxLayout()
         layout.addWidget(self.deplete_button)
-        self.setLayout(layout)
 
     def toggle_value(self):
         self.DEPLETE = self.deplete_button.isChecked()
@@ -176,18 +180,18 @@ class IdVgWindow(QWidget):
         self.k.keithley.write("smub.measure.autorangei = 1")
         self.k.keithley.write("smua.measure.nplc = 1.0") 
         self.k.keithley.write("smub.measure.nplc = 1.0")
-        
-        if self.DEPLETE:
-            self.k.set_Vg(-1)
-            time.sleep(5)
+    
 
         self.k.set_Vd(V_D)
-        self.k.set_Vg(GATE_START)
+
+        if not self.DEPLETE:
+            self.k.set_Vg(GATE_START)
+
         self.k.enable_output('a', True)
         self.k.enable_output('b', True)
         
         # 4. Start Thread
-        self.worker = SweepWorker(self.k, vg_points, SETTLE_DELAY)
+        self.worker = SweepWorker(self.k, vg_points, SETTLE_DELAY, do_deplete=self.DEPLETE)
         self.worker.new_data.connect(self.update_plot)
         self.worker.sweep_finished.connect(self.on_sweep_finished)
         self.worker.start()
@@ -227,6 +231,7 @@ class IdVgWindow(QWidget):
         self.stop_btn.setEnabled(False)
         self.Vd_spin.setEnabled(True)
         self.clear_btn.setEnabled(True)
+        self.deplete_button.setEnabled(True)
         self.setWindowTitle("Id-Vg Sweep - Finished")
 
 # -------------------------------
