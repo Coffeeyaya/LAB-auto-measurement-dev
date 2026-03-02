@@ -97,7 +97,7 @@ class Keithley2636B:
         smu = f"smu{smu_char.lower()}"
         # The instrument accepts '1' for ON and '0' for OFF
         val = "1" if state else "0"
-        self.inst.write(f"{smu}.source.output = {val}")
+        self.keithley.write(f"{smu}.source.output = {val}")
 
     # Add this to your Keithley2636B class
     def set_autorange(self, smu_char, state):
