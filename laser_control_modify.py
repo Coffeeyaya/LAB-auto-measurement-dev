@@ -45,7 +45,7 @@ def run_laser_server(host="0.0.0.0", port=5001):
                             time.sleep(1)
                             
                             on_coord = get_coord(grid, channel, "on")
-                            background_click(on_coord[0], on_coord[1])
+                            background_click(hwnd, on_coord[0], on_coord[1])
                             # time.sleep(1)
                             # move_and_click(on_coord)
                             # time.sleep(0.5)
@@ -56,7 +56,7 @@ def run_laser_server(host="0.0.0.0", port=5001):
                         elif target_state == "OFF" and current_state != "OFF":
                             print("Turning LIGHT OFF")
                             on_coord = get_coord(grid, channel, "on")
-                            background_click(on_coord[0], on_coord[1])
+                            background_click(hwnd, on_coord[0], on_coord[1])
                             # move_and_click(on_coord)
                             # time.sleep(0.5)
                             
