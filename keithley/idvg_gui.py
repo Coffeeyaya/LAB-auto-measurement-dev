@@ -119,6 +119,22 @@ class IdVgWindow(QWidget):
                 writer = csv.writer(f)
                 writer.writerow(["V_D", "V_G", "I_D", "I_G"])
 
+        # deplete button                
+        self.DEPLETE = False
+
+        self.deplete_button = QPushButton("OFF")
+        self.deplete_button.setCheckable(True)  # Makes it toggleable
+        self.deplete_button.clicked.connect(self.toggle_value)
+
+        layout = QVBoxLayout()
+        layout.addWidget(self.deplete_button)
+        self.setLayout(layout)
+
+    def toggle_value(self):
+        self.DEPLETE = self.deplete_button.isChecked()
+        self.deplete_button.setText("Deplete" if self.DEPLETE else "Not deplete")
+        print("Boolean value:", self.DEPLETE)
+
     def clear_plot(self):
         """Removes all lines from the plot and resets the view."""
         self.ax1.clear()
@@ -134,6 +150,8 @@ class IdVgWindow(QWidget):
         self.stop_btn.setEnabled(True)
         self.Vd_spin.setEnabled(False)
         self.clear_btn.setEnabled(False)
+        self.deplete_button.setEnabled(False)
+        
         
         # Clear data arrays for the NEW sweep, but DO NOT clear the plot
         self.Vgs.clear()
@@ -159,8 +177,9 @@ class IdVgWindow(QWidget):
         self.k.keithley.write("smua.measure.nplc = 1.0") 
         self.k.keithley.write("smub.measure.nplc = 1.0")
         
-        self.k.set_Vg(-1)
-        time.sleep(3)
+        if self.DEPLETE:
+            self.k.set_Vg(-1)
+            time.sleep(5)
 
         self.k.set_Vd(V_D)
         self.k.set_Vg(GATE_START)
