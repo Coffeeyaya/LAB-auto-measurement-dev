@@ -14,15 +14,14 @@ class Keithley2636B:
     def __init__(self, resource_id, limiti_a=1e-3, limiti_b=1e-3,
              rangei_a=1e-3, rangei_b=1e-3, nplc_a=1, nplc_b=1):
         self.resource_id = resource_id
-        # self.filename = filename
-        self.limiti_a = limiti_a
+        self.limiti_a = limiti_a # source limit (current)
         self.limiti_b = limiti_b
-        self.rangei_a = rangei_a
+        self.rangei_a = rangei_a # source range (current)
         self.rangei_b = rangei_b
         self.nplc_a = nplc_a
         self.nplc_b = nplc_b
-        self.rm = None
-        self.keithley = None
+        self.rm = None # pyvisa.ResourceManager()
+        self.keithley = None # rm.open_resource(self.resource_id)
         self.start_time = None
         self.Vd = 0.0
         self.Vg = 0.0
@@ -47,12 +46,12 @@ class Keithley2636B:
         k.write("smua.source.func=smua.OUTPUT_DCVOLTS; smua.source.levelv=0")
         k.write(f"smua.source.limiti={self.limiti_a}; smua.measure.rangei={self.rangei_a}")
         k.write(f"smua.measure.nplc={self.nplc_a}; smua.measure.autorangei=0")
-        k.write("smua.source.output=1")
+        # k.write("smua.source.output=1") # this is done by enable_output
 
         k.write("smub.source.func=smub.OUTPUT_DCVOLTS; smub.source.levelv=0")
         k.write(f"smub.source.limiti={self.limiti_b}; smub.measure.rangei={self.rangei_b}")
         k.write(f"smub.measure.nplc={self.nplc_b}; smub.measure.autorangei=0")
-        k.write("smub.source.output=1")
+        # k.write("smub.source.output=1")
 
     # clean error
     def clean_instrument(self):
@@ -92,20 +91,26 @@ class Keithley2636B:
 
     def enable_output(self, smu_char, state):
         """
-        Turns output ON (True) or OFF (False).
+        smu_char: channel a or b
+        state: '1' for ON and '0' for OFF
         """
         smu = f"smu{smu_char.lower()}"
-        # The instrument accepts '1' for ON and '0' for OFF
         val = "1" if state else "0"
         self.keithley.write(f"{smu}.source.output = {val}")
 
-    # Add this to your Keithley2636B class
     def set_autorange(self, smu_char, state):
+        """
+        smu_char: channel a or b
+        state: '1' for ON and '0' for OFF
+        """
         smu = f"smu{smu_char.lower()}"
         val = "1" if state else "0"
         self.keithley.write(f"{smu}.measure.autorangei = {val}")
 
     def set_nplc(self, smu_char, nplc_value):
+        """
+        smu_char: channel a or b
+        """
         smu = f"smu{smu_char.lower()}"
         self.keithley.write(f"{smu}.measure.nplc = {nplc_value}")
         
@@ -127,6 +132,10 @@ class Keithley2636B:
                 pass
 
     def measure(self):
+        """
+        measure current of channel a(drain) and b(gate)
+        use self.lock to ensure that: only one of set_Vd(), set_Vg(), and measure() can run at a time
+        """
         with self.lock:
             try:
                 self.keithley.write("print(smua.measure.i(), smub.measure.i())")
@@ -135,8 +144,7 @@ class Keithley2636B:
                     return float(resp[0]), float(resp[1])
             except:
                 return 0.0, 0.0
-
-
+    
     def start_vg_pulse(self, pulse_sequence):
         """
         pulse_sequence: list of tuples [(Vg1, duration1), (Vg2, duration2), ...]
@@ -169,77 +177,17 @@ class Keithley2636B:
         if hasattr(self, '_pulse_thread'):
             self._pulse_thread.join()
             print("Vg pulse stopped")
-
-    # prepare csv file for saving data
-    def prepare_file(self):
-
-        if os.path.exists(self.filename):
-            try:
-                os.remove(self.filename)
-            except:
-                pass
-
-        with open(self.filename, 'w', newline='') as f:
-            writer = csv.writer(f)
-            writer.writerow(["Time", "V_Drain", "V_Gate", "I_Drain", "I_Gate"])
-
-    # set vg to a value, measure some points
-    def set_vg_phase(self, gate_voltage, points_per_phase):
-
-        k = self.keithley
-
-        with open(self.filename, 'a', newline='') as f:
-            writer = csv.writer(f)
-
-            for _ in range(points_per_phase):
-
-                try:
-                    k.write("print(smua.measure.i(), smub.measure.i())")
-                    resp = k.read().replace('\t', ',').split(',')
-
-                    if len(resp) >= 2:
-                        t = time.time() - self.start_time
-                        writer.writerow([
-                            t,
-                            gate_voltage,
-                            float(resp[0]),
-                            float(resp[1])
-                        ])
-                except:
-                    pass
-
-                f.flush()
-
-    def gate_periodic(self, vg_high, vg_low, points_per_phase, cycle_numbers):
-        k = self.keithley
-        for i in range(cycle_numbers):
-            print(f"Cycle {i+1}/{cycle_numbers}...", end="", flush=True)
-
-            # high Vg
-            k.write(f"smub.source.levelv = {vg_high}")
-            self.set_vg_phase(vg_high, points_per_phase)
-
-            # low Vg
-            k.write(f"smub.source.levelv = {vg_low}")
-            self.set_vg_phase(vg_low, points_per_phase)
-        
-    # run measurement(includes measurement procedure)             
-    def run(self):
-        self.prepare_file()
-        self.start_time = time.time()
-        self.keithley.write(f"smua.source.levelv = {DRAIN_V}")
-        self.gate_periodic(vg_high=GATE_HIGH, vg_low=GATE_LOW, points_per_phase=POINTS_PER_PHASE, cycle_numbers=CYCLE_NUMBERS)
-        self.keithley.write("smua.source.levelv = 0")
-        self.keithley.write("smub.source.levelv = 0")
-        print("Done.")
-    
+            
     def shutdown(self):
+        """
+        set
+        """
         print("Shutting down...")
         try:
             self.keithley.write("smua.source.levelv = 0")
             self.keithley.write("smub.source.levelv = 0")
-            self.keithley.write("smua.source.output = 0")
-            self.keithley.write("smub.source.output = 0")
+            self.enable_output("a", False)
+            self.enable_output("b", False)
             self.keithley.close()
         except:
             pass
@@ -262,21 +210,15 @@ if __name__ == "__main__":
     k.clean_instrument()
     k.config()
 
-    # Set initial voltages
+    k.enable_output('a', True)
+    k.enable_output('b', True)
     k.set_Vd(1.0)
     k.set_Vg(0.0)
 
-    # Start Vg pulse: alternate +1/-1 V every 1 second
-    pulse_seq = [(1.0, 1.0), (-1.0, 1.0)]
-    k.start_vg_pulse(pulse_seq)
+    time.sleep(5)
 
-    # Let it run for 10 seconds
-    time.sleep(10)
-
-    # Stop pulse
-    k.stop_vg_pulse()
-
-    # Shutdown safely
     k.set_Vd(0)
     k.set_Vg(0)
+    k.enable_output("a", False)
+    k.enable_output("b", False)
     k.shutdown()

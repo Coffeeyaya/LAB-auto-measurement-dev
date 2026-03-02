@@ -43,18 +43,20 @@ class KeithleyWorker(QThread):
 class MainWindow(QWidget):
     def __init__(self, keithley, filename):
         super().__init__()
-        self.setWindowTitle("Keithley Real-Time Control with Vg Pulse")
+        self.setWindowTitle("Keithley python control - manual")
         self.k = keithley
 
+        # Layout
         layout = QVBoxLayout()
         self.setLayout(layout)
 
         # Matplotlib Figure
-        self.figure = Figure(figsize=(6,4))
+        self.figure = Figure(figsize=(10,7))
         self.canvas = FigureCanvas(self.figure)
-        layout.addWidget(self.canvas)
         # matplotlib toolbar
         self.toolbar = NavigationToolbar(self.canvas, self)
+
+        layout.addWidget(self.canvas)
         layout.addWidget(self.toolbar)
 
         
@@ -62,6 +64,10 @@ class MainWindow(QWidget):
         self.ax2 = self.figure.add_subplot(212, sharex=self.ax1)
         self.line_id, = self.ax1.plot([], [], 'b.-', label='I_D')
         self.line_ig, = self.ax2.plot([], [], 'r.-', label='I_G')
+        self.ax1.set_ylabel("I_D (A)")
+        self.ax2.set_ylabel("I_G (A)")
+        self.ax2.set_xlabel("Time (s)")
+        self.ax1.legend(); self.ax2.legend()
         
         # ax1_v (Drain Voltage - Right Side)
         self.ax1_v = self.ax1.twinx() 
@@ -79,10 +85,7 @@ class MainWindow(QWidget):
 
         ###
 
-        self.ax1.set_ylabel("I_D (A)")
-        self.ax2.set_ylabel("I_G (A)")
-        self.ax2.set_xlabel("Time (s)")
-        self.ax1.legend(); self.ax2.legend()
+        
 
         # Controls for Vd and Vg
         ctrl_layout = QHBoxLayout()
