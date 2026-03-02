@@ -36,7 +36,7 @@ def run_laser_server(host="0.0.0.0", port=5001):
                     
                     if command == "SET_LIGHT":
                         target_state = data.get("state")
-                        channel = data.get("channel", 6)
+                        channel = data.get("channel", 5)
                         power = str(data.get("power", "17"))
                         
                         if target_state == "ON" and current_state != "ON":
