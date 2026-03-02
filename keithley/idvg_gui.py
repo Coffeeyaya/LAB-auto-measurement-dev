@@ -175,8 +175,8 @@ class IdVgWindow(QWidget):
         vg_points = np.linspace(GATE_START, GATE_STOP, STEPS)
         
         # 3. Configure Instrument
-        self.k.keithley.write("smua.measure.autorangei = 1")
-        self.k.keithley.write("smub.measure.autorangei = 1")
+        # self.k.keithley.write("smua.measure.autorangei = 1")
+        # self.k.keithley.write("smub.measure.autorangei = 1")
         # NPLC 8.0 is great for low-noise Id-Vg when you aren't rushing for transient data
         self.k.keithley.write("smua.measure.nplc = 8.0") 
         self.k.keithley.write("smub.measure.nplc = 8.0")

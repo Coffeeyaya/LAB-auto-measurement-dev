@@ -12,7 +12,7 @@ import threading
 
 class Keithley2636B:
     def __init__(self, resource_id, limiti_a=1e-3, limiti_b=1e-3,
-             rangei_a=1e-3, rangei_b=1e-3, nplc_a=1, nplc_b=1):
+             rangei_a=1e-6, rangei_b=1e-6, nplc_a=1, nplc_b=1):
         self.resource_id = resource_id
         self.limiti_a = limiti_a # source limit (current)
         self.limiti_b = limiti_b
