@@ -3,8 +3,13 @@ import time
 from LabAuto.laser_bg import init_AOTF, get_coord, change_power_function, background_click, background_double_click, background_paste
 from LabAuto.network import create_server, Connection
 
+import win32gui
+import win32con
+import win32api
+
 def run_laser_server(host="0.0.0.0", port=5001):
     grid = init_AOTF()
+    hwnd = win32gui.FindWindow(None, "AOTF Controller")
     server_socket = create_server(host, port)
     
     current_state = "OFF"
@@ -36,7 +41,7 @@ def run_laser_server(host="0.0.0.0", port=5001):
                         
                         if target_state == "ON" and current_state != "ON":
                             print(f"Turning LIGHT ON (Ch: {channel}, Pwr: {power})")
-                            change_power_function(grid, channel, power)
+                            change_power_function(hwnd, grid, channel, power)
                             time.sleep(1)
                             
                             on_coord = get_coord(grid, channel, "on")
