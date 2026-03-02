@@ -27,18 +27,14 @@ try:
     k26.clean_instrument()
     k26.config()
     
-    # 2. CONFIGURE 
-    # Set limit to 10mA (0.01A) to protect the device.
-    k26.config()
-    
     # CRITICAL OVERRIDE FOR SWEEPS: Turn Auto-Range ON
     # We need this because Id changes by orders of magnitude.
-    k26.write("smua.measure.autorangei = 1")
-    k26.write("smub.measure.autorangei = 1")
+    k26.keithley.write("smua.measure.autorangei = 1")
+    k26.keithley.write("smub.measure.autorangei = 1")
     
     # Increase NPLC slightly for better accuracy on tiny OFF-currents
-    k26.write("smua.measure.nplc = 1.0") 
-    k26.write("smub.measure.nplc = 1.0")
+    k26.keithley.write("smua.measure.nplc = 1.0") 
+    k26.keithley.write("smub.measure.nplc = 1.0")
     
     # 3. PREPARE OUTPUTS
     k26.set_Vd(V_D)
