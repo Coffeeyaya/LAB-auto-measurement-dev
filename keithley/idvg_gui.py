@@ -30,8 +30,8 @@ class SweepWorker(QThread):
     def run(self):
         # --- DEPLETION PHASE ---
         if self.do_deplete and self.running:
-            print("Depleting at -1V for 5 seconds...")
-            self.k.set_Vg(-1.0)
+            print("Depleting at -5V for 5 seconds...")
+            self.k.set_Vg(-5.0)
             
             # We break the 5 seconds into small chunks. 
             # This allows the user to click "Abort" DURING the 5 second wait!
