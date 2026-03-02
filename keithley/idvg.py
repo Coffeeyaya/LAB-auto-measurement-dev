@@ -25,8 +25,7 @@ try:
     
     # 2. CONFIGURE 
     # Set limit to 10mA (0.01A) to protect the device.
-    k26.configure_source_v_measure_i('a', compliance_current=1e-4)
-    k26.configure_source_v_measure_i('b', compliance_current=1e-4)
+    k26.config()
     
     # CRITICAL OVERRIDE FOR SWEEPS: Turn Auto-Range ON
     # We need this because Id changes by orders of magnitude.
