@@ -11,6 +11,7 @@ def run_laser_server(host="0.0.0.0", port=5001):
     try:
         while True:
             print("Waiting for Electrical Computer to connect...")
+            grid = init_AOTF()
             conn, addr = Connection.accept(server_socket)
             
             try:
