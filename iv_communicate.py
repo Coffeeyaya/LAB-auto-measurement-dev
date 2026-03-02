@@ -11,7 +11,7 @@ def measure_electrical_data(condition):
     time.sleep(0.5)
 # ---------------------------------------------------------------------
 
-def run_experiment(light_ip, port=5001, cycles=10):
+def run_experiment(light_ip, port=5001, cycles=3):
     print(f"Connecting to Light Computer at {light_ip}...")
     conn = Connection.connect(light_ip, port)
     
