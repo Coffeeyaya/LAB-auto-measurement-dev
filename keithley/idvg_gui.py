@@ -220,8 +220,8 @@ class IdVgWindow(QWidget):
         vg_points = np.linspace(GATE_START, GATE_STOP, STEPS)
         
         # Configure Instrument
-        self.k.keithley.write("smua.measure.autorangei = 1")
-        self.k.keithley.write("smub.measure.autorangei = 1")
+        # self.k.keithley.write("smua.measure.autorangei = 1")
+        # self.k.keithley.write("smub.measure.autorangei = 1")
         self.k.keithley.write("smua.measure.nplc = 1.0")
         self.k.keithley.write("smub.measure.nplc = 1.0")
     
