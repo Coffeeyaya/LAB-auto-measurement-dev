@@ -11,7 +11,7 @@ FILENAME = "idvg_curve.csv"
 V_D = 1.0         # Constant Drain Voltage
 GATE_START = -2.0     # Starting Gate Voltage (Usually OFF state)
 GATE_STOP = 2.0       # Ending Gate Voltage (Usually ON state)
-STEPS = 41            # Number of points (41 points from -2 to +2 = 0.1V steps)
+STEPS = 21            # Number of points (41 points from -2 to +2 = 0.1V steps)
 SETTLE_DELAY = 0.01    # Time to wait after changing Vg before measuring (seconds)
 
 # Generate the array of voltage points to step through
@@ -62,7 +62,7 @@ try:
             
             if ia is not None:
                 # Print progress to console
-                print(f"Point {i+1}/{STEPS} | Vg: {vg:+.2f} V | Id: {ia:.2e} A")
+                # print(f"Point {i+1}/{STEPS} | Vg: {vg:+.2f} V | Id: {ia:.2e} A")
                 
                 # Save to file
                 writer.writerow([t, V_D, vg, ia, ib])
