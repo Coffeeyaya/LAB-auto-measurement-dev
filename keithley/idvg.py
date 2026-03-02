@@ -20,8 +20,12 @@ vg_points = np.linspace(GATE_START, GATE_STOP, STEPS)
 print(f"--- STARTING Id-Vg SWEEP ({STEPS} points) ---")
 
 try:
+    
     # 1. INITIALIZE
     k26 = Keithley2636B(USB_ID)
+    k26.connect()
+    k26.clean_instrument()
+    k26.config()
     
     # 2. CONFIGURE 
     # Set limit to 10mA (0.01A) to protect the device.
