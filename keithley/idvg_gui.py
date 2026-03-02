@@ -166,8 +166,8 @@ class IdVgWindow(QWidget):
         V_D = self.Vd_spin.value()
         GATE_START = -3.0
         GATE_STOP = 3.0
-        STEPS = 21
-        SETTLE_DELAY = 0.5 # A solid half-second wait for clean data
+        STEPS = 101
+        SETTLE_DELAY = 0.1 # A solid half-second wait for clean data
         
         self.current_line, = self.ax1.plot([], [], '.-', markersize=8, label=f'Vd = {V_D}V')
         self.ax1.legend() 
@@ -178,7 +178,7 @@ class IdVgWindow(QWidget):
         # self.k.keithley.write("smua.measure.autorangei = 1")
         # self.k.keithley.write("smub.measure.autorangei = 1")
         # NPLC 8.0 is great for low-noise Id-Vg when you aren't rushing for transient data
-        self.k.keithley.write("smua.measure.nplc = 8.0") 
+        self.k.keithley.write("smua.measure.nplc = 8.0")
         self.k.keithley.write("smub.measure.nplc = 8.0")
 
         self.k.set_Vd(V_D)
