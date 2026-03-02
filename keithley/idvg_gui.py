@@ -53,6 +53,8 @@ class SweepWorker(QThread):
 # -------------------------------
 # PyQt5 GUI
 # -------------------------------
+import os # Add this to your imports at the top
+
 class IdVgWindow(QWidget):
     def __init__(self, keithley, filename):
         super().__init__()
@@ -72,14 +74,12 @@ class IdVgWindow(QWidget):
         layout.addWidget(self.toolbar)
         layout.addWidget(self.canvas)
         
-        # Setup Plot (Log Scale for Id-Vg)
+        # Setup Plot 
         self.ax1 = self.figure.add_subplot(111)
-        self.line_id, = self.ax1.plot([], [], 'b.-', markersize=8, label='|I_D|')
         self.ax1.set_ylabel("Drain Current (A) - Log", color='b')
         self.ax1.set_xlabel("Gate Voltage (V)")
-        self.ax1.set_yscale('log') # CRITICAL for Transfer curves
+        self.ax1.set_yscale('log')
         self.ax1.grid(True, which="both", ls="--", alpha=0.5)
-        self.ax1.legend()
 
         # Controls Layout
         ctrl_layout = QHBoxLayout()
@@ -89,33 +89,55 @@ class IdVgWindow(QWidget):
         self.Vd_spin = QDoubleSpinBox()
         self.Vd_spin.setRange(-10.0, 10.0)
         self.Vd_spin.setSingleStep(0.1)
-        self.Vd_spin.setValue(1.0) # Default Vd
+        self.Vd_spin.setValue(1.0)
 
         self.start_btn = QPushButton("Start Sweep")
         self.stop_btn = QPushButton("Abort")
         self.stop_btn.setEnabled(False)
+        self.clear_btn = QPushButton("Clear Plot") # New Button
 
         ctrl_layout.addWidget(QLabel("Constant Vd (V):"))
         ctrl_layout.addWidget(self.Vd_spin)
         ctrl_layout.addStretch()
+        ctrl_layout.addWidget(self.clear_btn)
         ctrl_layout.addWidget(self.start_btn)
         ctrl_layout.addWidget(self.stop_btn)
 
         # Connect signals
         self.start_btn.clicked.connect(self.start_sweep)
         self.stop_btn.clicked.connect(self.abort_sweep)
+        self.clear_btn.clicked.connect(self.clear_plot)
 
         # Data storage
         self.Vgs, self.I_Ds = [], []
         self.worker = None
+        self.current_line = None # Tracks the active line being drawn
+
+        # Setup CSV Header (Only write if file doesn't exist or we want a fresh one)
+        if not os.path.exists(self.csv_file):
+            with open(self.csv_file, 'w', newline='') as f:
+                writer = csv.writer(f)
+                writer.writerow(["V_D", "V_G", "I_D", "I_G"])
+
+    def clear_plot(self):
+        """Removes all lines from the plot and resets the view."""
+        self.ax1.clear()
+        self.ax1.set_ylabel("Drain Current (A) - Log", color='b')
+        self.ax1.set_xlabel("Gate Voltage (V)")
+        self.ax1.set_yscale('log')
+        self.ax1.grid(True, which="both", ls="--", alpha=0.5)
+        self.canvas.draw()
 
     def start_sweep(self):
         # 1. Prepare UI
         self.start_btn.setEnabled(False)
         self.stop_btn.setEnabled(True)
         self.Vd_spin.setEnabled(False)
-        self.Vgs.clear(); self.I_Ds.clear()
-        self.line_id.set_data([], [])
+        self.clear_btn.setEnabled(False)
+        
+        # Clear data arrays for the NEW sweep, but DO NOT clear the plot
+        self.Vgs.clear()
+        self.I_Ds.clear()
         
         # 2. Setup Sweep Parameters
         V_D = self.Vd_spin.value()
@@ -124,19 +146,19 @@ class IdVgWindow(QWidget):
         STEPS = 41
         SETTLE_DELAY = 0.1
         
+        # Create a new line on the plot for this specific Vd sweep
+        # Matplotlib will automatically cycle the colors for you!
+        self.current_line, = self.ax1.plot([], [], '.-', markersize=8, label=f'Vd = {V_D}V')
+        self.ax1.legend() # Update legend to show the new line
+        
         vg_points = np.linspace(GATE_START, GATE_STOP, STEPS)
         
-        # Create CSV and write header
-        with open(self.csv_file, 'w', newline='') as f:
-            writer = csv.writer(f)
-            writer.writerow(["V_D", "V_G", "I_D", "I_G"])
-
-        # 3. Configure Instrument for Sweep
+        # 3. Configure Instrument
         self.k.keithley.write("smua.measure.autorangei = 1")
         self.k.keithley.write("smub.measure.autorangei = 1")
         self.k.keithley.write("smua.measure.nplc = 1.0") 
         self.k.keithley.write("smub.measure.nplc = 1.0")
-    
+        
         self.k.set_Vg(-1)
         time.sleep(3)
 
@@ -152,13 +174,12 @@ class IdVgWindow(QWidget):
         self.worker.start()
 
     def update_plot(self, Vg, I_D, I_G):
-        # Update lists
         self.Vgs.append(Vg)
-        # CRITICAL: Take absolute value for log scale plotting!
         self.I_Ds.append(abs(I_D)) 
 
-        # Update Plot
-        self.line_id.set_data(self.Vgs, self.I_Ds)
+        # Update ONLY the active line for this sweep
+        if self.current_line:
+            self.current_line.set_data(self.Vgs, self.I_Ds)
         
         if self.ax1.get_autoscale_on():
             self.ax1.relim()
@@ -166,7 +187,7 @@ class IdVgWindow(QWidget):
 
         self.canvas.draw()
 
-        # Save to CSV
+        # Save to CSV using APPEND mode ('a') so we don't overwrite previous sweeps
         V_D = self.Vd_spin.value()
         with open(self.csv_file, 'a', newline='') as f:
             writer = csv.writer(f)
@@ -178,16 +199,15 @@ class IdVgWindow(QWidget):
         self.on_sweep_finished()
 
     def on_sweep_finished(self):
-        # Safety Shutdown
         self.k.set_Vd(0)
         self.k.set_Vg(0)
         self.k.enable_output('a', False)
         self.k.enable_output('b', False)
         
-        # Reset UI
         self.start_btn.setEnabled(True)
         self.stop_btn.setEnabled(False)
         self.Vd_spin.setEnabled(True)
+        self.clear_btn.setEnabled(True)
         self.setWindowTitle("Id-Vg Sweep - Finished")
 
 # -------------------------------
