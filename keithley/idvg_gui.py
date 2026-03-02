@@ -136,7 +136,10 @@ class IdVgWindow(QWidget):
         self.k.keithley.write("smub.measure.autorangei = 1")
         self.k.keithley.write("smua.measure.nplc = 1.0") 
         self.k.keithley.write("smub.measure.nplc = 1.0")
-        
+    
+        self.k.set_Vg(-1)
+        time.sleep(3)
+
         self.k.set_Vd(V_D)
         self.k.set_Vg(GATE_START)
         self.k.enable_output('a', True)
