@@ -209,7 +209,7 @@ class IdVgWindow(QWidget):
         STEPS = 21
         
         # NOTE: Consider increasing SETTLE_DELAY and lowering NPLC to see a true transient curve
-        SETTLE_DELAY = 1.0 
+        SETTLE_DELAY = 3.0 
         
         # Create lines for BOTH plots
         self.line_steady, = self.ax_steady.plot([], [], 'b.-', markersize=8, label=f'Vd = {V_D}V')
@@ -222,8 +222,8 @@ class IdVgWindow(QWidget):
         # Configure Instrument
         # self.k.keithley.write("smua.measure.autorangei = 1")
         # self.k.keithley.write("smub.measure.autorangei = 1")
-        self.k.keithley.write("smua.measure.nplc = 1.0")
-        self.k.keithley.write("smub.measure.nplc = 1.0")
+        self.k.keithley.write("smua.measure.nplc = 0.1")
+        self.k.keithley.write("smub.measure.nplc = 0.1")
     
         self.k.set_Vd(V_D)
         if not self.DEPLETE:
