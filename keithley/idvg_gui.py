@@ -128,7 +128,7 @@ class IdVgWindow(QWidget):
         # deplete button                
         self.DEPLETE = False
 
-        self.deplete_button = QPushButton("OFF")
+        self.deplete_button = QPushButton("Not deplete")
         self.deplete_button.setCheckable(True)  # Makes it toggleable
         self.deplete_button.clicked.connect(self.toggle_value)
 
@@ -163,9 +163,9 @@ class IdVgWindow(QWidget):
         
         # 2. Setup Sweep Parameters
         V_D = self.Vd_spin.value()
-        GATE_START = -2.0
-        GATE_STOP = 2.0
-        STEPS = 41
+        GATE_START = -3.0
+        GATE_STOP = 3.0
+        STEPS = 21
         SETTLE_DELAY = 0.1
         
         # Create a new line on the plot for this specific Vd sweep
