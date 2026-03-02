@@ -103,11 +103,11 @@ class Keithley2636B:
     def set_autorange(self, smu_char, state):
         smu = f"smu{smu_char.lower()}"
         val = "1" if state else "0"
-        self.inst.write(f"{smu}.measure.autorangei = {val}")
+        self.keithley.write(f"{smu}.measure.autorangei = {val}")
 
     def set_nplc(self, smu_char, nplc_value):
         smu = f"smu{smu_char.lower()}"
-        self.inst.write(f"{smu}.measure.nplc = {nplc_value}")
+        self.keithley.write(f"{smu}.measure.nplc = {nplc_value}")
         
     def set_Vd(self, v):
         with self.lock:
