@@ -158,7 +158,7 @@ def change_power(main_hwnd, grid, channel, new_power_value):
     background_click(popup_hwnd, popup_ok_x, popup_ok_y) # click or double click
     time.sleep(0.5)
 
-def init_AOTF_grid():
+def init_AOTF():
     while True:
         try:
             win = gw.getWindowsWithTitle("AOTF Controller")
