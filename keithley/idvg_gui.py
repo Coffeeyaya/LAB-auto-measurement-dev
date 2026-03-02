@@ -66,6 +66,7 @@ class SweepWorker(QThread):
                     self.transient_data.emit(t, self.k.Vd, vg, I_D, I_G)
                     last_Id = I_D # Keep track of the most recent value
                     last_Ig = I_G # Keep track of the most recent value
+                time.sleep(0.05)
 
             # --- THE STEADY STATE EMIT ---
             # Once the time is up, emit the very last measured value to the Id-Vg graph
