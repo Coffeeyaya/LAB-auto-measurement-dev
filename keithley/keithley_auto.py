@@ -171,7 +171,7 @@ class MainWindow(QWidget):
         self.k.enable_output('a', True)
         self.k.enable_output('b', True)
 
-        sequence = [(1, 3.0), (-1, 3.0)]
+        sequence = [(1, 10.0), (-1, 10.0)]
         self.k.set_Vd(1.0)
         self.k.start_vg_pulse(sequence)
 
