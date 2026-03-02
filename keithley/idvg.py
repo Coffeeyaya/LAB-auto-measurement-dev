@@ -29,12 +29,12 @@ try:
     
     # CRITICAL OVERRIDE FOR SWEEPS: Turn Auto-Range ON
     # We need this because Id changes by orders of magnitude.
-    k26.inst.write("smua.measure.autorangei = 1")
-    k26.inst.write("smub.measure.autorangei = 1")
+    k26.write("smua.measure.autorangei = 1")
+    k26.write("smub.measure.autorangei = 1")
     
     # Increase NPLC slightly for better accuracy on tiny OFF-currents
-    k26.inst.write("smua.measure.nplc = 1.0") 
-    k26.inst.write("smub.measure.nplc = 1.0")
+    k26.write("smua.measure.nplc = 1.0") 
+    k26.write("smub.measure.nplc = 1.0")
     
     # 3. PREPARE OUTPUTS
     k26.set_Vd(V_D)
