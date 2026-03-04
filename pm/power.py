@@ -42,7 +42,7 @@ class PowerMeter():
         t0 = time.perf_counter()
         
         for i in range(num_points):
-            power = self.meter.query_ascii_values('read?')[0]
+            power = float(self.meter.query('measure:power?'))
             t = time.perf_counter() - t0
 
             time_array[i] = t
@@ -70,10 +70,18 @@ if __name__ == "__main__":
     pm.zero_sensor()
     t, p = pm.measure_power(measure_interval=0.2, num_points=10)
 
-    plt.figure()
-    plt.plot(t, p)
-    plt.xlabel("Time (s)")
-    plt.ylabel("Power (W)")
-    plt.title("PM100D Power vs Time")
-    plt.grid(True)
-    plt.show()
+    try:
+        pm.config_meter(wavelength, average_count)
+        pm.zero_sensor()
+        t, p = pm.measure_power(measure_interval=0.2, num_points=10)
+
+        plt.figure()
+        plt.plot(t, p)
+        plt.xlabel("Time (s)")
+        plt.ylabel("Power (W)")
+        plt.title("PM100D Power vs Time")
+        plt.grid(True)
+        plt.show()
+
+    finally:
+        pm.close_meter()
