@@ -3,75 +3,46 @@ import time
 import numpy as np
 import matplotlib.pyplot as plt
 
+class PowerMeter():
+    def __init__(self):
+        self.rm = pyvisa.ResourceManager()
+        res = self.rm.list_resources('USB?*::0x1313::0x8078::?*::INSTR')
 
-def zero_sensor(meter):
-    print("Zeroing sensor... Make sure beam is blocked.")
-    
-    meter.write('sense:correction:collect:zero')
-    meter.query('*opc?')  # wait until operation complete
-    print("Zeroing complete.")
+        if not res:
+            raise Exception("PM100D not found")
 
-def measure_power(
-    wavelength=660,
-    average_count=10,
-    measure_interval=0.2,
-    num_points=10
-):
-    """
-    Continuous power measurement using Thorlabs PM100D.
+        self.meter = self.rm.open_resource(res[0])
+        self.meter.read_termination = '\n'
+        self.meter.write_termination = '\n'
+        self.meter.timeout = 2000
 
-    Parameters
-    ----------
-    wavelength : float
-        Wavelength in nm.
-    average_count : int
-        Averaging count for smoothing.
-    measure_interval : float
-        Delay between measurements (seconds).
-    num_points : int
-        Number of data points to acquire.
+        self.meter.write('sense:power:unit W')
+        self.meter.write('sense:power:range:auto 1')
+        
+    def config_meter(self, wavelength, average_count):
+        """
+        wavelength : float, Wavelength in nm
+        average_count : int, Averaging count for smoothing
+        """
+        self.meter.write(f'sense:average:count {average_count}')
+        self.meter.write('configure:power')
+        self.meter.write(f'sense:correction:wavelength {wavelength}')
 
-    Returns
-    -------
-    time_array : np.ndarray
-        Relative time array (seconds).
-    power_array : np.ndarray
-        Measured power array (Watts).
-    """
+    def zero_sensor(self):
+        print("Zeroing sensor... Make sure beam is blocked.")
+        
+        self.meter.write('sense:correction:collect:zero')
+        self.meter.query('*opc?')  # wait until operation complete
+        print("Zeroing complete.")
 
-    rm = pyvisa.ResourceManager()
-    res = rm.list_resources('USB?*::0x1313::0x8078::?*::INSTR')
+    def measure_power(self, measure_interval=0.2, num_points=10):
+        time_array = np.zeros(num_points)
+        power_array = np.zeros(num_points)
 
-    if not res:
-        raise Exception("PM100D not found")
-
-    meter = rm.open_resource(res[0])
-    meter.read_termination = '\n'
-    meter.write_termination = '\n'
-    meter.timeout = 2000
-
-    # Configure meter
-    meter.write('sense:power:unit W')
-    meter.write('sense:power:range:auto 1')
-    meter.write(f'sense:average:count {average_count}')
-    meter.write('configure:power')
-    meter.write(f'sense:correction:wavelength {wavelength}')
-
-
-    # zero
-    zero_sensor(meter)
-    
-    print('turn on the light')
-    time.sleep(2)
-
-    time_array = np.zeros(num_points)
-    power_array = np.zeros(num_points)
-
-    t0 = time.perf_counter()
-
-    try:
+        t0 = time.perf_counter()
+        
         for i in range(num_points):
-            power = meter.query_ascii_values('read?')[0]
+            power = self.meter.query_ascii_values('read?')[0]
             t = time.perf_counter() - t0
 
             time_array[i] = t
@@ -80,23 +51,25 @@ def measure_power(
             if i < num_points - 1:
                 time.sleep(measure_interval)
 
-    finally:
-        meter.close()
-        rm.close()
+        return time_array, power_array
+    
+    def close_meter(self):
+        self.meter.close()
+        self.rm.close()
 
-    return time_array, power_array
+        
 
 
 if __name__ == "__main__":
-    t, p = measure_power(
-    wavelength=660,
-    average_count=20,
-    measure_interval=0.2,
-    num_points=10
-    )
 
-    print(t)
-    print(p)
+    wavelength=660
+    average_count=20
+
+    pm = PowerMeter()
+    pm.config_meter(wavelength, average_count)
+    pm.zero_sensor()
+    t, p = pm.measure_power(measure_interval=0.2, num_points=10)
+
     plt.figure()
     plt.plot(t, p)
     plt.xlabel("Time (s)")
