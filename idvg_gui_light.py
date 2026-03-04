@@ -10,7 +10,7 @@ from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
 
-from keithley import Keithley2636B 
+from keithley.keithley import Keithley2636B 
 from LabAuto.network import Connection 
 
 # -------------------------------
@@ -23,7 +23,7 @@ class PersistentLaserWorker(QThread):
     light_turned_on = pyqtSignal() 
     laser_finished = pyqtSignal() # Signals the GUI that the light is safely off and socket is closed
 
-    def __init__(self, light_ip, port=5001, wait_time=30):
+    def __init__(self, light_ip, port=5001, wait_time=3):
         super().__init__()
         self.light_ip = light_ip
         self.port = port
