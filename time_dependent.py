@@ -4,7 +4,7 @@ import pyvisa
 import matplotlib.pyplot as plt
 
 # Import your existing modules
-from keithley import Keithley2636B #
+from keithley.keithley import Keithley2636B #
 from LabAuto.network import Connection #
 
 def run_time_dependent_auto(resource_id, light_ip, filename, total_duration=60.0):
