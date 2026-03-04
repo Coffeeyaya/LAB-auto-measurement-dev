@@ -208,8 +208,8 @@ def press_on_button(hwnd, grid, channel):
     background_click(hwnd, on_coord[0], on_coord[1])
 
 if __name__ == "__main__":
-    grid = init_AOTF()
-    hwnd = win32gui.FindWindow(None, "AOTF Controller")
+    hwnd, grid = init_AOTF()
+    # hwnd = win32gui.FindWindow(None, "AOTF Controller")
 
     if hwnd == 0:
         print("Please open the AOTF Controller GUI first.")
