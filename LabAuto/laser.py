@@ -123,7 +123,7 @@ def change_power_function(grid, channel, new_power_value):
     time.sleep(0.5)
     fill_box_no_ctrl_a(new_power_value)
 
-    power_ok_coord = get_power_ok_coord(power_coord)
+    power_ok_coord = get_power_ok_coord([0,0])
     pyautogui.moveTo(*power_ok_coord)
     time.sleep(0.5)
     pyautogui.click(*power_ok_coord)
