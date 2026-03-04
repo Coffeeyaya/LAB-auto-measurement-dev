@@ -1,27 +1,26 @@
 import time
 import csv
+import threading
 import matplotlib.pyplot as plt
 
 # Import your existing hardware modules
 from keithley.keithley import Keithley2636B #
 from LabAuto.network import Connection #
-import threading
 
+# =============================================================================
+# Helper Functions
+# =============================================================================
 
 def toggle_light_async(conn):
     """Sends the command and waits for the ACK in the background."""
     try:
-        conn.send_json({"channel": 6, "on": 1})
-        conn.receive_json()
+        conn.send_json({"channel": 6, "on": 1}) #
+        conn.receive_json() #
     except Exception as e:
-        print(f"\nNetwork Error in background thread: {e}")
+        print(f"\nNetwork Error in background thread: {e}") #
 
-def run_sequential_time_dep(resource_id, light_ip, filename, sequence, Vd_target=1.0):
-    print("--- Starting Sequential Time-Dependent Measurement ---")
-
-    # ---------------------------------------------------------
-    # 1. SETUP LIVE PLOT
-    # ---------------------------------------------------------
+def setup_live_plot():
+    """Initializes the matplotlib figure and returns the figure, axes, and lines."""
     plt.ion() 
     fig = plt.figure(figsize=(10, 7)) #
     
@@ -41,28 +40,41 @@ def run_sequential_time_dep(resource_id, light_ip, filename, sequence, Vd_target
     line_vd, = ax1_v.plot([], [], 'g.-', alpha=0.3, label='V_D') #
     line_vg, = ax2_v.plot([], [], 'k.-', alpha=0.3, label='V_G') #
 
-    ax1.legend(loc='upper left'); ax2.legend(loc='upper left') #
-    ax1_v.legend(loc='upper right'); ax2_v.legend(loc='upper right') #
+    ax1.legend(loc='upper left')
+    ax2.legend(loc='upper left') 
+    ax1_v.legend(loc='upper right')
+    ax2_v.legend(loc='upper right') 
 
-    # ---------------------------------------------------------
-    # 2. INITIALIZE FILES & HARDWARE
-    # ---------------------------------------------------------
-    times, I_Ds, I_Gs, V_Ds, V_Gs = [], [], [], [], [] #
-    with open(filename, 'w', newline='') as f:
-        writer = csv.writer(f)
-        writer.writerow(["Time", "V_D", "V_G", "I_D", "I_G", "Light_State"]) #
+    axes = (ax1, ax2, ax1_v, ax2_v)
+    lines = (line_id, line_ig, line_vd, line_vg)
+    return fig, axes, lines
 
+def update_plot(axes, lines, times, I_Ds, I_Gs, V_Ds, V_Gs):
+    """Pushes new data to the live plot and rescales the axes."""
+    ax1, ax2, ax1_v, ax2_v = axes
+    line_id, line_ig, line_vd, line_vg = lines
+
+    line_id.set_data(times, I_Ds) 
+    line_ig.set_data(times, I_Gs) 
+    line_vd.set_data(times, V_Ds) 
+    line_vg.set_data(times, V_Gs) 
+    
+    for ax in axes: 
+        ax.relim() 
+        ax.autoscale_view() 
+    
+    plt.pause(0.001)  # Flush GUI events
+
+def initialize_hardware(resource_id, light_ip, Vd_target):
+    """Establishes connections and configures default states."""
     print(f"Connecting to Light PC at {light_ip}...")
     conn = Connection.connect(light_ip, 5001) #
     
-    # We assume the physical laser starts in the OFF (0) state when the script boots.
-    current_light_state = 0 
-    
     print("Connecting to Keithley...")
     k = Keithley2636B(resource_id) #
-    k.connect() #
-    k.clean_instrument() #
-    k.config() #
+    k.connect() 
+    k.clean_instrument() 
+    k.config() 
     
     k.keithley.write("smua.measure.nplc = 1.0") #
     k.keithley.write("smub.measure.nplc = 1.0") #
@@ -71,116 +83,131 @@ def run_sequential_time_dep(resource_id, light_ip, filename, sequence, Vd_target
     k.enable_output('a', True) #
     k.enable_output('b', True) #
 
-    start_time = time.time() #
+    return k, conn
 
+def shutdown_hardware(k, conn, current_light_state):
+    """Safely powers down relays and resets light state."""
+    print("\nShutting down hardware...")
     try:
-        with open(filename, 'a', newline='') as f:
-            writer = csv.writer(f)
-            
-            # ---------------------------------------------------------
-            # 3. SEQUENTIAL STATE MACHINE
-            # ---------------------------------------------------------
-            for step_idx, (target_vg, target_light, duration) in enumerate(sequence):
-                print(f"\n--- Sequence Step {step_idx + 1}/{len(sequence)} ---")
-                print(f"Applying: Vg = {target_vg}V | Light = {'ON' if target_light else 'OFF'} | Duration = {duration}s")
-                
-                # Apply Gate Voltage
-                k.set_Vg(target_vg) #
-                
-                
-                # Apply Light
-                if target_light != current_light_state:
-                    print(f"Executing GUI click to toggle light {'ON' if target_light else 'OFF'}...")
-                    
-                    # Fire the network command in the background so the loop doesn't freeze!
-                    threading.Thread(target=toggle_light_async, args=(conn,), daemon=True).start()
-                    
-                    current_light_state = target_light
-
-                # Measure continuously for the specified duration
-                step_end_time = time.time() + duration
-                
-                while time.time() < step_end_time:
-                    t_elapsed = time.time() - start_time #
-                    I_D, I_G = k.measure() #
-                    
-                    if I_D is not None:
-                        # 1. Save Data
-                        writer.writerow([t_elapsed, Vd_target, target_vg, I_D, I_G, current_light_state]) 
-                        
-                        # 2. Update Memory
-                        times.append(t_elapsed) #
-                        V_Ds.append(Vd_target) #
-                        V_Gs.append(target_vg) #
-                        I_Ds.append(I_D) #
-                        I_Gs.append(I_G) #
-                        
-                        # 3. Push to Plot
-                        line_id.set_data(times, I_Ds) #
-                        line_ig.set_data(times, I_Gs) #
-                        line_vd.set_data(times, V_Ds) #
-                        line_vg.set_data(times, V_Gs) #
-                        
-                        # 4. Rescale Axes
-                        for ax in [ax1, ax2, ax1_v, ax2_v]: #
-                            ax.relim() #
-                            ax.autoscale_view() #
-                        
-                        # 5. Flush GUI events
-                        plt.pause(0.001) 
-                        
-                        print(f"Time: {t_elapsed:.1f}s | Vg: {target_vg}V | Id: {I_D:.2e}A", end='\r')
-
-    except Exception as e:
-        print(f"\nERROR: Sequence interrupted! {e}")
-        
+        # Guarantee the light turns off if we abort mid-illumination
+        if current_light_state == 1 and conn is not None:
+            print("Executing final GUI click to turn Light OFF...")
+            conn.send_json({"channel": 6, "on": 1}) #
+            time.sleep(2) # Give it time to execute without needing a blocking receive
+    except Exception:
+        pass
     finally:
-        # ---------------------------------------------------------
-        # 4. SAFE SHUTDOWN
-        # ---------------------------------------------------------
-        print("\n\nSequence Finished. Shutting down...")
-        
-        try:
-            # Guarantee the light turns off if we abort mid-illumination
-            if current_light_state == 1:
-                print("Executing final GUI click to turn Light OFF...")
-                # We send "on": 1 again to trigger the final click to toggle it off
-                conn.send_json({"channel": 6, "on": 1}) #
-                conn.receive_json() #
-        except Exception:
-            pass
-        finally:
+        if conn is not None:
             conn.close() #
-            
+        
+    if k is not None:
         k.shutdown() #
-        print("Hardware safely disabled.")
+    print("Hardware safely disabled.")
 
-        plt.ioff() 
-        plt.show() 
+# =============================================================================
+# Main Measurement Loop
+# =============================================================================
 
+def run_measurement(resource_id, light_ip, filename, sequence, Vd_target=1.0, max_retries=3):
+    print("--- Starting Sequential Time-Dependent Measurement ---")
+
+    # Initialize visualization and data storage
+    fig, axes, lines = setup_live_plot()
+    times, I_Ds, I_Gs, V_Ds, V_Gs = [], [], [], [], [] 
+    
+    with open(filename, 'w', newline='') as f:
+        writer = csv.writer(f)
+        writer.writerow(["Time", "V_D", "V_G", "I_D", "I_G", "Light_State"]) #
+
+    # --- THE RETRY LOOP ---
+    for attempt in range(max_retries):
+        print(f"\n=== Attempt {attempt + 1} of {max_retries} ===")
+        
+        k = None
+        conn = None
+        current_light_state = 0 #
+
+        try:
+            k, conn = initialize_hardware(resource_id, light_ip, Vd_target)
+            start_time = time.time() #
+
+            with open(filename, 'a', newline='') as f:
+                writer = csv.writer(f)
+                
+                # --- SEQUENTIAL STATE MACHINE ---
+                for step_idx, (target_vg, target_light, duration) in enumerate(sequence):
+                    print(f"\n--- Sequence Step {step_idx + 1}/{len(sequence)} ---")
+                    print(f"Applying: Vg = {target_vg}V | Light = {'ON' if target_light else 'OFF'} | Duration = {duration}s") #
+                    
+                    k.set_Vg(target_vg) #
+                    
+                    # Apply Light Toggle
+                    if target_light != current_light_state:
+                        print(f"Executing GUI click to toggle light {'ON' if target_light else 'OFF'}...") #
+                        threading.Thread(target=toggle_light_async, args=(conn,), daemon=True).start() #
+                        current_light_state = target_light #
+
+                    # Measure for duration
+                    step_end_time = time.time() + duration
+                    while time.time() < step_end_time:
+                        t_elapsed = time.time() - start_time #
+                        I_D, I_G = k.measure() #
+                        
+                        if I_D is not None:
+                            writer.writerow([t_elapsed, Vd_target, target_vg, I_D, I_G, current_light_state]) 
+                            
+                            times.append(t_elapsed) 
+                            V_Ds.append(Vd_target) 
+                            V_Gs.append(target_vg) 
+                            I_Ds.append(I_D) 
+                            I_Gs.append(I_G) 
+                            
+                            update_plot(axes, lines, times, I_Ds, I_Gs, V_Ds, V_Gs)
+                            print(f"Time: {t_elapsed:.1f}s | Vg: {target_vg}V | Id: {I_D:.2e}A", end='\r') #
+
+            # If loop finishes without exceptions, break out of retries
+            print("\nSequence completed successfully!")
+            break 
+
+        except Exception as e:
+            print(f"\nERROR: Sequence interrupted! {e}") #
+            if attempt < max_retries - 1:
+                print("Preparing to restart the sequence...")
+                time.sleep(3) 
+            else:
+                print("Max retries reached. Measurement failed.")
+            
+        finally:
+            shutdown_hardware(k, conn, current_light_state)
+
+    print("Done.")
+    plt.ioff() #
+    plt.show() #
+
+# =============================================================================
+# Script Execution
+# =============================================================================
 if __name__ == "__main__":
     RESOURCE_ID = "USB0::0x05E6::0x2636::4407529::INSTR" #
-    LIGHT_IP = "192.168.50.17"
-    FILENAME = "automated_sequence.csv"
+    LIGHT_IP = "192.168.50.17" #
+    FILENAME = "automated_sequence.csv" #
     
-    # Program your precise automated progression here: 
-    # Tuple format: (Vg_Voltage, Light_ON_or_OFF, Duration_in_Seconds)
-    # 0 = OFF, 1 = ON
-    duration = 1
-    Vg_on = 0.5
-    Vg_off = -1
-    my_sequence = [
-        (0.0,  0, duration),  # vg = 0, light OFF
-        (Vg_off,  0, duration),  # vg = -1, light OFF
-        (Vg_on,  0, duration),  # vg = 1, light OFF
-        (Vg_on,  1, duration),  # vg = 1, light ON
-        (Vg_on,  0, duration),  # vg = 1, light OFF
-        (Vg_off, 0, duration),  # vg = -1, light OFF
-        (Vg_on,  0, duration),  # vg = 1, light OFF
-        (Vg_on,  1, duration),  # vg = 1, light ON
-        (Vg_on,  0, duration),  # vg = 1, light OFF
-        (Vg_off, 0, duration),  # vg = -1, light OFF
-        (0.0,  0, duration)   # vg = 0, light OFF
+    duration = 2 #
+    Vg_on = 0.5 #
+    Vg_off = -1 #
+    
+    my_sequence = [ #
+        (0.0,  0, duration),   #
+        (Vg_off,  0, duration),#
+        (Vg_on,  0, duration), #
+        (Vg_on,  1, duration), #
+        (Vg_on,  0, duration), #
+        (Vg_off, 0, duration), #
+        (Vg_on,  0, duration), #
+        (Vg_on,  1, duration), #
+        (Vg_on,  0, duration), #
+        (Vg_off, 0, duration), #
+        (0.0,  0, duration)    #
     ]
     
-    run_sequential_time_dep(RESOURCE_ID, LIGHT_IP, FILENAME, sequence=my_sequence, Vd_target=1)
+    run_measurement(RESOURCE_ID, LIGHT_IP, FILENAME, sequence=my_sequence, Vd_target=1)
