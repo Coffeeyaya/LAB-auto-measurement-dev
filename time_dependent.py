@@ -5,6 +5,16 @@ import matplotlib.pyplot as plt
 # Import your existing hardware modules
 from keithley.keithley import Keithley2636B #
 from LabAuto.network import Connection #
+import threading
+
+
+def toggle_light_async(conn):
+    """Sends the command and waits for the ACK in the background."""
+    try:
+        conn.send_json({"channel": 6, "wavelength": "660", "power": "17", "on": 1})
+        conn.receive_json()
+    except Exception as e:
+        print(f"\nNetwork Error in background thread: {e}")
 
 def run_sequential_time_dep(resource_id, light_ip, filename, sequence, Vd_target=1.0):
     print("--- Starting Sequential Time-Dependent Measurement ---")
@@ -77,17 +87,16 @@ def run_sequential_time_dep(resource_id, light_ip, filename, sequence, Vd_target
                 # Apply Gate Voltage
                 k.set_Vg(target_vg) #
                 
-                # Apply Light (Toggle ONLY if the sequence demands a state change)
+                
+                # Apply Light
                 if target_light != current_light_state:
                     print(f"Executing GUI click to toggle light {'ON' if target_light else 'OFF'}...")
                     
-                    # We ALWAYS send "on": 1 because it just means "perform the mouse click"
-                    conn.send_json({"channel": 6, "on": 1}) #
-                    conn.receive_json() # Blocks GUI until laser_control.py replies with ACK
+                    # Fire the network command in the background so the loop doesn't freeze!
+                    threading.Thread(target=toggle_light_async, args=(conn,), daemon=True).start()
                     
-                    # Update our internal tracker so we know the new physical state
                     current_light_state = target_light
-
+                    
                 # Measure continuously for the specified duration
                 step_end_time = time.time() + duration
                 
