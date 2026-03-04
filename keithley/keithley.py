@@ -54,6 +54,11 @@ class Keithley2636B:
         k.write(f"smub.measure.nplc={self.nplc_b}; smub.measure.autorangei=0")
         # k.write("smub.source.output=1")
 
+        # "Once" mode: Takes a zero reference reading just once when the command is sent, 
+        # and applies that same offset to all future measurements. (A great middle-ground for speed + stability).
+        self.keithley.write("smua.measure.autozero = smua.AUTOZERO_ONCE")
+        self.keithley.write("smub.measure.autozero = smub.AUTOZERO_ONCE")
+
     # clean error
     def clean_instrument(self):
         print("Cleaning instrument...")
