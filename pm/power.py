@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 
 def zero_sensor(meter):
     print("Zeroing sensor... Make sure beam is blocked.")
-    time.sleep(3)
+    
     meter.write('sense:correction:collect:zero')
     meter.query('*opc?')  # wait until operation complete
     print("Zeroing complete.")
@@ -60,6 +60,9 @@ def measure_power(
 
     # zero
     zero_sensor(meter)
+    
+    print('turn on the light')
+    time.sleep(3)
 
     time_array = np.zeros(num_points)
     power_array = np.zeros(num_points)
