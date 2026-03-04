@@ -167,7 +167,7 @@ if __name__ == "__main__":
     # Tuple format: (Vg_Voltage, Light_ON_or_OFF, Duration_in_Seconds)
     # 0 = OFF, 1 = ON
     duration = 2
-    Vg_on = 0
+    Vg_on = 0.5
     Vg_off = -1
     my_sequence = [
         (0.0,  0, duration),  # vg = 0, light OFF
@@ -183,4 +183,4 @@ if __name__ == "__main__":
         (0.0,  0, duration)   # vg = 0, light OFF
     ]
     
-    run_sequential_time_dep(RESOURCE_ID, LIGHT_IP, FILENAME, sequence=my_sequence, Vd_target=Vg_on)
+    run_sequential_time_dep(RESOURCE_ID, LIGHT_IP, FILENAME, sequence=my_sequence, Vd_target=1)
