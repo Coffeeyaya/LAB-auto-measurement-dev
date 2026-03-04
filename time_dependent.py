@@ -166,9 +166,9 @@ if __name__ == "__main__":
     # Program your precise automated progression here: 
     # Tuple format: (Vg_Voltage, Light_ON_or_OFF, Duration_in_Seconds)
     # 0 = OFF, 1 = ON
-    duration = 3
-    Vg_on = 0.5
-    Vg_off = -0.5
+    duration = 2
+    Vg_on = 1
+    Vg_off = -1
     my_sequence = [
         (0.0,  0, duration),  # vg = 0, light OFF
         (Vg_off,  0, duration),  # vg = -1, light OFF
