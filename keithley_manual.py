@@ -9,7 +9,7 @@ from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
 
-from keithley import Keithley2636B
+from keithley.keithley import Keithley2636B
 
 # -------------------------------
 # Worker Thread for Measurement
