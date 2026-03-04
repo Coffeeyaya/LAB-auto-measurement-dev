@@ -29,6 +29,18 @@ def init_AOTF():
             grid[i][fields[j]] = (col_x, row_y)
     return grid
 
+def get_popup_window(window_title):
+    while True:
+        try:
+            win = gw.getWindowsWithTitle(f"{window_title}")
+            win = win[0]
+            win.restore()
+            win.moveTo(0, 0)
+            win.activate()
+            break
+        except gw.PyGetWindowException:
+            print(f'can not get window: {window_title}')
+
 def move_and_click(coord):
     pyautogui.moveTo(*coord)
     time.sleep(0.1)
@@ -76,11 +88,13 @@ def change_lambda_function(grid, channel, new_lambda_value):
     lambda_edit_coord = get_lambda_edit_coord(lambda_coord)
     pyautogui.moveTo(*lambda_edit_coord)
     time.sleep(0.5)
-    pyautogui.doubleClick(*lambda_edit_coord)
+    
+    get_popup_window('popup wavelength slider.vi')
+    pyautogui.doubleClick([0,0])
     time.sleep(0.5)
     fill_box_no_ctrl_a(new_lambda_value)
 
-    lambda_ok_coord = get_lambda_ok_coord(lambda_coord)
+    lambda_ok_coord = get_lambda_ok_coord([0,0])
     pyautogui.moveTo(*lambda_ok_coord)
     time.sleep(0.5)
     pyautogui.click(*lambda_ok_coord)
@@ -113,3 +127,7 @@ def press_on_button(grid, channel):
     on_coord = get_coord(grid, channel, "on")
     time.sleep(1)
     move_and_click(on_coord)
+
+if __name__ == "__main__":
+    grid = init_AOTF()
+    change_lambda_function(grid, 0, "660")
