@@ -168,7 +168,7 @@ if __name__ == "__main__":
     # 0 = OFF, 1 = ON
     duration = 3
     Vg_on = 0.1
-    Vg_off = -1
+    Vg_off = -0.5
     my_sequence = [
         (0.0,  0, duration),  # vg = 0, light OFF
         (Vg_off,  0, duration),  # vg = -1, light OFF
