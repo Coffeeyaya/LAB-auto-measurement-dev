@@ -1,4 +1,4 @@
-import visa
+import pyvisa
 import time
 import csv
 
@@ -14,7 +14,7 @@ CSV_FILENAME = "power_log_relative.csv"
 # ------------------------
 # Connect to PM100D
 # ------------------------
-rm = visa.ResourceManager()
+rm = pyvisa.ResourceManager()
 res = rm.list_resources('USB?*::0x1313::0x8078::?*::INSTR')
 
 if not res:
