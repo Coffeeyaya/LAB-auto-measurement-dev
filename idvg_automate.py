@@ -65,7 +65,7 @@ def run_automated_sequence(resource_id, light_ip, filename, Vd_target=1.0):
         # ---------------------------------------------------------
         gate_start = -3.0 #
         gate_stop = 3.0 #
-        steps = 101 #
+        steps = 21 #
         settle_delay = 0.1 #
         vg_points = np.linspace(gate_start, gate_stop, steps) #
 

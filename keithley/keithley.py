@@ -9,11 +9,11 @@ import time
 import csv
 import os
 import threading
-from LabAuto.network import Connection
+# from LabAuto.network import Connection
 
 class Keithley2636B:
     def __init__(self, resource_id, limiti_a=1e-3, limiti_b=1e-3,
-             rangei_a=1e-3, rangei_b=1e-3, nplc_a=1, nplc_b=1):
+             rangei_a=1e-4, rangei_b=1e-4, nplc_a=1, nplc_b=1):
         self.resource_id = resource_id
         self.limiti_a = limiti_a # source limit (current)
         self.limiti_b = limiti_b
@@ -204,56 +204,56 @@ class Keithley2636B:
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.shutdown()
 
-def run_experiment(light_ip, port=5001, cycles=3):
-    print(f"Connecting to Light Computer at {light_ip}...")
-    conn = Connection.connect(light_ip, port)
+# def run_experiment(light_ip, port=5001, cycles=3):
+#     print(f"Connecting to Light Computer at {light_ip}...")
+#     conn = Connection.connect(light_ip, port)
     
-    k = Keithley2636B(RESOURCE_ID)
-    k.connect()
-    k.clean_instrument()
-    k.config()
+#     k = Keithley2636B(RESOURCE_ID)
+#     k.connect()
+#     k.clean_instrument()
+#     k.config()
     
-    k.enable_output('a', True)
-    k.enable_output('b', True)
+#     k.enable_output('a', True)
+#     k.enable_output('b', True)
     
-    vg_sequence = [(-1, 2.0), (1, 2.0)]
+#     vg_sequence = [(-1, 2.0), (1, 2.0)]
     
-    try:
-        # 1. Start the asynchronous background Vg pulse
-        k.start_vg_pulse(vg_sequence)
+#     try:
+#         # 1. Start the asynchronous background Vg pulse
+#         k.start_vg_pulse(vg_sequence)
         
-        # 2. Main synchronization loop for the Light PC
-        for i in range(cycles):
-            print(f"\n--- Light Cycle {i+1} ---")
+#         # 2. Main synchronization loop for the Light PC
+#         for i in range(cycles):
+#             print(f"\n--- Light Cycle {i+1} ---")
             
-            # 3. Light ON
-            print("Main Thread: Sending LIGHT ON command...")
-            conn.send_json({"channel": 6, "wavelength": "660", "power": "17", "on": 1})
-            conn.receive_json()  # Wait for Light PC to finish clicking
+#             # 3. Light ON
+#             print("Main Thread: Sending LIGHT ON command...")
+#             conn.send_json({"channel": 6, "wavelength": "660", "power": "17", "on": 1})
+#             conn.receive_json()  # Wait for Light PC to finish clicking
             
-            # The light is now ON. The Vg thread is still pulsing in the background.
-            # Define how long you want the light to stay ON.
-            time.sleep(10) 
+#             # The light is now ON. The Vg thread is still pulsing in the background.
+#             # Define how long you want the light to stay ON.
+#             time.sleep(10) 
             
-            # 4. Light OFF
-            print("Main Thread: Sending LIGHT OFF command...")
-            conn.send_json({"channel": 6, "on": 0})
-            conn.receive_json()  # Wait for Light PC to finish clicking
+#             # 4. Light OFF
+#             print("Main Thread: Sending LIGHT OFF command...")
+#             conn.send_json({"channel": 6, "on": 0})
+#             conn.receive_json()  # Wait for Light PC to finish clicking
             
-            # The light is now OFF. 
-            # Define how long you want the light to stay OFF before the next cycle.
-            time.sleep(10)
+#             # The light is now OFF. 
+#             # Define how long you want the light to stay OFF before the next cycle.
+#             time.sleep(10)
             
-    finally:
-        # 5. Clean up BOTH the socket and the background thread
-        conn.close()
-        k.stop_vg_pulse()
-        print("Experiment complete. Socket closed and Vg pulse stopped safely.")
+#     finally:
+#         # 5. Clean up BOTH the socket and the background thread
+#         conn.close()
+#         k.stop_vg_pulse()
+#         print("Experiment complete. Socket closed and Vg pulse stopped safely.")
 
 if __name__ == "__main__":
     RESOURCE_ID = "USB0::0x05E6::0x2636::4407529::INSTR"
     LIGHT_IP = "192.168.50.17"
-    run_experiment(LIGHT_IP, 5001, 3)
+    # run_experiment(LIGHT_IP, 5001, 3)
     # k = Keithley2636B(RESOURCE_ID)
     # k.connect()
     # k.clean_instrument()
