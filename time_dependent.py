@@ -3,14 +3,14 @@ import csv
 import matplotlib.pyplot as plt
 
 # Import your existing hardware modules
-from keithley.keithley import Keithley2636B #
+from keithley import Keithley2636B #
 from LabAuto.network import Connection #
 
 def run_sequential_time_dep(resource_id, light_ip, filename, sequence, Vd_target=1.0):
     print("--- Starting Sequential Time-Dependent Measurement ---")
 
     # ---------------------------------------------------------
-    # 1. SETUP LIVE PLOT (Headless Interactive Mode)
+    # 1. SETUP LIVE PLOT
     # ---------------------------------------------------------
     plt.ion() 
     fig = plt.figure(figsize=(10, 7)) #
@@ -44,7 +44,9 @@ def run_sequential_time_dep(resource_id, light_ip, filename, sequence, Vd_target
 
     print(f"Connecting to Light PC at {light_ip}...")
     conn = Connection.connect(light_ip, 5001) #
-    current_light_state = 0 # Track to avoid redundant network commands
+    
+    # We assume the physical laser starts in the OFF (0) state when the script boots.
+    current_light_state = 0 
     
     print("Connecting to Keithley...")
     k = Keithley2636B(resource_id) #
@@ -52,7 +54,6 @@ def run_sequential_time_dep(resource_id, light_ip, filename, sequence, Vd_target
     k.clean_instrument() #
     k.config() #
     
-    # 1.0 NPLC for fast ~10Hz measurements
     k.keithley.write("smua.measure.nplc = 1.0") #
     k.keithley.write("smub.measure.nplc = 1.0") #
     
@@ -73,15 +74,18 @@ def run_sequential_time_dep(resource_id, light_ip, filename, sequence, Vd_target
                 print(f"\n--- Sequence Step {step_idx + 1}/{len(sequence)} ---")
                 print(f"Applying: Vg = {target_vg}V | Light = {'ON' if target_light else 'OFF'} | Duration = {duration}s")
                 
-                # Apply Vg
+                # Apply Gate Voltage
                 k.set_Vg(target_vg) #
                 
-                # Apply Light (Only send command if state needs to change)
+                # Apply Light (Toggle ONLY if the sequence demands a state change)
                 if target_light != current_light_state:
-                    cmd_state = 1 if target_light else 0
-                    print(f"Sending Light {'ON' if cmd_state else 'OFF'} command...")
-                    conn.send_json({"channel": 6, "wavelength": "660", "power": "17", "on": cmd_state}) #
-                    conn.receive_json() # Wait for GUI click to finish
+                    print(f"Executing GUI click to toggle light {'ON' if target_light else 'OFF'}...")
+                    
+                    # We ALWAYS send "on": 1 because it just means "perform the mouse click"
+                    conn.send_json({"channel": 6, "on": 1}) #
+                    conn.receive_json() # Blocks GUI until laser_control.py replies with ACK
+                    
+                    # Update our internal tracker so we know the new physical state
                     current_light_state = target_light
 
                 # Measure continuously for the specified duration
@@ -97,8 +101,8 @@ def run_sequential_time_dep(resource_id, light_ip, filename, sequence, Vd_target
                         
                         # 2. Update Memory
                         times.append(t_elapsed) #
-                        V_Ds.append(Vd_target) 
-                        V_Gs.append(target_vg) 
+                        V_Ds.append(Vd_target) #
+                        V_Gs.append(target_vg) #
                         I_Ds.append(I_D) #
                         I_Gs.append(I_G) #
                         
@@ -128,9 +132,11 @@ def run_sequential_time_dep(resource_id, light_ip, filename, sequence, Vd_target
         print("\n\nSequence Finished. Shutting down...")
         
         try:
+            # Guarantee the light turns off if we abort mid-illumination
             if current_light_state == 1:
-                print("Turning Light OFF...")
-                conn.send_json({"channel": 6, "on": 0}) #
+                print("Executing final GUI click to turn Light OFF...")
+                # We send "on": 1 again to trigger the final click to toggle it off
+                conn.send_json({"channel": 6, "on": 1}) #
                 conn.receive_json() #
         except Exception:
             pass
@@ -148,15 +154,16 @@ if __name__ == "__main__":
     LIGHT_IP = "192.168.50.17"
     FILENAME = "automated_sequence.csv"
     
-    # Define your exact progression here: (Vg_Voltage, Light_ON_or_OFF, Duration_in_Seconds)
+    # Program your precise automated progression here: 
+    # Tuple format: (Vg_Voltage, Light_ON_or_OFF, Duration_in_Seconds)
     # 0 = OFF, 1 = ON
     my_sequence = [
-        (0.0,  0, 10.0),  # vg = 0, light off, measure for 10 seconds
-        (1.0,  0, 10.0),  # vg = 1, light off, measure for 10 seconds
-        (1.0,  1, 20.0),  # vg = 1, light ON, measure for 20 seconds
-        (1.0,  0, 15.0),  # vg = 1, light off, measure for 15 seconds
-        (-1.0, 0, 10.0),  # vg = -1, light off, measure for 10 seconds
-        (0.0,  0, 10.0)   # vg = 0, light off, measure for 10 seconds
+        (0.0,  0, 5),  # vg = 0, light OFF, measure for 10 seconds
+        (1.0,  0, 5),  # vg = 1, light OFF, measure for 10 seconds
+        (1.0,  1, 5),  # vg = 1, light ON, measure for 20 seconds
+        (1.0,  0, 5),  # vg = 1, light OFF, measure for 15 seconds
+        (-1.0, 0, 5),  # vg = -1, light OFF, measure for 10 seconds
+        (0.0,  0, 5)   # vg = 0, light OFF, measure for 10 seconds
     ]
     
     run_sequential_time_dep(RESOURCE_ID, LIGHT_IP, FILENAME, sequence=my_sequence, Vd_target=1.0)
