@@ -11,7 +11,7 @@ import threading
 def toggle_light_async(conn):
     """Sends the command and waits for the ACK in the background."""
     try:
-        conn.send_json({"channel": 6, "wavelength": "660", "power": "17", "on": 1})
+        conn.send_json({"channel": 6, "on": 1})
         conn.receive_json()
     except Exception as e:
         print(f"\nNetwork Error in background thread: {e}")
@@ -96,7 +96,7 @@ def run_sequential_time_dep(resource_id, light_ip, filename, sequence, Vd_target
                     threading.Thread(target=toggle_light_async, args=(conn,), daemon=True).start()
                     
                     current_light_state = target_light
-                    
+
                 # Measure continuously for the specified duration
                 step_end_time = time.time() + duration
                 
