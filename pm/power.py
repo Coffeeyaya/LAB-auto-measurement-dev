@@ -1,40 +1,74 @@
-# Import & initialize the PyVISA library
-import pyvisa
-rm = pyvisa.ResourceManager()
+import visa
+import time
+import csv
 
-# Find the power meter: we know it's a USB device from vendor 0x1313 (Thorlabs),
-# and with model 0x8078 (PM100D).
-res_found = rm.list_resources('USB?*::0x1313::0x8078::?*::INSTR')
-if not res_found:
-    raise Exception('Could not find the PM100D power meter. Is it connected and powered on?')
+# ------------------------
+# User settings
+# ------------------------
+WAVELENGTH = 660       # nm
+AVERAGE_COUNT = 10      # smoothing
+MEASURE_INTERVAL = 0.2  # seconds
+SAVE_TO_CSV = True
+CSV_FILENAME = "power_log_relative.csv"
 
-# Connect to the power meter, make it beep, and ask it for its ID
-print('Connecting to PM100D...')
-meter = rm.open_resource(res_found[0])
+# ------------------------
+# Connect to PM100D
+# ------------------------
+rm = visa.ResourceManager()
+res = rm.list_resources('USB?*::0x1313::0x8078::?*::INSTR')
+
+if not res:
+    raise Exception("PM100D not found")
+
+meter = rm.open_resource(res[0])
 meter.read_termination = '\n'
 meter.write_termination = '\n'
-meter.timeout = 2000  # ms
+meter.timeout = 2000
 
-meter.write('system:beeper')
+print("Connected to:", meter.query('*idn?'))
 
-print('*idn?')
-print('--> ' + meter.query('*idn?'))
-
-# Configure the power meter for laser power measurements
-wavelength = 1064  # nm
-beam_diameter = 20  # mm
-
+# ------------------------
+# Configure meter
+# ------------------------
 meter.write('sense:power:unit W')
 meter.write('sense:power:range:auto 1')
-meter.write('sense:average:count 50')
+meter.write(f'sense:average:count {AVERAGE_COUNT}')
 meter.write('configure:power')
+meter.write(f'sense:correction:wavelength {WAVELENGTH}')
 
-meter.write('sense:correction:wavelength %.1f' % wavelength)
-meter.write('sense:correction:beamdiameter %1f' % beam_diameter)
+# ------------------------
+# Optional CSV logging
+# ------------------------
+if SAVE_TO_CSV:
+    csv_file = open(CSV_FILENAME, mode='w', newline='')
+    writer = csv.writer(csv_file)
+    writer.writerow(["Time (s)", "Power (W)"])
 
-# Read the current power reading
-# ... this could go into a loop, where you first set the output power of the
-#     laser, then read the power meter, etc.
+print("Starting measurement... Press Ctrl+C to stop.")
 
-cur_power = meter.query_ascii_values('read?')[0]
-print('Current power: %.2g W' % cur_power)
+# ------------------------
+# Continuous loop
+# ------------------------
+t0 = time.perf_counter()   # high-resolution timer
+
+try:
+    while True:
+        power = meter.query_ascii_values('read?')[0]
+        t = time.perf_counter() - t0   # relative time in seconds
+
+        print(f"{t:8.3f} s  |  {power:.6e} W")
+
+        if SAVE_TO_CSV:
+            writer.writerow([t, power])
+            csv_file.flush()
+
+        time.sleep(MEASURE_INTERVAL)
+
+except KeyboardInterrupt:
+    print("\nMeasurement stopped.")
+
+finally:
+    if SAVE_TO_CSV:
+        csv_file.close()
+    meter.close()
+    rm.close()
