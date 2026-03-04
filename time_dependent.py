@@ -167,7 +167,7 @@ if __name__ == "__main__":
     # Tuple format: (Vg_Voltage, Light_ON_or_OFF, Duration_in_Seconds)
     # 0 = OFF, 1 = ON
     duration = 2
-    Vg_on = 0.3
+    Vg_on = 0
     Vg_off = -1
     my_sequence = [
         (0.0,  0, duration),  # vg = 0, light OFF
