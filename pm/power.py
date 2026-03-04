@@ -66,9 +66,6 @@ if __name__ == "__main__":
     average_count=20
 
     pm = PowerMeter()
-    pm.config_meter(wavelength, average_count)
-    pm.zero_sensor()
-    t, p = pm.measure_power(measure_interval=0.2, num_points=10)
 
     try:
         pm.config_meter(wavelength, average_count)
