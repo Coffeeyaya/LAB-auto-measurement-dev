@@ -15,7 +15,7 @@ def measure_power(
     wavelength=660,
     average_count=10,
     measure_interval=0.2,
-    num_points=100
+    num_points=10
 ):
     """
     Continuous power measurement using Thorlabs PM100D.
@@ -62,7 +62,6 @@ def measure_power(
     zero_sensor(meter)
 
     print('turn on the light')
-    time.sleep(3)
 
     time_array = np.zeros(num_points)
     power_array = np.zeros(num_points)
