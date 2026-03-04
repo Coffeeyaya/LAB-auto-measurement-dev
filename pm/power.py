@@ -1,7 +1,7 @@
 import pyvisa
 import time
 import numpy as np
-
+import matplotlib.pyplot as plt
 
 def measure_power(
     wavelength=660,
@@ -77,8 +77,15 @@ if __name__ == "__main__":
     wavelength=660,
     average_count=10,
     measure_interval=0.2,
-    num_points=50
+    num_points=25
     )
 
     print(t)
     print(p)
+    plt.figure()
+    plt.plot(t, p)
+    plt.xlabel("Time (s)")
+    plt.ylabel("Power (W)")
+    plt.title("PM100D Power vs Time")
+    plt.grid(True)
+    plt.show()
