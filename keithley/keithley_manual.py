@@ -28,7 +28,14 @@ class KeithleyWorker(QThread):
             # Because of the lock we built into Keithley2636B, this measure command 
             # will politely wait for a fraction of a millisecond if the user 
             # clicks "Set Vg" or if the Pulse thread is changing the voltage!
-            I_D, I_G = self.k.measure()
+            # 1. Grab the raw result first (do not unpack yet!)
+            result = self.k.measure()
+            
+            # 2. Check if the USB communication failed or returned an empty value
+            if result is None or len(result) != 2:
+                self.msleep(10) # Rest for 10ms and try again
+                continue # Skip the rest of this loop and go back to the top
+            I_D, I_G = result
             
             t = time.time() - start_time
             # Grab the current Vd and Vg state from the class variables
