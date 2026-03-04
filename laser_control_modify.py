@@ -9,7 +9,7 @@ import win32api
 
 def run_laser_server(host="0.0.0.0", port=5001):
     grid = init_AOTF()
-    hwnd = win32gui.FindWindow(None, "AOTF Controller")
+    # hwnd = win32gui.FindWindow(None, "AOTF Controller")
     server_socket = create_server(host, port)
     
     try:
