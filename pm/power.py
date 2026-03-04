@@ -1,6 +1,6 @@
 # Import & initialize the PyVISA library
-import visa
-rm = visa.ResourceManager()
+import pyvisa
+rm = pyvisa.ResourceManager()
 
 # Find the power meter: we know it's a USB device from vendor 0x1313 (Thorlabs),
 # and with model 0x8078 (PM100D).
