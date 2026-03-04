@@ -169,6 +169,7 @@ if __name__ == "__main__":
     duration = 3
     my_sequence = [
         (0.0,  0, duration),  # vg = 0, light OFF
+        (-1.0,  0, duration),  # vg = -1, light OFF
         (1.0,  0, duration),  # vg = 1, light OFF
         (1.0,  1, duration),  # vg = 1, light ON
         (1.0,  0, duration),  # vg = 1, light OFF
