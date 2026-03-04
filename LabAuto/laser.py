@@ -112,7 +112,11 @@ def change_power_function(grid, channel, new_power_value):
     time.sleep(0.5)
     pyautogui.click(*power_coord)
 
-    power_edit_coord = get_power_edit_coord(power_coord)
+    power_edit_coord = get_power_edit_coord([0,0])
+
+    get_popup_window('popup power slider.vi')
+    time.sleep(0.5)
+
     pyautogui.moveTo(*power_edit_coord)
     time.sleep(0.5)
     pyautogui.doubleClick(*power_edit_coord)
@@ -132,4 +136,5 @@ def press_on_button(grid, channel):
 
 if __name__ == "__main__":
     grid = init_AOTF()
-    change_lambda_function(grid, 0, "660")
+    # change_lambda_function(grid, 0, "660")
+    change_power_function(grid, 0, "50")
