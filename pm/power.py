@@ -60,7 +60,7 @@ def measure_power(
 
     # zero
     zero_sensor(meter)
-    
+
     print('turn on the light')
     time.sleep(3)
 
@@ -92,7 +92,7 @@ if __name__ == "__main__":
     wavelength=660,
     average_count=10,
     measure_interval=0.2,
-    num_points=25
+    num_points=50
     )
 
     print(t)
