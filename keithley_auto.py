@@ -5,7 +5,7 @@ import sys
 import time
 import csv
 import pyvisa
-from keithley import Keithley2636B
+from keithley.keithley import Keithley2636B
 
 from PyQt5.QtWidgets import (QApplication, QWidget, QVBoxLayout, QHBoxLayout,
                              QPushButton, QDoubleSpinBox, QLabel)
