@@ -75,7 +75,7 @@ class PersistentLaserWorker(QThread):
         if self.conn:
             try:
                 self.status_update.emit("Sending Light OFF...")
-                self.conn.send_json({"channel": 6, "on": 0})
+                self.conn.send_json({"channel": 6, "on": 1})
                 self.conn.receive_json()
             except Exception as e:
                 print(f"Failed to turn off light: {e}")
