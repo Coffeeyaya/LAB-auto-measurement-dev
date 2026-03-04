@@ -164,7 +164,7 @@ def init_AOTF_grid():
             win = gw.getWindowsWithTitle("AOTF Controller")
             win = win[0]
             win.restore()
-            win.moveTo(0, 0)
+            win.moveTo(10, 10)
             win.activate()
             break
         except gw.PyGetWindowException:
