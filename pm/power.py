@@ -1,74 +1,84 @@
 import pyvisa
 import time
-import csv
+import numpy as np
 
-# ------------------------
-# User settings
-# ------------------------
-WAVELENGTH = 660       # nm
-AVERAGE_COUNT = 10      # smoothing
-MEASURE_INTERVAL = 0.2  # seconds
-SAVE_TO_CSV = True
-CSV_FILENAME = "power_log_relative.csv"
 
-# ------------------------
-# Connect to PM100D
-# ------------------------
-rm = pyvisa.ResourceManager()
-res = rm.list_resources('USB?*::0x1313::0x8078::?*::INSTR')
+def measure_power(
+    wavelength=660,
+    average_count=10,
+    measure_interval=0.2,
+    num_points=100
+):
+    """
+    Continuous power measurement using Thorlabs PM100D.
 
-if not res:
-    raise Exception("PM100D not found")
+    Parameters
+    ----------
+    wavelength : float
+        Wavelength in nm.
+    average_count : int
+        Averaging count for smoothing.
+    measure_interval : float
+        Delay between measurements (seconds).
+    num_points : int
+        Number of data points to acquire.
 
-meter = rm.open_resource(res[0])
-meter.read_termination = '\n'
-meter.write_termination = '\n'
-meter.timeout = 2000
+    Returns
+    -------
+    time_array : np.ndarray
+        Relative time array (seconds).
+    power_array : np.ndarray
+        Measured power array (Watts).
+    """
 
-print("Connected to:", meter.query('*idn?'))
+    rm = pyvisa.ResourceManager()
+    res = rm.list_resources('USB?*::0x1313::0x8078::?*::INSTR')
 
-# ------------------------
-# Configure meter
-# ------------------------
-meter.write('sense:power:unit W')
-meter.write('sense:power:range:auto 1')
-meter.write(f'sense:average:count {AVERAGE_COUNT}')
-meter.write('configure:power')
-meter.write(f'sense:correction:wavelength {WAVELENGTH}')
+    if not res:
+        raise Exception("PM100D not found")
 
-# ------------------------
-# Optional CSV logging
-# ------------------------
-if SAVE_TO_CSV:
-    csv_file = open(CSV_FILENAME, mode='w', newline='')
-    writer = csv.writer(csv_file)
-    writer.writerow(["Time (s)", "Power (W)"])
+    meter = rm.open_resource(res[0])
+    meter.read_termination = '\n'
+    meter.write_termination = '\n'
+    meter.timeout = 2000
 
-print("Starting measurement... Press Ctrl+C to stop.")
+    # Configure meter
+    meter.write('sense:power:unit W')
+    meter.write('sense:power:range:auto 1')
+    meter.write(f'sense:average:count {average_count}')
+    meter.write('configure:power')
+    meter.write(f'sense:correction:wavelength {wavelength}')
 
-# ------------------------
-# Continuous loop
-# ------------------------
-t0 = time.perf_counter()   # high-resolution timer
+    time_array = np.zeros(num_points)
+    power_array = np.zeros(num_points)
 
-try:
-    while True:
-        power = meter.query_ascii_values('read?')[0]
-        t = time.perf_counter() - t0   # relative time in seconds
+    t0 = time.perf_counter()
 
-        print(f"{t:8.3f} s  |  {power:.6e} W")
+    try:
+        for i in range(num_points):
+            power = meter.query_ascii_values('read?')[0]
+            t = time.perf_counter() - t0
 
-        if SAVE_TO_CSV:
-            writer.writerow([t, power])
-            csv_file.flush()
+            time_array[i] = t
+            power_array[i] = power
 
-        time.sleep(MEASURE_INTERVAL)
+            if i < num_points - 1:
+                time.sleep(measure_interval)
 
-except KeyboardInterrupt:
-    print("\nMeasurement stopped.")
+    finally:
+        meter.close()
+        rm.close()
 
-finally:
-    if SAVE_TO_CSV:
-        csv_file.close()
-    meter.close()
-    rm.close()
+    return time_array, power_array
+
+
+if __name__ == "__main__":
+    t, p = measure_power(
+    wavelength=660,
+    average_count=10,
+    measure_interval=0.2,
+    num_points=50
+    )
+
+    print(t)
+    print(p)
