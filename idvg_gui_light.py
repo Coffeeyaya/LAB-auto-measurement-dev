@@ -238,7 +238,7 @@ class IdVgWindow(QWidget):
         self.deplete_button.setEnabled(False)
 
         # Start the persistent connection thread
-        self.laser_worker = PersistentLaserWorker(self.light_ip, wait_time=30)
+        self.laser_worker = PersistentLaserWorker(self.light_ip, wait_time=3)
         self.laser_worker.status_update.connect(self.status_label.setText)
         self.laser_worker.light_turned_on.connect(self.mark_light_on)
         self.laser_worker.prep_finished.connect(self.start_sweep) 
