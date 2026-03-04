@@ -3,7 +3,7 @@ import csv
 import matplotlib.pyplot as plt
 
 # Import your existing hardware modules
-from keithley import Keithley2636B #
+from keithley.keithley import Keithley2636B #
 from LabAuto.network import Connection #
 
 def run_sequential_time_dep(resource_id, light_ip, filename, sequence, Vd_target=1.0):
