@@ -60,8 +60,9 @@ def measure_power(
 
     # zero
     zero_sensor(meter)
-
+    
     print('turn on the light')
+    time.sleep(2)
 
     time_array = np.zeros(num_points)
     power_array = np.zeros(num_points)
