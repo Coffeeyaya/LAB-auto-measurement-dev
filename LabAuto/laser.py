@@ -137,4 +137,5 @@ def press_on_button(grid, channel):
 if __name__ == "__main__":
     grid = init_AOTF()
     # change_lambda_function(grid, 0, "660")
-    change_power_function(grid, 0, "50")
+    # change_power_function(grid, 0, "50")
+    get_popup_window('popup power slider.vi')
