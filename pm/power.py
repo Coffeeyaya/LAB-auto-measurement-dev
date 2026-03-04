@@ -3,6 +3,14 @@ import time
 import numpy as np
 import matplotlib.pyplot as plt
 
+
+def zero_sensor(meter):
+    print("Zeroing sensor... Make sure beam is blocked.")
+    time.sleep(3)
+    meter.write('sense:correction:collect:zero')
+    meter.query('*opc?')  # wait until operation complete
+    print("Zeroing complete.")
+
 def measure_power(
     wavelength=660,
     average_count=10,
@@ -48,6 +56,10 @@ def measure_power(
     meter.write(f'sense:average:count {average_count}')
     meter.write('configure:power')
     meter.write(f'sense:correction:wavelength {wavelength}')
+
+
+    # zero
+    zero_sensor(meter)
 
     time_array = np.zeros(num_points)
     power_array = np.zeros(num_points)
