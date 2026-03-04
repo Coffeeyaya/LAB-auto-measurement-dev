@@ -85,12 +85,14 @@ def change_lambda_function(grid, channel, new_lambda_value):
     time.sleep(0.5)
     pyautogui.click(*lambda_coord)
 
-    lambda_edit_coord = get_lambda_edit_coord(lambda_coord)
+    get_popup_window('popup wavelength slider.vi')
+    time.sleep(0.5)
+
+    lambda_edit_coord = get_lambda_edit_coord([0,0])
     pyautogui.moveTo(*lambda_edit_coord)
     time.sleep(0.5)
     
-    get_popup_window('popup wavelength slider.vi')
-    pyautogui.doubleClick([0,0])
+    pyautogui.doubleClick(*lambda_edit_coord)
     time.sleep(0.5)
     fill_box_no_ctrl_a(new_lambda_value)
 
