@@ -1,5 +1,5 @@
 import time
-from LabAuto.laser import init_AOTF, get_coord, change_power_function, move_and_click, press_on_button, change_lambda_function
+from LabAuto.laser import init_AOTF, get_coord, change_power_function, move_and_click
 # from LabAuto.laser_bg import init_AOTF, get_coord, change_power_function, background_click, background_double_click, background_paste, press_on_button, change_lambda_function
 from LabAuto.network import create_server, Connection
 
@@ -35,13 +35,13 @@ def run_laser_server(host="0.0.0.0", port=5001):
                     on_recv = data.get("on", None)
 
                     if channel_recv and wavelength_recv: 
-                        change_lambda_function(grid, channel_recv, str(wavelength_recv))
+                        change_lambda_function(hwnd, grid, channel_recv, str(wavelength_recv))
                         time.sleep(1)
                     if channel_recv and power_recv:
-                        change_power_function(grid, channel_recv, str(power_recv))
+                        change_power_function(hwnd, grid, channel_recv, str(power_recv))
                         time.sleep(1)
                     if channel_recv and on_recv:
-                        press_on_button(grid, channel_recv)
+                        press_on_button(hwnd, grid, channel_recv)
                         # Tell the Electrical Computer we are finished clicking
                     conn.send_json({"response": "ACK"})
 

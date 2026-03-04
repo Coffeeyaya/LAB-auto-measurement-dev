@@ -199,13 +199,13 @@ class MainWindow(QWidget):
         # 3. Create NEW line objects for this specific run
         # Matplotlib will automatically color-cycle these new lines so they stand out
         run_name = self.filename.replace('.csv', '') # delete the file extension, so the the label looks nicer
-        self.line_id, = self.ax1.plot([], [], '.-', label=f'I_D ({run_name})')
-        self.line_ig, = self.ax2.plot([], [], '.-', label=f'I_G ({run_name})')
+        self.line_id, = self.ax1.plot([], [], 'b.-', label=f'I_D ({run_name})')
+        self.line_ig, = self.ax2.plot([], [], 'r.-', label=f'I_G ({run_name})')
         
         # Optional: You can also create new lines for Vd/Vg, but 4 lines per run 
         # can get very visually cluttered on a single graph!
-        self.line_vd, = self.ax1_v.plot([], [], '.-', alpha=0.3, label=f'V_D')
-        self.line_vg, = self.ax2_v.plot([], [], '.-', alpha=0.3, label=f'V_G')
+        self.line_vd, = self.ax1_v.plot([], [], 'g.-', alpha=0.3, label=f'V_D')
+        self.line_vg, = self.ax2_v.plot([], [], 'k.-', alpha=0.3, label=f'V_G')
         
         # Refresh legends to show the new run
         self.ax1.legend(loc='upper left')

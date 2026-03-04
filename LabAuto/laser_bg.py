@@ -43,7 +43,6 @@ def background_paste(hwnd, text):
     pyautogui.press('enter')
     print(f"Paste command for '{text}' sent.")
 
-
 def move_window_to_origin(hwnd):
     """
     Grabs a window by its handle and forces it to screen coordinates (0, 0)
@@ -157,19 +156,37 @@ def change_power_function(main_hwnd, grid, channel, new_power_value):
     popup_ok_x, popup_ok_y = get_power_ok_coord([0,0])
     background_click(popup_hwnd, popup_ok_x, popup_ok_y) # click or double click
     time.sleep(0.5)
-
+    
 def init_AOTF():
-    while True:
-        try:
-            win = gw.getWindowsWithTitle("AOTF Controller")
-            win = win[0]
-            win.restore()
-            win.moveTo(0, 0)
-            win.activate()
-            break
-        except gw.PyGetWindowException:
-            pyautogui.click(win.left, win.top)
+    """
+    Initializes the AOTF Controller window using pure Windows API.
+    Returns the window handle (hwnd) and the generated coordinate grid.
+    """
+    # 1. Find the window handle directly
+    hwnd = win32gui.FindWindow(None, "AOTF Controller")
+    
+    # Wait until the software is actually open
+    while hwnd == 0:
+        print("Waiting for AOTF Controller to open...")
+        time.sleep(1)
+        hwnd = win32gui.FindWindow(None, "AOTF Controller")
 
+    # 2. Restore the window if it happens to be minimized (SW_RESTORE = 9)
+    win32gui.ShowWindow(hwnd, win32con.SW_RESTORE)
+    
+    # 3. Bring it to the active foreground
+    win32gui.SetForegroundWindow(hwnd)
+    time.sleep(0.2) # Short pause to let Windows draw the UI
+
+    # 4. Grab current dimensions to prevent squishing the GUI
+    rect = win32gui.GetWindowRect(hwnd)
+    width = rect[2] - rect[0]
+    height = rect[3] - rect[1]
+    
+    # 5. Move the window to (10, 10)
+    win32gui.MoveWindow(hwnd, 10, 10, width, height, True)
+
+    # 6. Generate your exact mathematical grid
     x = np.array([190, 270, 320])
     y = np.linspace(193, 430, 8)
     fields = ["lambda", "power", "on"]
@@ -178,11 +195,17 @@ def init_AOTF():
     for i, row_y in enumerate(y):
         for j, col_x in enumerate(x):
             grid[i][fields[j]] = (col_x, row_y)
-    return grid
+            
+    # Returning BOTH the handle and the grid keeps your main script much cleaner
+    return hwnd, grid
 
 def get_coord(grid, channel, field):
     coord = grid[channel][field]
     return coord
+
+def press_on_button(hwnd, grid, channel):
+    on_coord = get_coord(grid, channel, "on")
+    background_click(hwnd, on_coord[0], on_coord[1])
 
 if __name__ == "__main__":
     grid = init_AOTF()
@@ -191,12 +214,11 @@ if __name__ == "__main__":
     if hwnd == 0:
         print("Please open the AOTF Controller GUI first.")
     else:
-
-        change_lambda_function(hwnd, grid, 4, "500")
-        time.sleep(1)
-        change_power_function(hwnd, grid, 4, "50")
-        channel = 4
-        on_coord = get_coord(grid, channel, "on")
-        background_click(hwnd, on_coord[0], on_coord[1])
-        time.sleep(1)
-        background_click(hwnd, on_coord[0], on_coord[1])
+        channel = 0
+        change_lambda_function(hwnd, grid, channel, "500")
+        time.sleep(2)
+        change_power_function(hwnd, grid, channel, "50")
+        press_on_button(hwnd, grid, channel)
+        time.sleep(2)
+        press_on_button(hwnd, grid, channel)
+        

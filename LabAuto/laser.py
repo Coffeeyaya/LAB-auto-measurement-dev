@@ -39,8 +39,8 @@ def get_coord(grid, channel, field):
     return coord
     
 def get_lambda_edit_coord(lambda_coord):
-    abs_x = lambda_coord[0] + 370 # 350
-    abs_y = lambda_coord[1] + 40 # 
+    abs_x = lambda_coord[0] + 370 
+    abs_y = lambda_coord[1] + 40 
     return abs_x, abs_y
 
 def get_lambda_ok_coord(lambda_coord):
@@ -108,3 +108,8 @@ def change_power_function(grid, channel, new_power_value):
     time.sleep(0.5)
     pyautogui.click(*power_ok_coord)
     time.sleep(0.5)# important
+
+def press_on_button(grid, channel):
+    on_coord = get_coord(grid, channel, "on")
+    time.sleep(1)
+    move_and_click(on_coord)

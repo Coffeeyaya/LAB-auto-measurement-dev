@@ -29,13 +29,13 @@ def run_experiment(light_ip, port=5001, cycles=3):
             
             # 3. Light ON
             print("Sending LIGHT ON command...")
-            conn.send_json({"cmd": "SET_LIGHT", "state": "ON", "channel": 6, "power": "17"})
+            conn.send_json({"channel": 6, "wavelength": "660", "power": "17", "on": 1})
             conn.receive_json()  # CRITICAL: Wait here until Light PC finishes clicking
             measure_electrical_data("Light ON")
             
             # 4. Light OFF
             print("Sending LIGHT OFF command...")
-            conn.send_json({"cmd": "SET_LIGHT", "state": "OFF", "channel": 6})
+            conn.send_json({"channel": 6, "on": 1})
             conn.receive_json()  # CRITICAL: Wait here until Light PC finishes clicking
             measure_electrical_data("Light OFF")
             
