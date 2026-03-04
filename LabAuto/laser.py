@@ -61,13 +61,13 @@ def get_lambda_ok_coord(lambda_coord):
     return abs_x, abs_y
 
 def get_power_edit_coord(power_coord):
-    abs_x = power_coord[0] + 90
-    abs_y = power_coord[1] + 300
+    abs_x = power_coord[0] + 80
+    abs_y = power_coord[1] + 295
     return abs_x, abs_y
 
 def get_power_ok_coord(power_coord):
-    abs_x = power_coord[0] + 90
-    abs_y = power_coord[1] + 335
+    abs_x = power_coord[0] + 80
+    abs_y = power_coord[1] + 325
     return abs_x, abs_y
 
 def fill_box_no_ctrl_a(content):
@@ -136,6 +136,7 @@ def press_on_button(grid, channel):
 
 if __name__ == "__main__":
     grid = init_AOTF()
-    # change_lambda_function(grid, 0, "660")
-    # change_power_function(grid, 0, "50")
-    get_popup_window('popup power slider.vi')
+    change_lambda_function(grid, 0, "660")
+    change_power_function(grid, 1, "50")
+    press_on_button(grid, 7)
+    
