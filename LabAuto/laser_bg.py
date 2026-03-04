@@ -188,7 +188,7 @@ def init_AOTF():
 
     # 6. Generate your exact mathematical grid
     x = np.array([190, 270, 320])
-    y = np.linspace(193, 430, 8)
+    y = np.linspace(165, 405, 8)
     fields = ["lambda", "power", "on"]
     grid = {i: {} for i in range(len(y))}
 
