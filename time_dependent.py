@@ -167,18 +167,20 @@ if __name__ == "__main__":
     # Tuple format: (Vg_Voltage, Light_ON_or_OFF, Duration_in_Seconds)
     # 0 = OFF, 1 = ON
     duration = 3
+    Vg_on = 0.5
+    Vg_off = -1
     my_sequence = [
         (0.0,  0, duration),  # vg = 0, light OFF
-        (-1.0,  0, duration),  # vg = -1, light OFF
-        (1.0,  0, duration),  # vg = 1, light OFF
-        (1.0,  1, duration),  # vg = 1, light ON
-        (1.0,  0, duration),  # vg = 1, light OFF
-        (-1.0, 0, duration),  # vg = -1, light OFF
-        (1.0,  0, duration),  # vg = 1, light OFF
-        (1.0,  1, duration),  # vg = 1, light ON
-        (1.0,  0, duration),  # vg = 1, light OFF
-        (-1.0, 0, duration),  # vg = -1, light OFF
+        (Vg_off,  0, duration),  # vg = -1, light OFF
+        (Vg_on,  0, duration),  # vg = 1, light OFF
+        (Vg_on,  1, duration),  # vg = 1, light ON
+        (Vg_on,  0, duration),  # vg = 1, light OFF
+        (Vg_off, 0, duration),  # vg = -1, light OFF
+        (Vg_on,  0, duration),  # vg = 1, light OFF
+        (Vg_on,  1, duration),  # vg = 1, light ON
+        (Vg_on,  0, duration),  # vg = 1, light OFF
+        (Vg_off, 0, duration),  # vg = -1, light OFF
         (0.0,  0, duration)   # vg = 0, light OFF
     ]
     
-    run_sequential_time_dep(RESOURCE_ID, LIGHT_IP, FILENAME, sequence=my_sequence, Vd_target=1.0)
+    run_sequential_time_dep(RESOURCE_ID, LIGHT_IP, FILENAME, sequence=my_sequence, Vd_target=Vg_on)
