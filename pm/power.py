@@ -89,9 +89,9 @@ def measure_power(
 if __name__ == "__main__":
     t, p = measure_power(
     wavelength=660,
-    average_count=10,
+    average_count=20,
     measure_interval=0.2,
-    num_points=50
+    num_points=10
     )
 
     print(t)
