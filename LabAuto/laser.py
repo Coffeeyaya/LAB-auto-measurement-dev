@@ -51,13 +51,13 @@ def get_coord(grid, channel, field):
     return coord
     
 def get_lambda_edit_coord(lambda_coord):
-    abs_x = lambda_coord[0] + 370 
-    abs_y = lambda_coord[1] + 40 
+    abs_x = lambda_coord[0] + 350 
+    abs_y = lambda_coord[1] + 30 
     return abs_x, abs_y
 
 def get_lambda_ok_coord(lambda_coord):
-    abs_x = lambda_coord[0] + 440
-    abs_y = lambda_coord[1] + 40
+    abs_x = lambda_coord[0] + 430
+    abs_y = lambda_coord[1] + 30
     return abs_x, abs_y
 
 def get_power_edit_coord(power_coord):
