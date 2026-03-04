@@ -16,7 +16,10 @@ def init_AOTF():
             break
         except gw.PyGetWindowException:
             pyautogui.click(win.left, win.top)
+    pyautogui.moveTo(200, 500)
+    time.sleep(1)
     pyautogui.click(200, 500)
+    time.sleep(1)
     x = np.array([190, 270, 320])
     y = np.linspace(193, 430, 8)
 
