@@ -25,9 +25,6 @@ class KeithleyWorker(QThread):
     def run(self):
         start_time = time.time()
         while self.running:
-            # Because of the lock we built into Keithley2636B, this measure command 
-            # will politely wait for a fraction of a millisecond if the user 
-            # clicks "Set Vg" or if the Pulse thread is changing the voltage!
             # 1. Grab the raw result first (do not unpack yet!)
             result = self.k.measure()
             
@@ -119,7 +116,10 @@ class MainWindow(QWidget):
         
         # --- Block 3: Automation ---
         self.pulse_btn = QPushButton("Start Vg Pulse")
-        self.pulse_btn.setEnabled(False) # Only enable when measuring!
+        self.pulse_btn.setEnabled(False) # Only enable when measuring
+        
+        self.stop_pulse_btn = QPushButton("Stop Pulse")
+        self.stop_pulse_btn.setEnabled(False) # Only enable when pulsing
 
         # Add to layout horizontally
         ctrl_layout.addWidget(QLabel("File:"))
@@ -138,6 +138,7 @@ class MainWindow(QWidget):
         
         ctrl_layout.addSpacing(15)
         ctrl_layout.addWidget(self.pulse_btn)
+        ctrl_layout.addWidget(self.stop_pulse_btn) # Added new button
         ctrl_layout.addStretch()
         ctrl_layout.addWidget(self.stop_btn)
 
@@ -146,6 +147,7 @@ class MainWindow(QWidget):
         self.set_Vd_btn.clicked.connect(self.apply_Vd)
         self.set_Vg_btn.clicked.connect(self.apply_Vg)
         self.pulse_btn.clicked.connect(self.trigger_pulse)
+        self.stop_pulse_btn.clicked.connect(self.stop_pulse_only) # Connect new button
         self.stop_btn.clicked.connect(self.stop_everything)
 
     def _setup_data_pipeline(self, filename):
@@ -163,7 +165,8 @@ class MainWindow(QWidget):
         self.start_measure_btn.setEnabled(False)
         self.filename_input.setEnabled(False)
         self.stop_btn.setEnabled(True)
-        self.pulse_btn.setEnabled(True) # Now we can pulse!
+        self.pulse_btn.setEnabled(True) 
+        self.stop_pulse_btn.setEnabled(False) # Ensure this is off initially
         
         # 2. Pipeline & Plot Initialization
         self.filename = self.filename_input.text()
@@ -178,7 +181,7 @@ class MainWindow(QWidget):
         self.ax1.legend(loc='upper left'); self.ax2.legend(loc='upper left')
         self.ax1_v.legend(loc='upper right'); self.ax2_v.legend(loc='upper right')
         
-        # 3. Hardware Setup (Apply current spinbox values and turn ON)
+        # 3. Hardware Setup
         self.k.set_Vd(self.Vd_spin.value())
         self.k.set_Vg(self.Vg_spin.value())
         self.k.enable_output('a', True)
@@ -203,8 +206,21 @@ class MainWindow(QWidget):
         """Triggers the background pulse sequence."""
         sequence = [(0, 3.0), (1, 3.0), (2, 3.0), (3, 3.0), (2, 3.0), (1, 3.0), (0, 3.0)]
         self.k.start_vg_pulse(sequence)
+        
+        # Lock start, unlock stop
         self.pulse_btn.setText("Pulsing...")
         self.pulse_btn.setEnabled(False)
+        self.stop_pulse_btn.setEnabled(True)
+
+    def stop_pulse_only(self):
+        """Stops ONLY the pulsing sequence. Measurement keeps running."""
+        self.k.stop_vg_pulse()
+        print("Manual override: Pulse stopped.")
+        
+        # Reset buttons back to idle state
+        self.pulse_btn.setText("Start Vg Pulse")
+        self.pulse_btn.setEnabled(True)
+        self.stop_pulse_btn.setEnabled(False)
 
     def update_plot(self, t, Vd, Vg, I_D, I_G):
         # Update memory
@@ -251,6 +267,7 @@ class MainWindow(QWidget):
         self.filename_input.setEnabled(True)
         self.stop_btn.setEnabled(False)
         self.pulse_btn.setEnabled(False)
+        self.stop_pulse_btn.setEnabled(False)
         self.pulse_btn.setText("Start Vg Pulse")
 
     def closeEvent(self, event):
@@ -266,8 +283,6 @@ if __name__ == "__main__":
     k26.connect()
     k26.clean_instrument()
     
-    # Crucial for time-dependent: NPLC determines measurement speed.
-    # 1.0 is a good balance between speed and noise for a 10Hz sampling rate.
     k26.config()
     k26.keithley.write("smua.measure.nplc = 1.0") 
     k26.keithley.write("smub.measure.nplc = 1.0")
