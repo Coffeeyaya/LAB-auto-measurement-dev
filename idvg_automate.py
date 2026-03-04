@@ -110,7 +110,7 @@ def run_automated_sequence(resource_id, light_ip, filename, Vd_target=1.0):
         # ---------------------------------------------------------
         print("\n\nSequence Finished. Turning Light OFF...")
         try:
-            conn.send_json({"channel": 6, "on": 0}) #
+            conn.send_json({"channel": 6, "on": 1}) #
             conn.receive_json() #
         except Exception as e:
             pass
