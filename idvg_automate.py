@@ -55,7 +55,7 @@ def run_automated_sequence(resource_id, light_ip, filename, Vd_target=1.0):
         conn.receive_json() # Wait for confirmation
         
         print("Light is ON. Waiting 30 seconds for stabilization...")
-        for i in range(30, 0, -1):
+        for i in range(3, 0, -1):
             print(f"  Stabilizing... {i}s remaining", end='\r')
             time.sleep(1) # This pauses the script, no threads needed
         print("\nStabilization complete. Starting Sweep.")
