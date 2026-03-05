@@ -82,7 +82,7 @@ if __name__ == "__main__":
     try:
         pm.zero_sensor() # zero power meter
         for i, wavelength in enumerate(wavelength_arr):
-            pp, power = find_pp_for_target_power(conn=conn, pm=pm, channel=i, target_power=100, wavelength=wavelength,
+            pp, power = find_pp_for_target_power(conn=conn, pm=pm, channel=6, target_power=100, wavelength=wavelength,
                                     pp_min = 5, pp_max = 120)
             pp_table[i] = pp
             power_table[i] = power
