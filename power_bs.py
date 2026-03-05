@@ -57,6 +57,9 @@ def find_pp_for_target_power(conn,
 
         best_pp = mid
 
+        conn.send_json({"channel": channel, "on": 1})
+        conn.receive_json()
+
     return best_pp, measured_power
 
 if __name__ == "__main__":
