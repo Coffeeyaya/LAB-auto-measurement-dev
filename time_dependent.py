@@ -193,29 +193,27 @@ if __name__ == "__main__":
     device_number = ''
     run = ''
     FILENAME = f"time_{device_number}_{run}.csv" #
-    deplete_time = 5
-    duration = 5
-    on_time = 30
-    off_time = 10
+
+    
+    Vg_on_time = 3
+    Vg_off_time = 3
+    Light_on_time = 5
+    Light_off_time = 3
+
     Vg_on = 0 #
     Vg_off = -2 #
     channel = 6
     # power = 10
     
-    my_sequence = [ #
-        (0.0,  0, duration),   #
-        (Vg_off,  0, duration),#
-        (Vg_on,  0, duration), #
-        (Vg_on,  1, on_time), # light on
-        (Vg_on,  0, off_time), # light off
-        (Vg_off, 0, deplete_time), #
-          #
-    ]
+    my_sequence = []
     for i in range(5):
-        my_sequence.extend([(Vg_on,  0, duration), #
-            (Vg_on,  1, on_time),
-            (Vg_on,  0, off_time),
-            (Vg_off, 0, deplete_time)])
-    my_sequence.append((0, 0, duration))
+        my_sequence.extend(
+            [
+                (Vg_off,  0, Vg_off_time),#
+                (Vg_on,  0, Vg_on_time), #
+                (Vg_on,  1, Light_on_time), # light on
+                (Vg_on,  0, Light_off_time), # light off
+            ])
+    my_sequence.append((Vg_off, 0, Vg_off_time))
     
     run_measurement(RESOURCE_ID, LIGHT_IP, FILENAME, channel=channel, sequence=my_sequence, Vd_target=1)
