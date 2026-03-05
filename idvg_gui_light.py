@@ -277,6 +277,8 @@ class IdVgWindow(QWidget):
 
         self.k.enable_output('a', True)
         self.k.enable_output('b', True)
+        self.k.set_autorange('a', 1) #
+        self.k.set_autorange('b', 1) #
         
         self.worker = SweepWorker(self.k, vg_points, SETTLE_DELAY, do_deplete=self.DEPLETE)
         self.worker.new_data.connect(self.update_plot)
@@ -357,7 +359,9 @@ class IdVgWindow(QWidget):
 
 if __name__ == "__main__":
     RESOURCE_ID = "USB0::0x05E6::0x2636::4407529::INSTR"
-    FILENAME = 'idvg_gui_data.csv'
+    run = 0
+    device_number = ''
+    FILENAME = f'idvg_{device_number}_{run}.csv'
     LIGHT_IP = "192.168.50.17" 
     
     k26 = Keithley2636B(RESOURCE_ID)

@@ -11,11 +11,15 @@ from LabAuto.network import Connection #
 # Helper Functions
 # =============================================================================
 
-def toggle_light_async(conn):
+def toggle_light_async(conn, channel, power=None):
     """Sends the command and waits for the ACK in the background."""
     try:
-        conn.send_json({"channel": 6, "on": 1}) #
-        conn.receive_json() #
+        if channel and power:
+            conn.send_json({"channel": channel, "power": power, "on": 1}) #
+            conn.receive_json()
+        else:
+            conn.send_json({"channel": channel, "on": 1}) #
+            conn.receive_json()
     except Exception as e:
         print(f"\nNetwork Error in background thread: {e}") #
 
@@ -108,7 +112,7 @@ def shutdown_hardware(k, conn, current_light_state):
 # Main Measurement Loop
 # =============================================================================
 
-def run_measurement(resource_id, light_ip, filename, sequence, Vd_target=1.0, max_retries=3):
+def run_measurement(resource_id, light_ip, filename, channel, power, sequence, Vd_target=1.0, max_retries=3):
     print("--- Starting Sequential Time-Dependent Measurement ---")
 
     # Initialize visualization and data storage
@@ -144,7 +148,7 @@ def run_measurement(resource_id, light_ip, filename, sequence, Vd_target=1.0, ma
                     # Apply Light Toggle
                     if target_light != current_light_state:
                         print(f"Executing GUI click to toggle light {'ON' if target_light else 'OFF'}...") #
-                        threading.Thread(target=toggle_light_async, args=(conn,), daemon=True).start() #
+                        threading.Thread(target=toggle_light_async, args=(conn,channel, power), daemon=True).start() #
                         current_light_state = target_light #
 
                     # Measure for duration
@@ -190,24 +194,28 @@ def run_measurement(resource_id, light_ip, filename, sequence, Vd_target=1.0, ma
 if __name__ == "__main__":
     RESOURCE_ID = "USB0::0x05E6::0x2636::4407529::INSTR" #
     LIGHT_IP = "192.168.50.17" #
-    FILENAME = "automated_sequence.csv" #
+    device_number = ''
+    run = ''
+    FILENAME = f"time_{device_number}_{run}.csv" #
     
     duration = 2 #
-    Vg_on = 0.5 #
+    Vg_on = 0 #
     Vg_off = -1 #
+    channel = 6
+    power = 10
     
     my_sequence = [ #
         (0.0,  0, duration),   #
         (Vg_off,  0, duration),#
         (Vg_on,  0, duration), #
-        (Vg_on,  1, duration), #
-        (Vg_on,  0, duration), #
+        (Vg_on,  1, duration), # light on
+        (Vg_on,  0, duration), # light off
         (Vg_off, 0, duration), #
         (Vg_on,  0, duration), #
-        (Vg_on,  1, duration), #
-        (Vg_on,  0, duration), #
+        (Vg_on,  1, duration), # light on
+        (Vg_on,  0, duration), # light off
         (Vg_off, 0, duration), #
         (0.0,  0, duration)    #
     ]
     
-    run_measurement(RESOURCE_ID, LIGHT_IP, FILENAME, sequence=my_sequence, Vd_target=1)
+    run_measurement(RESOURCE_ID, LIGHT_IP, FILENAME, channel=channel, power=power, sequence=my_sequence, Vd_target=1)
