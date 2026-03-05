@@ -209,10 +209,11 @@ if __name__ == "__main__":
         (Vg_off, 0, duration), #
           #
     ]
-    my_sequence.extend([(Vg_on,  0, duration), #
-        (Vg_on,  1, duration),
-        (Vg_on,  0, duration),
-        (Vg_off, 0, duration)])
+    for i in range(5):
+        my_sequence.extend([(Vg_on,  0, duration), #
+            (Vg_on,  1, duration),
+            (Vg_on,  0, duration),
+            (Vg_off, 0, duration)])
     my_sequence.append((0, 0, duration))
     
     run_measurement(RESOURCE_ID, LIGHT_IP, FILENAME, channel=channel, sequence=my_sequence, Vd_target=1)
