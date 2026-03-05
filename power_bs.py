@@ -3,6 +3,7 @@ from pm.power import PowerMeter
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+import time
 
 def find_pp_for_target_power(conn,
                              pm,
@@ -40,6 +41,7 @@ def find_pp_for_target_power(conn,
         # Send power command
         conn.send_json({"channel": channel, "power": mid, "on": 1})
         conn.receive_json()
+        time.sleep(1)
 
         # Measure power (average final value)
         _, p = pm.measure_power(measure_interval, num_points) # t,p
@@ -59,7 +61,8 @@ def find_pp_for_target_power(conn,
 
         conn.send_json({"channel": channel, "on": 1})
         conn.receive_json()
-
+        time.sleep(1)
+        
     return best_pp, measured_power
 
 if __name__ == "__main__":
