@@ -194,7 +194,7 @@ if __name__ == "__main__":
     run = ''
     FILENAME = f"time_{device_number}_{run}.csv" #
     
-    duration = 4 #
+    duration = 10 #
     Vg_on = 0 #
     Vg_off = -2 #
     channel = 6
