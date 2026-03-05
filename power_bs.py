@@ -71,7 +71,10 @@ if __name__ == "__main__":
 
     # pp_values = np.linspace(10, 100, 10) # pp = power percent
     # wavelength_arr = np.array([450, 488, 514, 532, 600, 633, 660, 690])
+    # channel_arr = np.linspace(0, 7, 8)
     wavelength_arr = np.array([660])
+    channel_arr = np.array([6])
+    
 
     pm = PowerMeter()
 
@@ -82,7 +85,7 @@ if __name__ == "__main__":
     try:
         pm.zero_sensor() # zero power meter
         for i, wavelength in enumerate(wavelength_arr):
-            pp, power = find_pp_for_target_power(conn=conn, pm=pm, channel=6, target_power=100, wavelength=wavelength,
+            pp, power = find_pp_for_target_power(conn=conn, pm=pm, channel=channel_arr[i], target_power=100, wavelength=wavelength,
                                     pp_min = 5, pp_max = 120)
             pp_table[i] = pp
             power_table[i] = power
