@@ -14,8 +14,8 @@ def find_pp_for_target_power(conn,
                              num_points=5,
                              pp_min=5, ##
                              pp_max=120, ##
-                             tolerance=1e-9,
-                             max_iter=7):
+                             tolerance=3 * 1e-9,
+                             max_iter=10):
     """
     Binary search to find power_percent that produces target optical power.
 

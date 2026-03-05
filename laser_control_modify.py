@@ -53,4 +53,9 @@ def run_laser_server(host="0.0.0.0", port=5001):
         server_socket.close()
 
 if __name__ == "__main__":
-    run_laser_server()
+    grid = init_AOTF()
+    host="0.0.0.0"
+    port=5001
+    server_socket = create_server(host, port)
+    change_power_function(grid, 0, 50)
+    # run_laser_server()
