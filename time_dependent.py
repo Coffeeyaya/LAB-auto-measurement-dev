@@ -11,15 +11,11 @@ from LabAuto.network import Connection #
 # Helper Functions
 # =============================================================================
 
-def toggle_light_async(conn, channel, power=None):
+def toggle_light_async(conn, channel):
     """Sends the command and waits for the ACK in the background."""
     try:
-        if channel and power:
-            conn.send_json({"channel": channel, "power": power, "on": 1}) #
-            conn.receive_json()
-        else:
-            conn.send_json({"channel": channel, "on": 1}) #
-            conn.receive_json()
+        conn.send_json({"channel": channel, "on": 1}) #
+        conn.receive_json()
     except Exception as e:
         print(f"\nNetwork Error in background thread: {e}") #
 
@@ -112,7 +108,7 @@ def shutdown_hardware(k, conn, current_light_state):
 # Main Measurement Loop
 # =============================================================================
 
-def run_measurement(resource_id, light_ip, filename, channel, power, sequence, Vd_target=1.0, max_retries=3):
+def run_measurement(resource_id, light_ip, filename, channel, sequence, Vd_target=1.0, max_retries=3):
     print("--- Starting Sequential Time-Dependent Measurement ---")
 
     # Initialize visualization and data storage
@@ -148,7 +144,7 @@ def run_measurement(resource_id, light_ip, filename, channel, power, sequence, V
                     # Apply Light Toggle
                     if target_light != current_light_state:
                         print(f"Executing GUI click to toggle light {'ON' if target_light else 'OFF'}...") #
-                        threading.Thread(target=toggle_light_async, args=(conn,channel, power), daemon=True).start() #
+                        threading.Thread(target=toggle_light_async, args=(conn,channel), daemon=True).start() #
                         current_light_state = target_light #
 
                     # Measure for duration
@@ -202,7 +198,7 @@ if __name__ == "__main__":
     Vg_on = 0 #
     Vg_off = -1 #
     channel = 6
-    power = 10
+    # power = 10
     
     my_sequence = [ #
         (0.0,  0, duration),   #
@@ -218,4 +214,4 @@ if __name__ == "__main__":
         (0.0,  0, duration)    #
     ]
     
-    run_measurement(RESOURCE_ID, LIGHT_IP, FILENAME, channel=channel, power=power, sequence=my_sequence, Vd_target=1)
+    run_measurement(RESOURCE_ID, LIGHT_IP, FILENAME, channel=channel, sequence=my_sequence, Vd_target=1)
