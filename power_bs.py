@@ -68,8 +68,8 @@ def find_pp_for_target_power(conn,
 if __name__ == "__main__":
     LIGHT_IP = "192.168.50.17" #
     conn = Connection.connect(LIGHT_IP, 5001)
-    conn.send_json({"channel": 6, "wavelength": "660"})
-    conn.receive_json() # Wait for confirmation
+    # conn.send_json({"channel": 6, "wavelength": "660"})
+    # conn.receive_json() # Wait for confirmation
 
     average_count=10
     measure_interval=0.2
