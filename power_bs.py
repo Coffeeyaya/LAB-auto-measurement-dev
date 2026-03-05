@@ -70,7 +70,8 @@ if __name__ == "__main__":
     num_points=10
 
     # pp_values = np.linspace(10, 100, 10) # pp = power percent
-    wavelength_arr = np.array([450, 488, 514, 532, 600, 633, 660, 690])
+    # wavelength_arr = np.array([450, 488, 514, 532, 600, 633, 660, 690])
+    wavelength_arr = np.array([660])
 
     pm = PowerMeter()
 
