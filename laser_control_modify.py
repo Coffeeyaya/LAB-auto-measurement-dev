@@ -33,16 +33,16 @@ def run_laser_server(host="0.0.0.0", port=5001):
                     wavelength_recv = data.get("wavelength", None)
                     power_recv = data.get("power", None)
                     on_recv = data.get("on", None)
-                    channel_recv = int(channel_recv)
+                    
                     
                     if channel_recv and wavelength_recv: 
-                        change_lambda_function(grid, channel_recv, str(wavelength_recv))
+                        change_lambda_function(grid, int(channel_recv), str(wavelength_recv))
                         time.sleep(1)
                     if channel_recv and power_recv:
-                        change_power_function(grid, channel_recv, str(power_recv))
+                        change_power_function(grid, int(channel_recv), str(power_recv))
                         time.sleep(1)
                     if channel_recv and on_recv:
-                        press_on_button(grid, channel_recv)
+                        press_on_button(grid, int(channel_recv))
                         # Tell the Electrical Computer we are finished clicking
                     conn.send_json({"response": "ACK"})
 
