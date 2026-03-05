@@ -196,7 +196,7 @@ if __name__ == "__main__":
     
     duration = 4 #
     Vg_on = 0 #
-    Vg_off = 2 #
+    Vg_off = -2 #
     channel = 6
     # power = 10
     
