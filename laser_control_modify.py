@@ -33,7 +33,8 @@ def run_laser_server(host="0.0.0.0", port=5001):
                     wavelength_recv = data.get("wavelength", None)
                     power_recv = data.get("power", None)
                     on_recv = data.get("on", None)
-                    print(data)
+                    channel_recv = int(channel_recv)
+                    
                     if channel_recv and wavelength_recv: 
                         change_lambda_function(grid, channel_recv, str(wavelength_recv))
                         time.sleep(1)

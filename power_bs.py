@@ -77,9 +77,9 @@ if __name__ == "__main__":
 
     # pp_values = np.linspace(10, 100, 10) # pp = power percent
     # wavelength_arr = np.array([450, 488, 514, 532, 600, 633, 660, 690])
-    # channel_arr = np.linspace(0, 7, 8)
+    # channel_arr = np.linspace(0, 7, 8).astype(str) ### 
     wavelength_arr = np.array([450])
-    channel_arr = np.array([0])
+    channel_arr = np.array([0]).astype(str) ###
     
 
     pm = PowerMeter()
