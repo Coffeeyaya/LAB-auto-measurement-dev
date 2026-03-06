@@ -178,12 +178,14 @@ class TimeDepWindow(QWidget):
         self.line_ig.set_data(self.times, self.I_Gs)
         self.line_vd.set_data(self.times, self.V_Ds)
         self.line_vg.set_data(self.times, self.V_Gs)
-        
-        for ax in [self.ax1, self.ax2, self.ax1_v, self.ax2_v]:
-            ax.relim()
-            ax.autoscale_view()
-            
-        self.canvas.draw()
+        current_time = time.time()
+        if current_time - self.last_draw_time > 0.1:
+            for ax in [self.ax1, self.ax2, self.ax1_v, self.ax2_v]:
+                ax.relim()
+                ax.autoscale_view()
+                
+            self.canvas.draw() # The heavy function
+            self.last_draw_time = current_time # Reset the timer
 
     def on_finished(self):
         print("Experiment complete. Hardware is safe.")
