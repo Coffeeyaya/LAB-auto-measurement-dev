@@ -114,8 +114,8 @@ class TimeDepWorker(QThread):
             
         finally:
             self.status_update.emit("Shutting down hardware...")
-            if self.laser:
-                self.laser.send_cmd({"channel": self.laser_channel, "on": 1}, wait_for_reply=False)
+            if self.laser and self.current_light_state:
+                self.laser.send_cmd({"channel": self.laser_channel, "on": 1}, wait_for_reply=True)
                 self.laser.close()
             if self.k:
                 self.k.shutdown()
@@ -217,4 +217,5 @@ if __name__ == "__main__":
     worker = TimeDepWorker(RESOURCE_ID, LASER_IP, LASER_CHANNEL, sequence, FILENAME)
     window = TimeDepWindow(worker)
     window.show()
+
     sys.exit(app.exec_())
