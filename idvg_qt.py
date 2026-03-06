@@ -111,6 +111,7 @@ class AutoIdVgWorker(QThread):
                     if "laser_cmd" in step and laser:
                         self.status_update.emit(f"Sweep done. Turning OFF Laser Ch {current_channel}...")
                         laser.send_cmd({"channel": current_channel, "on": 1}, wait_for_reply=True)
+                        current_channel = None
                         time.sleep(1)
                         
                     k.enable_output('a', False)
