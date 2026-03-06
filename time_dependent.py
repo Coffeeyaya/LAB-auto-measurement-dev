@@ -256,14 +256,14 @@ if __name__ == "__main__":
 
     exp = TimeDepExperiment(RESOURCE_ID, LASER_IP, LASER_CHANNEL, Vd_const=1.0)
 
-    sequence = [
-        {"Vg": -1.5, "duration": 3},
-        {"Vg": 0.5, "duration": 3, 
-         "laser_cmd1": {"channel": 6, "power": 50, "wavelength": 532}},  # set power/wavelength
-        {"Vg": 0.5, "duration": 5, 
-         "laser_cmd2": {"channel": 6}},  # press on_button
-        {"Vg": 0.5, "duration": 3, 
-         "laser_cmd2": {"channel": 6}},  # press on_button again if needed
-    ]
+    # sequence = [
+    #     {"Vg": -1.5, "duration": 3},
+    #     {"Vg": 0.5, "duration": 3, 
+    #      "laser_cmd1": {"channel": 6, "power": 50, "wavelength": 532}},  # set power/wavelength
+    #     {"Vg": 0.5, "duration": 5, 
+    #      "laser_cmd2": {"channel": 6}},  # press on_button
+    #     {"Vg": 0.5, "duration": 3, 
+    #      "laser_cmd2": {"channel": 6}},  # press on_button again if needed
+    # ]
 
-    exp.run(sequence, "time_dep_laser.csv")
+    # exp.run(sequence, "time_dep_laser.csv")
