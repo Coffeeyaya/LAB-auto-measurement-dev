@@ -206,7 +206,7 @@ if __name__ == "__main__":
     idx_arr = np.arange(0, 3, 1).astype(str) # ['0' '1' '2']
     def get_basic_block(idx):
         basic_block = [
-            {"Vg": -1.5, "duration": 3},
+            {"Vg": -1.5, "duration": 5},
             {"Vg": 0.5, "duration": 5, 
             "laser_cmd1": {"channel": idx, "power": 10}},
             {"Vg": 0.5, "duration": 5, 
