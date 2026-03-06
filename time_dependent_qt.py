@@ -137,6 +137,8 @@ class TimeDepWindow(QWidget):
         self.worker = worker
         
         self.times, self.I_Ds, self.I_Gs, self.V_Ds, self.V_Gs = [], [], [], [], []
+        # 
+        self.last_draw_time = time.time()
 
         layout = QVBoxLayout()
         self.setLayout(layout)
