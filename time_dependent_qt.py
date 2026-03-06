@@ -5,7 +5,7 @@ from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout
 from PyQt5.QtCore import QThread, pyqtSignal
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
-
+import numpy as np
 from keithley.keithley import Keithley2636B
 from LabAuto.network import Connection
 
@@ -203,18 +203,21 @@ if __name__ == "__main__":
     LASER_CHANNEL = 6
     FILENAME = "time_dep_laser_pyqt.csv"
     sequence = []
-
-    basic_block = [
-        {"Vg": -1.5, "duration": 3},
-        {"Vg": 0.5, "duration": 10, 
-         "laser_cmd1": {"channel": 6, "power": 50, "wavelength": 532}}, 
-        {"Vg": 0.5, "duration": 5, 
-         "laser_cmd2": {"channel": 6, "on": 1}}, 
-        {"Vg": 0.5, "duration": 5, 
-         "laser_cmd2": {"channel": 6, "on": 1}}, 
-    ]
-    for i in range(3):
-        sequence.extend(basic_block)
+    idx_arr = np.arange(0, 3, 1).astype(str) # ['0' '1' '2' '3']
+    def get_basic_block(idx):
+        basic_block = [
+            {"Vg": -1.5, "duration": 3},
+            {"Vg": 0.5, "duration": 10, 
+            "laser_cmd1": {"channel": idx, "power": 10}},
+            {"Vg": 0.5, "duration": 5, 
+            "laser_cmd2": {"channel": idx, "on": 1}}, 
+            {"Vg": 0.5, "duration": 5, 
+            "laser_cmd2": {"channel": idx, "on": 1}}, 
+        ]
+        return basic_block
+    for i in range(len(idx_arr)):
+        idx = idx_arr[i]
+        sequence.extend(get_basic_block(idx))
     
 
     app = QApplication(sys.argv)
