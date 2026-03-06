@@ -51,12 +51,12 @@ class TimeDepWorker(QThread):
         if laser_cmd1: 
             self.status_update.emit("Configuring laser... (GUI is still responsive!)")
             # Wait for PyAutoGUI to finish typing power/wavelength
-            self.laser.send_cmd(laser_cmd1, wait_for_reply=False) 
+            self.laser.send_cmd(laser_cmd1, wait_for_reply=True) 
 
         if laser_cmd2: 
             self.status_update.emit("Toggling laser ON/OFF...")
             # Fire-and-forget: do NOT wait, instantly return to start measuring!
-            self.laser.send_cmd(laser_cmd2, wait_for_reply=False) 
+            self.laser.send_cmd(laser_cmd2, wait_for_reply=True) 
             self.current_light_state = 1 - self.current_light_state
 
     def run(self):
