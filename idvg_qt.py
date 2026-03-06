@@ -11,7 +11,7 @@ from matplotlib.figure import Figure
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
 
 from keithley.keithley import Keithley2636B
-from LabAuto.laser_client import LaserController 
+from laser_remote import LaserController 
 
 # -------------------------------
 # Worker Thread: Unified Hardware Control
