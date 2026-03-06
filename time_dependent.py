@@ -21,21 +21,21 @@ class LaserController:
         t = threading.Thread(target=self._send, args=(payload,), daemon=True)
         t.start()
 
-    def set_wavelength(self, channel, wavelength, async_mode=False):
+    def set_wavelength(self, channel, wavelength, async_mode=True):
         cmd = {"channel": int(channel), "wavelength": str(wavelength)}
         if async_mode:
             self.send_async(cmd)
         else:
             self._send(cmd)
 
-    def set_power(self, channel, power, async_mode=False):
+    def set_power(self, channel, power, async_mode=True):
         cmd = {"channel": int(channel), "power": str(power)}
         if async_mode:
             self.send_async(cmd)
         else:
             self._send(cmd)
 
-    def toggle_light(self, channel, async_mode=False):
+    def toggle_light(self, channel, async_mode=True):
         # Press ON/OFF button to toggle light
         cmd = {"channel": int(channel), "on": 1}
         if async_mode:
@@ -175,13 +175,13 @@ class TimeDepExperiment:
             power = laser_cmd1.get("power", None)
             wavelength = laser_cmd1.get("wavelength", None)
             if power:
-                self.laser.set_power(channel, power, async_mode=True)
+                self.laser.set_power(channel, power, async_mode=True) #
             if wavelength:
-                self.laser.set_wavelength(channel, wavelength, async_mode=True)
+                self.laser.set_wavelength(channel, wavelength, async_mode=True) #
 
         if laser_cmd2: # toggle light on / off
             channel = laser_cmd2.get("channel", self.laser_channel)
-            self.laser.toggle_light(channel, async_mode=False)
+            self.laser.toggle_light(channel, async_mode=False) #
             self.current_light_state = 1 - self.current_light_state
 
     def measure_step(self, duration, target_vg, writer):
