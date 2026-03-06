@@ -209,9 +209,9 @@ if __name__ == "__main__":
         {"Vg": 0.5, "duration": 3, 
          "laser_cmd1": {"channel": 6, "power": 50, "wavelength": 532}}, 
         {"Vg": 0.5, "duration": 5, 
-         "laser_cmd2": {"channel": 6}}, 
+         "laser_cmd2": {"channel": 6, "on": 1}}, 
         {"Vg": 0.5, "duration": 3, 
-         "laser_cmd2": {"channel": 6}}, 
+         "laser_cmd2": {"channel": 6, "on": 1}}, 
     ]
     for i in range(3):
         sequence.extend(basic_block)
