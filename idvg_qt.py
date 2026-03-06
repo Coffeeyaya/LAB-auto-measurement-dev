@@ -226,24 +226,24 @@ if __name__ == "__main__":
     RESOURCE_ID = "USB0::0x05E6::0x2636::4407529::INSTR"
     LIGHT_IP = "192.168.50.17" 
     FILENAME = "idvg_auto_sequence.csv"
-
+    num_points = 3
     # --- DEFINE YOUR AUTOPILOT SEQUENCE HERE ---
     sequence = [
         {
             "label": "Dark Sweep",
-            "Vd": 1.0, "start": -3.0, "stop": 3.0, "points": 51,
+            "Vd": 1.0, "start": -3.0, "stop": 3.0, "points": num_points,
             "wait_time": 0
         },
         {
             "label": "Light Sweep (660nm, Pwr 10)",
             "laser_cmd": {"channel": 6, "wavelength": 660, "power": 10},
-            "Vd": 1.0, "start": -3.0, "stop": 3.0, "points": 51,
+            "Vd": 1.0, "start": -3.0, "stop": 3.0, "points": num_points,
             "wait_time": 5
         },
         {
             "label": "Light Sweep (660nm, Pwr 50)",
             "laser_cmd": {"channel": 6, "wavelength": 660, "power": 50},
-            "Vd": 1.0, "start": -3.0, "stop": 3.0, "points": 51,
+            "Vd": 1.0, "start": -3.0, "stop": 3.0, "points": num_points,
             "wait_time": 5
         }
     ]
