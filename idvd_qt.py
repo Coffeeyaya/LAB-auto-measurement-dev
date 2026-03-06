@@ -236,7 +236,7 @@ if __name__ == "__main__":
     RESOURCE_ID = "USB0::0x05E6::0x2636::4407529::INSTR"
     LIGHT_IP = "192.168.50.17" 
     FILENAME = "idvd_auto_sequence.csv"
-    num_points = 51
+    num_points = 5
 
     # --- DEFINE YOUR AUTOPILOT SEQUENCE HERE ---
     # Standard family of output curves (varying Vg)
