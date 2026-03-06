@@ -202,8 +202,9 @@ if __name__ == "__main__":
     LASER_IP = "192.168.50.17"
     LASER_CHANNEL = 6
     FILENAME = "time_dep_laser_pyqt.csv"
+    sequence = []
 
-    sequence = [
+    basic_block = [
         {"Vg": -1.5, "duration": 3},
         {"Vg": 0.5, "duration": 3, 
          "laser_cmd1": {"channel": 6, "power": 50, "wavelength": 532}}, 
@@ -212,6 +213,9 @@ if __name__ == "__main__":
         {"Vg": 0.5, "duration": 3, 
          "laser_cmd2": {"channel": 6}}, 
     ]
+    for i in range(3):
+        sequence.extend(basic_block)
+    
 
     app = QApplication(sys.argv)
     worker = TimeDepWorker(RESOURCE_ID, LASER_IP, LASER_CHANNEL, sequence, FILENAME)
