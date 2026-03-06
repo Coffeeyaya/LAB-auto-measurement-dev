@@ -249,18 +249,18 @@ if __name__ == "__main__":
     # --- GLOBAL VARIABLES ---
     DEPLETE_VOLTAGE = -3.0  # Set to None if you want to skip depletion completely
     DEPLETE_TIME = 5.0      # How many seconds to hold the depletion voltage
-
+    num_points = 5
     # --- DEFINE YOUR AUTOPILOT SEQUENCE HERE ---
     sequence = [
         {
             "label": "Dark Sweep",
-            "Vd": 1.0, "start": -3.0, "stop": 3.0, "points": 51,
+            "Vd": 1.0, "start": -3.0, "stop": 3.0, "points": num_points,
             "wait_time": 0
         },
         {
             "label": "Light Sweep (660nm, Pwr 10)",
             "laser_cmd": {"channel": 6, "wavelength": 660, "power": 10},
-            "Vd": 1.0, "start": -3.0, "stop": 3.0, "points": 51,
+            "Vd": 1.0, "start": -3.0, "stop": 3.0, "points": num_points,
             "wait_time": 5
         }
     ]
