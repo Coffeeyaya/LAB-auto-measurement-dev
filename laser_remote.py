@@ -12,16 +12,16 @@ class LaserController:
             self.conn.send_json(payload)
             return self.conn.receive_json()
 
-    def send_async(self, payload):
+    def send_async(self, payload): # no receive_json()
         t = threading.Thread(target=self._send, args=(payload,), daemon=True)
         t.start()
 
     def set_wavelength(self, channel, wavelength, async_mode=False):
         cmd = {"channel": int(channel), "wavelength": str(wavelength)}
         if async_mode:
-            self.send_async(cmd)
+            self.send_async(cmd) # no receive_json(), just proceed
         else:
-            self._send(cmd)
+            self._send(cmd) # receive_json()
 
     def set_power(self, channel, power, async_mode=False):
         cmd = {"channel": int(channel), "power": str(power)}

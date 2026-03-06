@@ -181,7 +181,7 @@ class TimeDepExperiment:
 
         if laser_cmd2: # toggle light on / off
             channel = laser_cmd2.get("channel", self.laser_channel)
-            self.laser.toggle_light(channel, async_mode=True)
+            self.laser.toggle_light(channel, async_mode=False)
             self.current_light_state = 1 - self.current_light_state
 
     def measure_step(self, duration, target_vg, writer):
