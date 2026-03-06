@@ -21,14 +21,12 @@ class AutoIdVgWorker(QThread):
     status_update = pyqtSignal(str)
     sequence_finished = pyqtSignal()
 
-    def __init__(self, resource_id, laser_ip, filename, sequence, deplete_voltage=None, deplete_time=5.0):
+    def __init__(self, resource_id, laser_ip, filename, sequence):
         super().__init__()
         self.resource_id = resource_id
         self.laser_ip = laser_ip
         self.filename = filename
         self.sequence = sequence
-        self.deplete_voltage = deplete_voltage # e.g., -3.0, or None to skip
-        self.deplete_time = deplete_time       # e.g., 5.0 seconds
         self.running = True
 
     def run(self):
@@ -98,13 +96,16 @@ class AutoIdVgWorker(QThread):
                     k.set_autorange('a', 1)
                     k.set_autorange('b', 1)
 
-                    # --- Depletion Phase ---
-                    if self.deplete_voltage is not None and self.running:
-                        self.status_update.emit(f"Depleting at {self.deplete_voltage}V for {self.deplete_time}s...")
-                        k.set_Vg(self.deplete_voltage)
+                    # --- DEPLETION ---
+                    # Safely grab the depletion settings for THIS specific step
+                    dep_v = step.get("deplete_voltage", None)
+                    dep_t = step.get("deplete_time", 5.0) # Defaults to 5 seconds if not specified
+                    
+                    if dep_v is not None and self.running:
+                        self.status_update.emit(f"Depleting at {dep_v}V for {dep_t}s...")
+                        k.set_Vg(dep_v)
                         
-                        # Calculate how many 0.1s steps we need to wait
-                        iterations = int(self.deplete_time / 0.1)
+                        iterations = int(dep_t / 0.1)
                         for _ in range(iterations): 
                             if not self.running: break
                             time.sleep(0.1)
@@ -246,36 +247,41 @@ if __name__ == "__main__":
     LIGHT_IP = "192.168.50.17" 
     FILENAME = "idvg_auto_sequence.csv"
 
-    # --- GLOBAL VARIABLES ---
-    DEPLETE_VOLTAGE = -3.0  # Set to None if you want to skip depletion completely
-    DEPLETE_TIME = 5.0      # How many seconds to hold the depletion voltage
-    num_points = 5
     # --- DEFINE YOUR AUTOPILOT SEQUENCE HERE ---
     sequence = [
         {
-            "label": "Dark Sweep",
-            "Vd": 1.0, "start": -3.0, "stop": 3.0, "points": num_points,
-            "wait_time": 0
+            "label": "Dark Sweep (With Depletion)",
+            "Vd": 1.0, "start": -3.0, "stop": 3.0, "points": 51,
+            "wait_time": 0,
+            
+            # --- Per-Step Depletion Config ---
+            "deplete_voltage": -3.0, 
+            "deplete_time": 5.0      
         },
         {
-            "label": "Light Sweep (660nm, Pwr 10)",
+            "label": "Light Sweep (No Depletion)",
             "laser_cmd": {"channel": 6, "wavelength": 660, "power": 10},
-            "Vd": 1.0, "start": -3.0, "stop": 3.0, "points": num_points,
+            "Vd": 1.0, "start": -3.0, "stop": 3.0, "points": 51,
             "wait_time": 5
+            
+            # Omitted deplete_voltage here, so it will skip the phase!
+        },
+        {
+            "label": "Light Sweep (Strong Depletion)",
+            "laser_cmd": {"channel": 6, "wavelength": 660, "power": 50},
+            "Vd": 1.0, "start": -3.0, "stop": 3.0, "points": 51,
+            "wait_time": 5,
+
+            # Custom depletion settings for this step only
+            "deplete_voltage": -5.0, 
+            "deplete_time": 10.0      
         }
     ]
 
     app = QApplication(sys.argv)
     
-    # Pass the new variables into the worker
-    worker = AutoIdVgWorker(
-        RESOURCE_ID, 
-        LIGHT_IP, 
-        FILENAME, 
-        sequence, 
-        deplete_voltage=DEPLETE_VOLTAGE, 
-        deplete_time=DEPLETE_TIME
-    )
+    # Worker is much cleaner now!
+    worker = AutoIdVgWorker(RESOURCE_ID, LIGHT_IP, FILENAME, sequence)
     
     window = AutoIdVgWindow(worker)
     window.show()
