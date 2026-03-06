@@ -203,11 +203,11 @@ if __name__ == "__main__":
     LASER_CHANNEL = 6
     FILENAME = "time_dep_laser_pyqt.csv"
     sequence = []
-    idx_arr = np.arange(0, 3, 1).astype(str) # ['0' '1' '2' '3']
+    idx_arr = np.arange(0, 3, 1).astype(str) # ['0' '1' '2']
     def get_basic_block(idx):
         basic_block = [
             {"Vg": -1.5, "duration": 3},
-            {"Vg": 0.5, "duration": 10, 
+            {"Vg": 0.5, "duration": 5, 
             "laser_cmd1": {"channel": idx, "power": 10}},
             {"Vg": 0.5, "duration": 5, 
             "laser_cmd2": {"channel": idx, "on": 1}}, 
