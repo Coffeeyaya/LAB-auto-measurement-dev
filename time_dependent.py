@@ -7,151 +7,247 @@ from keithley.keithley import Keithley2636B
 from LabAuto.network import Connection
 
 class LaserController:
-    # Simplified! No locks, no complex async functions needed.
+
     def __init__(self, laser_ip, port=5001):
         self.conn = Connection.connect(laser_ip, port)
+        self.lock = threading.Lock()  # prevent concurrent socket use
 
-    def send_cmd(self, payload, wait_for_reply=True):
-        self.conn.send_json(payload)
-        if wait_for_reply:
+    def _send(self, payload):
+        with self.lock:
+            self.conn.send_json(payload)
             return self.conn.receive_json()
+
+    def send_async(self, payload):
+        t = threading.Thread(target=self._send, args=(payload,), daemon=True)
+        t.start()
+
+    def set_wavelength(self, channel, wavelength, async_mode=True):
+        cmd = {"channel": int(channel), "wavelength": str(wavelength)}
+        if async_mode:
+            self.send_async(cmd)
+        else:
+            self._send(cmd)
+
+    def set_power(self, channel, power, async_mode=True):
+        cmd = {"channel": int(channel), "power": str(power)}
+        if async_mode:
+            self.send_async(cmd)
+        else:
+            self._send(cmd)
+
+    def toggle_light(self, channel, async_mode=False):
+        # Press ON/OFF button to toggle light
+        cmd = {"channel": int(channel), "on": 1}
+        if async_mode:
+            self.send_async(cmd)
+        else:
+            self._send(cmd)
 
     def close(self):
         self.conn.close()
 
 class TimeDepExperiment:
+
     def __init__(self, resource_id, laser_ip, laser_channel, Vd_const=1.0):
+
         self.resource_id = resource_id
         self.laser_ip = laser_ip
         self.laser_channel = laser_channel
         self.Vd_const = Vd_const
 
+        # Instruments
         self.k = None
         self.laser = None
+
+        # Measurement state
         self.current_light_state = 0
         self.start_time = None
-        
-        # We need a flag to tell the Matplotlib loop when the sequence is done
-        self.is_running = False 
 
-        # Plotting memory
-        self.times, self.I_Ds, self.I_Gs, self.V_Ds, self.V_Gs = [], [], [], [], []
+        # Plotting
+        self.fig = None
+        self.axes = None
+        self.lines = None
 
-    def setup_plot(self):
-        plt.ion()
-        self.fig = plt.figure(figsize=(10, 7))
-        self.ax1 = self.fig.add_subplot(211)
-        self.ax2 = self.fig.add_subplot(212, sharex=self.ax1)
-        self.ax1_v = self.ax1.twinx()
-        self.ax2_v = self.ax2.twinx()
+        # Data storage for plotting
+        self.times = []
+        self.I_Ds = []
+        self.I_Gs = []
+        self.V_Ds = []
+        self.V_Gs = []
 
-        self.ax1.set_ylabel("Id (A)")
-        self.ax2.set_ylabel("Ig (A)")
-        self.ax2.set_xlabel("Time (s)")
+    def init_laser(self):
+        self.laser = LaserController(self.laser_ip)
 
-        self.line_id, = self.ax1.plot([], [], 'b.-')
-        self.line_ig, = self.ax2.plot([], [], 'r.-')
-        self.line_vd, = self.ax1_v.plot([], [], 'g.-', alpha=0.3)
-        self.line_vg, = self.ax2_v.plot([], [], 'k.-', alpha=0.3)
+    def disconnect_light_PC(self):
 
-    def _measurement_thread_worker(self, sequence, filename):
-        """This entirely runs in the background!"""
+        print("Disconnecting light PC...")
+
         try:
-            # 1. Init Hardware
-            self.k = Keithley2636B(self.resource_id)
-            self.k.connect()
-            self.k.clean_instrument()
-            self.k.config()
-            self.k.set_nplc('a', "1.0")
-            self.k.set_nplc('b', "1.0")
-            self.k.enable_output('a', True)
-            self.k.enable_output('b', True)
-            self.k.set_Vd(self.Vd_const)
+            if self.current_light_state == 1 and self.laser is not None:
+                # if light is on, press the on_button again to turn it off
+                print("Turning light OFF before exit")
+                self.laser.toggle_light(self.laser_channel, async_mode=False)
+                time.sleep(2)
 
-            self.laser = LaserController(self.laser_ip)
-            self.start_time = time.time()
+        except Exception:
+            pass
 
-            with open(filename, 'w', newline='') as f:
-                writer = csv.writer(f)
-                writer.writerow(["Time", "V_D", "V_G", "I_D", "I_G", "Light_State"])
-
-                # 2. Run Sequence
-                for step_idx, step in enumerate(sequence):
-                    target_vg = step["Vg"]
-                    duration = step["duration"]
-                    self.k.set_Vg(target_vg)
-
-                    # --- Safe, Synchronous Laser Setup ---
-                    if "laser_cmd1" in step:
-                        print("Waiting for Light PC to configure laser...")
-                        # This blocks this background thread, but Matplotlib keeps updating!
-                        self.laser.send_cmd(step["laser_cmd1"], wait_for_reply=True) 
-
-                    # --- Fire-and-Forget Laser Trigger ---
-                    if "laser_cmd2" in step:
-                        print("Triggering Light ON/OFF!")
-                        # wait_for_reply=False means we instantly start measuring the Keithley
-                        self.laser.send_cmd(step["laser_cmd2"], wait_for_reply=False) 
-                        self.current_light_state = 1 - self.current_light_state
-
-                    # 3. Fast Polling Loop
-                    step_end = time.time() + duration
-                    while time.time() < step_end:
-                        I_D, I_G = self.k.measure()
-                        if I_D is not None:
-                            t = time.time() - self.start_time
-                            self.times.append(t)
-                            self.I_Ds.append(I_D)
-                            self.I_Gs.append(I_G)
-                            self.V_Ds.append(self.Vd_const)
-                            self.V_Gs.append(target_vg)
-                            writer.writerow([t, self.Vd_const, target_vg, I_D, I_G, self.current_light_state])
-                            
-            print("\nSequence completed successfully!")
-
-        except Exception as e:
-            print(f"Hardware Error in background thread: {e}")
         finally:
             if self.laser:
-                # Clean up
-                self.laser.send_cmd({"channel": self.laser_channel, "on": 1}, wait_for_reply=False)
                 self.laser.close()
-            if self.k:
-                self.k.shutdown()
-            self.is_running = False # Tell the main thread we are done
 
-    def run(self, sequence, filename):
+    def init_keithley(self):
+
+        print("Connecting to Keithley...")
+        self.k = Keithley2636B(self.resource_id)
+
+        self.k.connect()
+        self.k.clean_instrument()
+        self.k.config()
+
+        self.k.set_nplc('a', "1.0")
+        self.k.set_nplc('b', "1.0")
+
+        self.k.enable_output('a', True)
+        self.k.enable_output('b', True)
+
+        self.k.set_Vd(self.Vd_const)
+
+    def shutdown_keithley(self):
+
+        if self.k:
+            self.k.shutdown()
+
+    def setup_plot(self):
+
+        plt.ion()
+
+        self.fig = plt.figure(figsize=(10, 7))
+
+        '''
+        ax1 = Id
+        ax2 = Ig
+        ax1_v = Vd
+        ax2_v = Vg
+        '''
+        ax1 = self.fig.add_subplot(211)
+        ax2 = self.fig.add_subplot(212, sharex=ax1)
+
+        ax1_v = ax1.twinx()
+        ax2_v = ax2.twinx()
+
+        ax1.set_ylabel("Id (A)")
+        ax2.set_ylabel("Ig (A)")
+        ax2.set_xlabel("Time (s)")
+
+        ax1_v.set_ylabel("Vd (V)")
+        ax2_v.set_ylabel("Vg (V)")
+
+        line_id, = ax1.plot([], [], 'b.-')
+        line_ig, = ax2.plot([], [], 'r.-')
+        line_vd, = ax1_v.plot([], [], 'g.-', alpha=0.3)
+        line_vg, = ax2_v.plot([], [], 'k.-', alpha=0.3)
+
+        self.axes = (ax1, ax2, ax1_v, ax2_v)
+        self.lines = (line_id, line_ig, line_vd, line_vg)
+
+    def update_plot(self):
+
+        line_id, line_ig, line_vd, line_vg = self.lines
+
+        line_id.set_data(self.times, self.I_Ds)
+        line_ig.set_data(self.times, self.I_Gs)
+        line_vd.set_data(self.times, self.V_Ds)
+        line_vg.set_data(self.times, self.V_Gs)
+
+        for ax in self.axes:
+            ax.relim()
+            ax.autoscale_view()
+
+        plt.pause(0.001) # plt.pause(0.001) = adds 1 ms delay per loop.
+
+    def switch_source(self, target_vg, laser_cmd1=None, laser_cmd2=None):
+        """Set Vg, then optionally send two-step laser commands"""
+        self.k.set_Vg(target_vg)
+
+        if laser_cmd1: # set laser channel, wavelength, power
+            channel = laser_cmd1.get("channel", self.laser_channel)
+            power = laser_cmd1.get("power", None)
+            wavelength = laser_cmd1.get("wavelength", None)
+            if power:
+                self.laser.set_power(channel, power, async_mode=True) #
+            if wavelength:
+                self.laser.set_wavelength(channel, wavelength, async_mode=True) #
+
+        if laser_cmd2: # toggle light on / off
+            channel = laser_cmd2.get("channel", self.laser_channel)
+            self.laser.toggle_light(channel, async_mode=False) #
+            self.current_light_state = 1 - self.current_light_state
+
+    def measure_step(self, duration, target_vg, writer):
+        """Measure for the given duration and write each point to CSV"""
+        step_end = time.time() + duration
+        while time.time() < step_end:
+            t = time.time() - self.start_time
+            I_D, I_G = self.k.measure()
+            if I_D is None:
+                continue
+
+            # Store for plotting
+            self.times.append(t)
+            self.I_Ds.append(I_D)
+            self.I_Gs.append(I_G)
+            self.V_Ds.append(self.Vd_const)
+            self.V_Gs.append(target_vg)
+
+            # Write to CSV
+            writer.writerow([t, self.Vd_const, target_vg, I_D, I_G, self.current_light_state])
+
+            # Update live plot
+            self.update_plot()
+
+    def run(self, sequence, filename, max_retries=3):
         self.setup_plot()
-        self.is_running = True
 
-        # Kick off the hardware routine in the background
-        measure_thread = threading.Thread(
-            target=self._measurement_thread_worker, 
-            args=(sequence, filename), 
-            daemon=True
-        )
-        measure_thread.start()
+        for attempt in range(max_retries):
+            print(f"\n=== Attempt {attempt+1} / {max_retries} ===")
+            try:
+                self.init_keithley()
+                self.init_laser()
+                print('here')
+                self.start_time = time.time()
 
-        # MAIN THREAD JOB: Just keep the GUI alive and updated!
-        while self.is_running:
-            # Update data lines
-            self.line_id.set_data(self.times, self.I_Ds)
-            self.line_ig.set_data(self.times, self.I_Gs)
-            self.line_vd.set_data(self.times, self.V_Ds)
-            self.line_vg.set_data(self.times, self.V_Gs)
+                with open(filename, 'w', newline='') as f:
+                    writer = csv.writer(f)
+                    writer.writerow(["Time", "V_D", "V_G", "I_D", "I_G", "Light_State"])
 
-            # Rescale axes
-            for ax in (self.ax1, self.ax2, self.ax1_v, self.ax2_v):
-                ax.relim()
-                ax.autoscale_view()
+                    for step_idx, step in enumerate(sequence):
+                        target_vg = step["Vg"]
+                        duration = step["duration"]
+                        laser_cmd1 = step.get("laser_cmd1", None)
+                        laser_cmd2 = step.get("laser_cmd2", None)
 
-            # Process GUI events (keeps the window un-frozen)
-            plt.pause(0.1) 
+                        print(f"Step {step_idx+1}: Vg={target_vg}, duration={duration}, laser_cmd1={laser_cmd1}, laser_cmd2={laser_cmd2}")
+                        self.switch_source(target_vg, laser_cmd1, laser_cmd2)
+                        self.measure_step(duration, target_vg, writer)
 
-        print("Experiment finished. You can now close the plot window.")
+                print("Sequence completed successfully!")
+                break
+
+            except Exception as e:
+                print(f"ERROR: {e}")
+                if attempt < max_retries-1:
+                    print("Retrying...")
+                    time.sleep(3)
+                else:
+                    print("Max retries reached. Measurement failed.")
+
+            finally:
+                self.disconnect_light_PC()
+                self.shutdown_keithley()
+
         plt.ioff()
         plt.show()
-
 
 if __name__ == "__main__":
 
