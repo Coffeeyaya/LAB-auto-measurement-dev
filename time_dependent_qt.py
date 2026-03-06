@@ -196,7 +196,9 @@ class TimeDepWindow(QWidget):
         if self.worker.isRunning():
             self.worker.stop()
         event.accept()
-
+'''
+set range?
+'''
 if __name__ == "__main__":
     RESOURCE_ID = "USB0::0x05E6::0x2636::4407529::INSTR"
     LASER_IP = "192.168.50.17"
