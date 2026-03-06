@@ -21,12 +21,14 @@ class AutoIdVgWorker(QThread):
     status_update = pyqtSignal(str)
     sequence_finished = pyqtSignal()
 
-    def __init__(self, resource_id, laser_ip, filename, sequence):
+    def __init__(self, resource_id, laser_ip, filename, sequence, deplete_voltage=None, deplete_time=5.0):
         super().__init__()
         self.resource_id = resource_id
         self.laser_ip = laser_ip
         self.filename = filename
         self.sequence = sequence
+        self.deplete_voltage = deplete_voltage # e.g., -3.0, or None to skip
+        self.deplete_time = deplete_time       # e.g., 5.0 seconds
         self.running = True
 
     def run(self):
@@ -57,6 +59,7 @@ class AutoIdVgWorker(QThread):
 
                     label = step["label"]
                     V_D = step["Vd"]
+
                     vg_points = np.linspace(step["start"], step["stop"], step["points"])
                     
                     self.status_update.emit(f"Starting Step {step_idx+1}: {label}")
@@ -88,11 +91,27 @@ class AutoIdVgWorker(QThread):
 
                     # --- 2. Execute Sweep ---
                     k.set_Vd(V_D)
-                    k.set_Vg(step["start"])
+                    # k.set_Vg(step["start"])
+
                     k.enable_output('a', True)
                     k.enable_output('b', True)
                     k.set_autorange('a', 1)
                     k.set_autorange('b', 1)
+
+                    # --- Depletion Phase ---
+                    if self.deplete_voltage is not None and self.running:
+                        self.status_update.emit(f"Depleting at {self.deplete_voltage}V for {self.deplete_time}s...")
+                        k.set_Vg(self.deplete_voltage)
+                        
+                        # Calculate how many 0.1s steps we need to wait
+                        iterations = int(self.deplete_time / 0.1)
+                        for _ in range(iterations): 
+                            if not self.running: break
+                            time.sleep(0.1)
+
+                    # Move to the actual start voltage of the sweep
+                    k.set_Vg(step["start"])
+
                     time.sleep(1) # Initial RC settling
 
                     self.status_update.emit(f"Sweeping {label}...")
@@ -222,36 +241,42 @@ class AutoIdVgWindow(QWidget):
             self.worker.stop()
         event.accept()
 
-
 if __name__ == "__main__":
     RESOURCE_ID = "USB0::0x05E6::0x2636::4407529::INSTR"
     LIGHT_IP = "192.168.50.17" 
     FILENAME = "idvg_auto_sequence.csv"
-    num_points = 3
+
+    # --- GLOBAL VARIABLES ---
+    DEPLETE_VOLTAGE = -3.0  # Set to None if you want to skip depletion completely
+    DEPLETE_TIME = 5.0      # How many seconds to hold the depletion voltage
+
     # --- DEFINE YOUR AUTOPILOT SEQUENCE HERE ---
     sequence = [
         {
             "label": "Dark Sweep",
-            "Vd": 1.0, "start": -3.0, "stop": 3.0, "points": num_points,
+            "Vd": 1.0, "start": -3.0, "stop": 3.0, "points": 51,
             "wait_time": 0
         },
         {
             "label": "Light Sweep (660nm, Pwr 10)",
             "laser_cmd": {"channel": 6, "wavelength": 660, "power": 10},
-            "Vd": 1.0, "start": -3.0, "stop": 3.0, "points": num_points,
-            "wait_time": 5
-        },
-        {
-            "label": "Light Sweep (660nm, Pwr 50)",
-            "laser_cmd": {"channel": 6, "wavelength": 660, "power": 50},
-            "Vd": 1.0, "start": -3.0, "stop": 3.0, "points": num_points,
+            "Vd": 1.0, "start": -3.0, "stop": 3.0, "points": 51,
             "wait_time": 5
         }
     ]
 
     app = QApplication(sys.argv)
     
-    worker = AutoIdVgWorker(RESOURCE_ID, LIGHT_IP, FILENAME, sequence)
+    # Pass the new variables into the worker
+    worker = AutoIdVgWorker(
+        RESOURCE_ID, 
+        LIGHT_IP, 
+        FILENAME, 
+        sequence, 
+        deplete_voltage=DEPLETE_VOLTAGE, 
+        deplete_time=DEPLETE_TIME
+    )
+    
     window = AutoIdVgWindow(worker)
     window.show()
     
