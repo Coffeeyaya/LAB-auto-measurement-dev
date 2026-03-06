@@ -246,12 +246,12 @@ if __name__ == "__main__":
     RESOURCE_ID = "USB0::0x05E6::0x2636::4407529::INSTR"
     LIGHT_IP = "192.168.50.17" 
     FILENAME = "idvg_auto_sequence.csv"
-
+    num_points = 5
     # --- DEFINE YOUR AUTOPILOT SEQUENCE HERE ---
     sequence = [
         {
             "label": "Dark Sweep (With Depletion)",
-            "Vd": 1.0, "start": -3.0, "stop": 3.0, "points": 51,
+            "Vd": 1.0, "start": -3.0, "stop": 3.0, "points": num_points,
             "wait_time": 0,
             
             # --- Per-Step Depletion Config ---
@@ -261,7 +261,7 @@ if __name__ == "__main__":
         {
             "label": "Light Sweep (No Depletion)",
             "laser_cmd": {"channel": 6, "wavelength": 660, "power": 10},
-            "Vd": 1.0, "start": -3.0, "stop": 3.0, "points": 51,
+            "Vd": 1.0, "start": -3.0, "stop": 3.0, "points": num_points,
             "wait_time": 5
             
             # Omitted deplete_voltage here, so it will skip the phase!
@@ -269,7 +269,7 @@ if __name__ == "__main__":
         {
             "label": "Light Sweep (Strong Depletion)",
             "laser_cmd": {"channel": 6, "wavelength": 660, "power": 50},
-            "Vd": 1.0, "start": -3.0, "stop": 3.0, "points": 51,
+            "Vd": 1.0, "start": -3.0, "stop": 3.0, "points": num_points,
             "wait_time": 5,
 
             # Custom depletion settings for this step only
