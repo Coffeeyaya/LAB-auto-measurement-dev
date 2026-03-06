@@ -13,7 +13,7 @@ import threading
 
 class Keithley2636B:
     def __init__(self, resource_id, limiti_a=1e-3, limiti_b=1e-3,
-             rangei_a=1e-3, rangei_b=1e-3, nplc_a=1, nplc_b=1):
+             rangei_a=1e-4, rangei_b=1e-4, nplc_a=1, nplc_b=1):
         self.resource_id = resource_id
         self.limiti_a = limiti_a # source limit (current)
         self.limiti_b = limiti_b
@@ -47,12 +47,10 @@ class Keithley2636B:
         k.write("smua.source.func=smua.OUTPUT_DCVOLTS; smua.source.levelv=0")
         k.write(f"smua.source.limiti={self.limiti_a}; smua.measure.rangei={self.rangei_a}")
         k.write(f"smua.measure.nplc={self.nplc_a}; smua.measure.autorangei=0")
-        # k.write("smua.source.output=1") # this is done by enable_output
 
         k.write("smub.source.func=smub.OUTPUT_DCVOLTS; smub.source.levelv=0")
         k.write(f"smub.source.limiti={self.limiti_b}; smub.measure.rangei={self.rangei_b}")
         k.write(f"smub.measure.nplc={self.nplc_b}; smub.measure.autorangei=0")
-        # k.write("smub.source.output=1")
 
         # "Once" mode: Takes a zero reference reading just once when the command is sent, 
         # and applies that same offset to all future measurements. (A great middle-ground for speed + stability).
@@ -112,6 +110,22 @@ class Keithley2636B:
         smu = f"smu{smu_char.lower()}"
         val = "1" if state else "0"
         self.keithley.write(f"{smu}.measure.autorangei = {val}")
+
+    def set_range(self, smu_char, range_value):
+        """
+        smu_char: channel a or b
+        range_value: range for measured current (if actual current > range_value, then it overflows, if actual value << range_value, then the measured value will be much greater then the actual value)
+        """
+        smu = f"smu{smu_char.lower()}"
+        self.keithley.write(f"{smu}.measure.rangei={range_value}")
+
+    def set_limit(self, smu_char, limit_value):
+        """
+        smu_char: channel a or b
+        limit_value: limit for measured current (it's a safe upper bound so that you won't damage the device)
+        """
+        smu = f"smu{smu_char.lower()}"
+        self.keithley.write(f"{smu}.measure.limiti={limit_value}")
 
     def set_nplc(self, smu_char, nplc_value):
         """

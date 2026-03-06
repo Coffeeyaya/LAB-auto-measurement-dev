@@ -3,10 +3,6 @@ from LabAuto.laser import init_AOTF, get_coord, change_power_function, move_and_
 # from LabAuto.laser_bg import init_AOTF, get_coord, change_power_function, background_click, background_double_click, background_paste, press_on_button, change_lambda_function
 from LabAuto.network import create_server, Connection
 
-import win32gui
-import win32con
-import win32api
-
 def run_laser_server(host="0.0.0.0", port=5001):
     grid = init_AOTF()
     # hwnd = win32gui.FindWindow(None, "AOTF Controller")

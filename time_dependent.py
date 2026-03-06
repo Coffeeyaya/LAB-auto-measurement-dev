@@ -3,217 +3,267 @@ import csv
 import threading
 import matplotlib.pyplot as plt
 
-# Import your existing hardware modules
-from keithley.keithley import Keithley2636B #
-from LabAuto.network import Connection #
+from keithley.keithley import Keithley2636B
+from LabAuto.network import Connection
 
-# =============================================================================
-# Helper Functions
-# =============================================================================
+class LaserController:
 
-def toggle_light_async(conn, channel):
-    """Sends the command and waits for the ACK in the background."""
-    try:
-        conn.send_json({"channel": channel, "on": 1}) #
-        conn.receive_json()
-    except Exception as e:
-        print(f"\nNetwork Error in background thread: {e}") #
+    def __init__(self, laser_ip, port=5001):
+        self.conn = Connection.connect(laser_ip, port)
+        self.lock = threading.Lock()  # prevent concurrent socket use
 
-def setup_live_plot():
-    """Initializes the matplotlib figure and returns the figure, axes, and lines."""
-    plt.ion() 
-    fig = plt.figure(figsize=(10, 7)) #
-    
-    ax1 = fig.add_subplot(211) #
-    ax2 = fig.add_subplot(212, sharex=ax1) #
-    ax1.set_ylabel("I_D (A)", color='blue') #
-    ax2.set_ylabel("I_G (A)", color='red') #
-    ax2.set_xlabel("Time (s)") #
-    
-    ax1_v = ax1.twinx() #
-    ax2_v = ax2.twinx() #
-    ax1_v.set_ylabel('V_D (V)', color='green') #
-    ax2_v.set_ylabel('V_G (V)', color='black') #
+    def _send(self, payload):
+        with self.lock:
+            self.conn.send_json(payload)
+            return self.conn.receive_json()
 
-    line_id, = ax1.plot([], [], 'b.-', label='I_D') #
-    line_ig, = ax2.plot([], [], 'r.-', label='I_G') #
-    line_vd, = ax1_v.plot([], [], 'g.-', alpha=0.3, label='V_D') #
-    line_vg, = ax2_v.plot([], [], 'k.-', alpha=0.3, label='V_G') #
+    def send_async(self, payload):
+        t = threading.Thread(target=self._send, args=(payload,), daemon=True)
+        t.start()
 
-    ax1.legend(loc='upper left')
-    ax2.legend(loc='upper left') 
-    ax1_v.legend(loc='upper right')
-    ax2_v.legend(loc='upper right') 
+    def set_wavelength(self, channel, wavelength, async_mode=False):
+        cmd = {"channel": int(channel), "wavelength": str(wavelength)}
+        if async_mode:
+            self.send_async(cmd)
+        else:
+            self._send(cmd)
 
-    axes = (ax1, ax2, ax1_v, ax2_v)
-    lines = (line_id, line_ig, line_vd, line_vg)
-    return fig, axes, lines
+    def set_power(self, channel, power, async_mode=False):
+        cmd = {"channel": int(channel), "power": str(power)}
+        if async_mode:
+            self.send_async(cmd)
+        else:
+            self._send(cmd)
 
-def update_plot(axes, lines, times, I_Ds, I_Gs, V_Ds, V_Gs):
-    """Pushes new data to the live plot and rescales the axes."""
-    ax1, ax2, ax1_v, ax2_v = axes
-    line_id, line_ig, line_vd, line_vg = lines
+    def toggle_light(self, channel, async_mode=False):
+        # Press ON/OFF button to toggle light
+        cmd = {"channel": int(channel), "on": 1}
+        if async_mode:
+            self.send_async(cmd)
+        else:
+            self._send(cmd)
 
-    line_id.set_data(times, I_Ds) 
-    line_ig.set_data(times, I_Gs) 
-    line_vd.set_data(times, V_Ds) 
-    line_vg.set_data(times, V_Gs) 
-    
-    for ax in axes: 
-        ax.relim() 
-        ax.autoscale_view() 
-    
-    plt.pause(0.001)  # Flush GUI events
+    def close(self):
+        self.conn.close()
 
-def initialize_hardware(resource_id, light_ip, Vd_target):
-    """Establishes connections and configures default states."""
-    print(f"Connecting to Light PC at {light_ip}...")
-    conn = Connection.connect(light_ip, 5001) #
-    
-    print("Connecting to Keithley...")
-    k = Keithley2636B(resource_id) #
-    k.connect() 
-    k.clean_instrument() 
-    k.config() 
-    
-    k.keithley.write("smua.measure.nplc = 1.0") #
-    k.keithley.write("smub.measure.nplc = 1.0") #
-    
-    k.set_Vd(Vd_target) #
-    k.enable_output('a', True) #
-    k.enable_output('b', True) #
+class TimeDepExperiment:
 
-    return k, conn
+    def __init__(self, resource_id, laser_ip, laser_channel, Vd_const=1.0):
 
-def shutdown_hardware(k, conn, current_light_state):
-    """Safely powers down relays and resets light state."""
-    print("\nShutting down hardware...")
-    try:
-        # Guarantee the light turns off if we abort mid-illumination
-        if current_light_state == 1 and conn is not None:
-            print("Executing final GUI click to turn Light OFF...")
-            conn.send_json({"channel": 6, "on": 1}) #
-            time.sleep(2) # Give it time to execute without needing a blocking receive
-    except Exception:
-        pass
-    finally:
-        if conn is not None:
-            conn.close() #
-        
-    if k is not None:
-        k.shutdown() #
-    print("Hardware safely disabled.")
+        self.resource_id = resource_id
+        self.laser_ip = laser_ip
+        self.laser_channel = laser_channel
+        self.Vd_const = Vd_const
 
-# =============================================================================
-# Main Measurement Loop
-# =============================================================================
+        # Instruments
+        self.k = None
+        self.laser = None
 
-def run_measurement(resource_id, light_ip, filename, channel, sequence, Vd_target=1.0, max_retries=3):
-    print("--- Starting Sequential Time-Dependent Measurement ---")
+        # Measurement state
+        self.current_light_state = 0
+        self.start_time = None
 
-    # Initialize visualization and data storage
-    fig, axes, lines = setup_live_plot()
-    times, I_Ds, I_Gs, V_Ds, V_Gs = [], [], [], [], [] 
-    
-    with open(filename, 'w', newline='') as f:
-        writer = csv.writer(f)
-        writer.writerow(["Time", "V_D", "V_G", "I_D", "I_G", "Light_State"]) #
+        # Plotting
+        self.fig = None
+        self.axes = None
+        self.lines = None
 
-    # --- THE RETRY LOOP ---
-    for attempt in range(max_retries):
-        print(f"\n=== Attempt {attempt + 1} of {max_retries} ===")
-        
-        k = None
-        conn = None
-        current_light_state = 0 #
+        # Data storage for plotting
+        self.times = []
+        self.I_Ds = []
+        self.I_Gs = []
+        self.V_Ds = []
+        self.V_Gs = []
+
+    def init_laser(self):
+        self.laser = LaserController(self.laser_ip)
+
+    def disconnect_light_PC(self):
+
+        print("Disconnecting light PC...")
 
         try:
-            k, conn = initialize_hardware(resource_id, light_ip, Vd_target)
-            start_time = time.time() #
+            if self.current_light_state == 1 and self.laser is not None:
+                # if light is on, press the on_button again to turn it off
+                print("Turning light OFF before exit")
+                self.laser.toggle_light(self.laser_channel, async_mode=False)
+                time.sleep(2)
 
-            with open(filename, 'a', newline='') as f:
-                writer = csv.writer(f)
-                
-                # --- SEQUENTIAL STATE MACHINE ---
-                for step_idx, (target_vg, target_light, duration) in enumerate(sequence):
-                    print(f"\n--- Sequence Step {step_idx + 1}/{len(sequence)} ---")
-                    print(f"Applying: Vg = {target_vg}V | Light = {'ON' if target_light else 'OFF'} | Duration = {duration}s") #
-                    
-                    k.set_Vg(target_vg) #
-                    
-                    # Apply Light Toggle
-                    if target_light != current_light_state:
-                        print(f"Executing GUI click to toggle light {'ON' if target_light else 'OFF'}...") #
-                        threading.Thread(target=toggle_light_async, args=(conn,channel), daemon=True).start() #
-                        current_light_state = target_light #
+        except Exception:
+            pass
 
-                    # Measure for duration
-                    step_end_time = time.time() + duration
-                    while time.time() < step_end_time:
-                        t_elapsed = time.time() - start_time #
-                        I_D, I_G = k.measure() #
-                        
-                        if I_D is not None:
-                            writer.writerow([t_elapsed, Vd_target, target_vg, I_D, I_G, current_light_state]) 
-                            
-                            times.append(t_elapsed) 
-                            V_Ds.append(Vd_target) 
-                            V_Gs.append(target_vg) 
-                            I_Ds.append(I_D) 
-                            I_Gs.append(I_G) 
-                            
-                            update_plot(axes, lines, times, I_Ds, I_Gs, V_Ds, V_Gs)
-                            print(f"Time: {t_elapsed:.1f}s | Vg: {target_vg}V | Id: {I_D:.2e}A", end='\r') #
-
-            # If loop finishes without exceptions, break out of retries
-            print("\nSequence completed successfully!")
-            break 
-
-        except Exception as e:
-            print(f"\nERROR: Sequence interrupted! {e}") #
-            if attempt < max_retries - 1:
-                print("Preparing to restart the sequence...")
-                time.sleep(3) 
-            else:
-                print("Max retries reached. Measurement failed.")
-            
         finally:
-            shutdown_hardware(k, conn, current_light_state)
+            if self.laser:
+                self.laser.close()
 
-    print("Done.")
-    plt.ioff() #
-    plt.show() #
+    def init_keithley(self):
 
-# =============================================================================
-# Script Execution
-# =============================================================================
+        print("Connecting to Keithley...")
+        self.k = Keithley2636B(self.resource_id)
+
+        self.k.connect()
+        self.k.clean_instrument()
+        self.k.config()
+
+        self.k.set_nplc('a', "1.0")
+        self.k.set_nplc('b', "1.0")
+
+        self.k.enable_output('a', True)
+        self.k.enable_output('b', True)
+
+        self.k.set_Vd(self.Vd_const)
+
+    def shutdown_keithley(self):
+
+        if self.k:
+            self.k.shutdown()
+
+    def setup_plot(self):
+
+        plt.ion()
+
+        self.fig = plt.figure(figsize=(10, 7))
+
+        '''
+        ax1 = Id
+        ax2 = Ig
+        ax1_v = Vd
+        ax2_v = Vg
+        '''
+        ax1 = self.fig.add_subplot(211)
+        ax2 = self.fig.add_subplot(212, sharex=ax1)
+
+        ax1_v = ax1.twinx()
+        ax2_v = ax2.twinx()
+
+        ax1.set_ylabel("Id (A)")
+        ax2.set_ylabel("Ig (A)")
+        ax2.set_xlabel("Time (s)")
+
+        ax1_v.set_ylabel("Vd (V)")
+        ax2_v.set_ylabel("Vg (V)")
+
+        line_id, = ax1.plot([], [], 'b.-')
+        line_ig, = ax2.plot([], [], 'r.-')
+        line_vd, = ax1_v.plot([], [], 'g.-', alpha=0.3)
+        line_vg, = ax2_v.plot([], [], 'k.-', alpha=0.3)
+
+        self.axes = (ax1, ax2, ax1_v, ax2_v)
+        self.lines = (line_id, line_ig, line_vd, line_vg)
+
+    def update_plot(self):
+
+        line_id, line_ig, line_vd, line_vg = self.lines
+
+        line_id.set_data(self.times, self.I_Ds)
+        line_ig.set_data(self.times, self.I_Gs)
+        line_vd.set_data(self.times, self.V_Ds)
+        line_vg.set_data(self.times, self.V_Gs)
+
+        for ax in self.axes:
+            ax.relim()
+            ax.autoscale_view()
+
+        plt.pause(0.001) # plt.pause(0.001) = adds 1 ms delay per loop.
+
+    def switch_source(self, target_vg, laser_cmd1=None, laser_cmd2=None):
+        """Set Vg, then optionally send two-step laser commands"""
+        self.k.set_Vg(target_vg)
+
+        if laser_cmd1: # set laser channel, wavelength, power
+            channel = laser_cmd1.get("channel", self.laser_channel)
+            power = laser_cmd1.get("power", None)
+            wavelength = laser_cmd1.get("wavelength", None)
+            if power:
+                self.laser.set_power(channel, power, async_mode=True)
+            if wavelength:
+                self.laser.set_wavelength(channel, wavelength, async_mode=True)
+
+        if laser_cmd2: # toggle light on / off
+            channel = laser_cmd2.get("channel", self.laser_channel)
+            self.laser.toggle_light(channel, async_mode=True)
+            self.current_light_state = 1 - self.current_light_state
+
+    def measure_step(self, duration, target_vg, writer):
+        """Measure for the given duration and write each point to CSV"""
+        step_end = time.time() + duration
+        while time.time() < step_end:
+            t = time.time() - self.start_time
+            I_D, I_G = self.k.measure()
+            if I_D is None:
+                continue
+
+            # Store for plotting
+            self.times.append(t)
+            self.I_Ds.append(I_D)
+            self.I_Gs.append(I_G)
+            self.V_Ds.append(self.Vd_const)
+            self.V_Gs.append(target_vg)
+
+            # Write to CSV
+            writer.writerow([t, self.Vd_const, target_vg, I_D, I_G, self.current_light_state])
+
+            # Update live plot
+            self.update_plot()
+
+    def run(self, sequence, filename, max_retries=3):
+        self.setup_plot()
+
+        for attempt in range(max_retries):
+            print(f"\n=== Attempt {attempt+1} / {max_retries} ===")
+            try:
+                self.init_keithley()
+                self.init_laser()
+                self.start_time = time.time()
+
+                with open(filename, 'w', newline='') as f:
+                    writer = csv.writer(f)
+                    writer.writerow(["Time", "V_D", "V_G", "I_D", "I_G", "Light_State"])
+
+                    for step_idx, step in enumerate(sequence):
+                        target_vg = step["Vg"]
+                        duration = step["duration"]
+                        laser_cmd1 = step.get("laser_cmd1", None)
+                        laser_cmd2 = step.get("laser_cmd2", None)
+
+                        print(f"Step {step_idx+1}: Vg={target_vg}, duration={duration}, laser_cmd1={laser_cmd1}, laser_cmd2={laser_cmd2}")
+                        self.switch_source(target_vg, laser_cmd1, laser_cmd2)
+                        self.measure_step(duration, target_vg, writer)
+
+                print("Sequence completed successfully!")
+                break
+
+            except Exception as e:
+                print(f"ERROR: {e}")
+                if attempt < max_retries-1:
+                    print("Retrying...")
+                    time.sleep(3)
+                else:
+                    print("Max retries reached. Measurement failed.")
+
+            finally:
+                self.disconnect_light_PC()
+                self.shutdown_keithley()
+
+        plt.ioff()
+        plt.show()
+
 if __name__ == "__main__":
-    RESOURCE_ID = "USB0::0x05E6::0x2636::4407529::INSTR" #
-    LIGHT_IP = "192.168.50.17" #
-    device_number = ''
-    run = ''
-    FILENAME = f"time_{device_number}_{run}.csv" #
 
-    
-    Vg_on_time = 3
-    Vg_off_time = 3
-    Light_on_time = 5
-    Light_off_time = 3
+    RESOURCE_ID = "USB0::0x05E6::0x2636::4407529::INSTR"
+    LASER_IP = "192.168.50.17"
+    LASER_CHANNEL = 6
 
-    Vg_on = 0 #
-    Vg_off = -2 #
-    channel = 6
-    # power = 10
-    
-    my_sequence = []
-    for i in range(5):
-        my_sequence.extend(
-            [
-                (Vg_off,  0, Vg_off_time),#
-                (Vg_on,  0, Vg_on_time), #
-                (Vg_on,  1, Light_on_time), # light on
-                (Vg_on,  0, Light_off_time), # light off
-            ])
-    my_sequence.append((Vg_off, 0, Vg_off_time))
-    
-    run_measurement(RESOURCE_ID, LIGHT_IP, FILENAME, channel=channel, sequence=my_sequence, Vd_target=1)
+    exp = TimeDepExperiment(RESOURCE_ID, LASER_IP, LASER_CHANNEL, Vd_const=1.0)
+
+    sequence = [
+        {"Vg": -1.5, "duration": 3},
+        {"Vg": 0.5, "duration": 3, 
+         "laser_cmd1": {"channel": 6, "power": 50, "wavelength": 532}},  # set power/wavelength
+        {"Vg": 0.5, "duration": 5, 
+         "laser_cmd2": {"channel": 6}},  # press on_button
+        {"Vg": 0.5, "duration": 3, 
+         "laser_cmd2": {"channel": 6}},  # press on_button again if needed
+    ]
+
+    exp.run(sequence, "time_dep_laser.csv")
