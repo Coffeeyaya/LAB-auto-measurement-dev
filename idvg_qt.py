@@ -244,7 +244,7 @@ if __name__ == "__main__":
     idvg_config_file = 'idvg_config.json'
     with open(idvg_config_file, 'r') as f:
         parameters = json.load(f)
-    device_number = parameters['device_nubmer']
+    device_number = parameters['device_number']
     run_number = parameters['run_number']
     FILENAME = f"idvg_{device_number}_{run_number}.csv"
 
