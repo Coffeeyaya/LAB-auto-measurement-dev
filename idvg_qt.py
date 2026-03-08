@@ -197,11 +197,11 @@ class AutoIdVgWindow(QWidget):
         self.ax1.set_yscale('log')
         self.ax1.grid(True, which="both", ls="--", alpha=0.5)
 
-    def add_sweep_line(self, step_idx, label):
+    def add_sweep_line(self, label):
         """Creates a new line on the plot for the current sequence step."""
         line, = self.ax1.plot([], [], '.-', markersize=8, label=label)
-        self.lines[step_idx] = line
-        self.data_memory[step_idx] = {"vgs": [], "ids": []}
+        # self.lines[step_idx] = line
+        # self.data_memory[step_idx] = {"vgs": [], "ids": []}
         self.ax1.legend()
         self.canvas.draw()
 
