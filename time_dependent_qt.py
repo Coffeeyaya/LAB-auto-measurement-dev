@@ -210,7 +210,7 @@ if __name__ == "__main__":
         parameters = json.load(f)
     
     FILENAME = f"time_{parameters['device_number']}_{parameters['run_number']}.csv"
-    FILENAME_CONFIG = f"time_{parameters['device_number']}_{parameters['run_number']}_config.csv"
+    FILENAME_CONFIG = f"time_{parameters['device_number']}_{parameters['run_number']}_config.json"
 
     with open(FILENAME_CONFIG, "w") as f:
         json.dump(parameters, f, indent=4)

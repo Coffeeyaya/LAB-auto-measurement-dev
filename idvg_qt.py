@@ -276,12 +276,13 @@ if __name__ == "__main__":
     device_number = parameters['device_number']
     run_number = parameters['run_number']
     FILENAME = f"idvg_{device_number}_{run_number}.csv"
-
+    FILENAME_CONFIG = f"idvg_{device_number}_{run_number}_config.json"
+    with open(FILENAME_CONFIG, 'w') as f:
+        json.dump(parameters, f, indent=4)
     app = QApplication(sys.argv)
     
     # Worker is much cleaner now!
     worker = AutoIdVgWorker(RESOURCE_ID, LIGHT_IP, FILENAME, idvg_config_file)
-    
     window = AutoIdVgWindow(worker)
     window.show()
     

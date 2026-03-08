@@ -1,7 +1,7 @@
 {   
     "description": "",
     "device_number": "1-1",
-    "run_number": "0",
+    "run_number": "2",
     "label": "",
     "current_limit_a": 1e-3,
     "current_limit_b": 1e-3,
@@ -15,6 +15,5 @@
     "laser_stable_time": 3,
     "deplete_voltage": -3.0,
     "deplete_time": 5,
-    "laser_cmd": {"channel": 6, "wavelength": 660, "power": 10} 
-
+    "laser_cmd": null
 }
