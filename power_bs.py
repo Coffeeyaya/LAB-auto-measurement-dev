@@ -97,9 +97,7 @@ def single_power_multi_wavelength(conn, channel_arr, wavelength_arr, target_powe
         print('power meter closed')
         pm.close_meter()
     
-def multi_power_single_wavelength(conn, target_channel, target_wavelength):
-    power_arr = np.array([20, 40, 100, 300])
-
+def multi_power_single_wavelength(conn, target_channel, power_arr, target_wavelength):
     n_power = len(power_arr)
     pp_table = np.zeros(n_power)
     power_table = np.zeros(n_power)
@@ -138,18 +136,18 @@ if __name__ == "__main__":
     wavelength_arr = np.array([450, 532, 660])
     channel_arr = np.array([0, 3, 6]).astype(int).astype(str) ### 
 
+    power_arr = np.array([10, 20, 30]).astype(int).astype(str)
+
     mode = parameters["mode"]
     if mode == "single_power_multi_wavelength":
         target_power = int(parameters["target_power"]) *  1e-9 # the unit in power_config.json is nW
         measured_table = single_power_multi_wavelength(conn, channel_arr, wavelength_arr, target_power)
-        if measured_table:
-            measured_table.to_csv("single_power_multi_wavelength.csv", index=False)
+        measured_table.to_csv("single_power_multi_wavelength.csv", index=False)
 
     if mode == "multi_power_single_wavelength":
         target_wavelength = parameters["target_wavelength"]
         target_channel = parameters["target_channel"]
-        measured_table = multi_power_single_wavelength(conn, target_channel, target_wavelength)
-        if measured_table:
-            measured_table.to_csv("multi_power_single_wavelength.csv", index=False)
+        measured_table = multi_power_single_wavelength(conn, power_arr, target_channel, target_wavelength)
+        measured_table.to_csv("multi_power_single_wavelength.csv", index=False)
 
     
