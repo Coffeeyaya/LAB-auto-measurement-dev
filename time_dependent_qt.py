@@ -208,8 +208,8 @@ if __name__ == "__main__":
     with open("time_dependent_config.json", "r") as f:
         parameters = json.load(f)
 
-    FILENAME = f"time_{parameters["device_number"]}_{parameters["run_number"]}.csv"
-    FILENAME_CONFIG = f"time_{parameters["device_number"]}_{parameters["run_number"]}_config.csv"
+    FILENAME = f"time_{parameters['device_number']}_{parameters['run_number']}.csv"
+    FILENAME_CONFIG = f"time_{parameters['device_number']}_{parameters['run_number']}_config.csv"
 
     with open(FILENAME_CONFIG, "w") as f:
         json.dump(parameters, f, indent=4)
@@ -236,7 +236,7 @@ if __name__ == "__main__":
     #     return basic_block
     
     # sequence = []
-    
+
     wavelength_arr = np.array([450, 532, 660])
     channel_arr = np.array([0, 3, 6])
     pp_arr = np.array([30, 20, 10])
