@@ -63,7 +63,7 @@ class AutoIdVgWorker(QThread):
             self.status_update.emit(self.parameters["label"])
             self.new_sweep.emit(self.parameters["label"])
 
-            wait_time = self.parameters['wait_time']
+            wait_time = int(self.parameters['wait_time'])
             if wait_time > 0:
                 for i in range(wait_time, 0, -1):
                     if not self.running: break
@@ -80,7 +80,7 @@ class AutoIdVgWorker(QThread):
                 self.status_update.emit("Turning Light ON...")
                 laser.send_cmd({"channel": current_channel, "on": 1}, wait_for_reply=True)
                 
-                laser_stable_time = self.parameters['laser_stable_time']
+                laser_stable_time = int(self.parameters['laser_stable_time'])
                 for i in range(laser_stable_time, 0, -1):
                     if not self.running: break
                     self.status_update.emit(f"Light is ON! Stabilizing... {i}s")
@@ -96,7 +96,7 @@ class AutoIdVgWorker(QThread):
 
             # --- DEPLETION ---
             dep_v = self.parameters['deplete_voltage']
-            dep_t = self.parameters['deplete_time']
+            dep_t = int(self.parameters['deplete_time'])
             
             if dep_v is not None and self.running:
                 self.status_update.emit(f"Depleting at {dep_v}V for {dep_t}s...")
