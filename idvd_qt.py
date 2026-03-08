@@ -196,10 +196,16 @@ class AutoIdVdWindow(QWidget):
         self.ax1.grid(True, which="both", ls="--", alpha=0.5)
 
     def add_sweep_line(self, step_idx, label):
-        line, = self.ax1.plot([], [], '.-', markersize=8, label=label)
-        self.lines[step_idx] = line
-        self.data_memory[step_idx] = {"vds": [], "ids": []}
-        self.ax1.legend()
+        """Creates new lines on the plot for Id."""
+        # Create the line and assign the label straight from the JSON
+        self.lines_id[step_idx], = self.ax1.plot([], [], '.-', markersize=8, label=label)
+        
+        # Prep the memory dictionaries
+        self.data_memory[step_idx] = {"vgs": [], "ids": [], "igs": []}
+        
+        # Let Matplotlib handle the legend automatically!
+        self.ax1.legend(loc='best')
+        
         self.canvas.draw()
 
     def update_plot(self, step_idx, Vd, I_D, I_G):
