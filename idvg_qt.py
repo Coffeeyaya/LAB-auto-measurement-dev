@@ -70,8 +70,8 @@ class AutoIdVgWorker(QThread):
                     time.sleep(1)
 
             # --- 1. Prepare Light (if specified) ---
-            if self.paramenters["laser_cmd"] and laser:
-                cmd = self.paramenters["laser_cmd"]
+            if self.parameters["laser_cmd"] and laser:
+                cmd = self.parameters["laser_cmd"]
                 current_channel = cmd["channel"]
                 self.status_update.emit(f"Configuring Laser")
                 laser.send_cmd(cmd, wait_for_reply=True)
