@@ -69,9 +69,7 @@ def find_pp_for_target_power(conn,
 
     return best_pp, measured_power
 
-def single_power_multi_wavelength(conn, target_power):
-    wavelength_arr = np.array([450, 488, 514, 532, 600, 633, 660, 690])
-    channel_arr = np.linspace(0, 7, 8).astype(int).astype(str) ### 
+def single_power_multi_wavelength(conn, channel_arr, wavelength_arr, target_power):
     n_wl = len(wavelength_arr)
     pp_table = np.zeros(n_wl)
     power_table = np.zeros(n_wl)
@@ -134,11 +132,15 @@ if __name__ == "__main__":
 
     with open("power_config.json", "r") as f:
         parameters = json.load(f)
+    # wavelength_arr = np.array([450, 488, 514, 532, 600, 633, 660, 690])
+    # channel_arr = np.linspace(0, 7, 8).astype(int).astype(str) ### 
+    wavelength_arr = np.array([450, 532, 660])
+    channel_arr = np.array([0, 3, 6]).astype(int).astype(str) ### 
 
     mode = parameters["mode"]
     if mode == "single_power_multi_wavelength":
         target_power = int(parameters["target_power"]) *  1e-9 # the unit in power_config.json is nW
-        measured_table = single_power_multi_wavelength(conn, target_power)
+        measured_table = single_power_multi_wavelength(conn, channel_arr, wavelength_arr, target_power)
         if measured_table:
             measured_table.to_csv("single_power_multi_wavelength.csv", index=False)
 
