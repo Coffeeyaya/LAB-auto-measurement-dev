@@ -27,6 +27,7 @@ class AutoIdVgWorker(QThread):
         self.resource_id = resource_id
         self.laser_ip = laser_ip
         self.filename = filename
+        self.f = None
         self.running = True
         with open(idvg_config_file, "r") as f:
             self.parameters = json.load(f)
@@ -53,9 +54,9 @@ class AutoIdVgWorker(QThread):
                 self.status_update.emit(f"Connecting to Light PC ({self.laser_ip})...")
                 laser = LaserController(self.laser_ip)
 
-            with open(self.filename, 'w', newline='') as f:
-                writer = csv.writer(f)
-                writer.writerow(["V_D", "V_G", "I_D", "I_G"])
+            self.f = open(self.filename, 'w', newline='')
+            writer = csv.writer(self.f)
+            writer.writerow(["V_D", "V_G", "I_D", "I_G"])
 
             vg_points = np.linspace(self.parameters["vg_start"], self.parameters["vg_stop"], self.parameters["num_points"])
             
@@ -139,6 +140,8 @@ class AutoIdVgWorker(QThread):
 
         finally:
             self.status_update.emit("Sequence complete. Shutting down hardware...")
+            if hasattr(self, 'f') and not self.f.closed:
+                self.f.close()
             if laser:
                 if current_channel is not None:
                     # Failsafe: Ensure it's off
