@@ -15,5 +15,5 @@
     "laser_stable_time": 3,
     "deplete_voltage": 0,
     "deplete_time": 0,
-    "laser_cmd": {"channel": 6, "wavelength": 660, "power": 10} 
+    "laser_cmd": {"channel": 6, "wavelength": 660, "power": 100} 
 }

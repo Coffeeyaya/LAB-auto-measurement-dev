@@ -97,7 +97,6 @@ def single_power_multi_wavelength(conn, target_power):
     finally:
         print('power meter closed')
         pm.close_meter()
-        return None
     
 def multi_power_single_wavelength(conn, target_channel, target_wavelength):
     power_arr = np.array([20, 40, 100, 300])
@@ -128,7 +127,6 @@ def multi_power_single_wavelength(conn, target_channel, target_wavelength):
     finally:
         print('power meter closed')
         pm.close_meter()
-        return None
 
 if __name__ == "__main__":
     LIGHT_IP = "192.168.50.17" #

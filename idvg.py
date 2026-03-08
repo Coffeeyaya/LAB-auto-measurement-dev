@@ -3,6 +3,7 @@ import time
 import csv
 import os
 import json
+import pandas as pd
 import numpy as np
 from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QLabel
 from PyQt5.QtCore import QThread, pyqtSignal
@@ -11,6 +12,15 @@ from matplotlib.figure import Figure
 
 from keithley.keithley import Keithley2636B
 from laser_remote import LaserController
+
+def get_pp_exact(df, wavelength, power_nw):
+    row = df[(df["Wavelength (nm)"] == wavelength) &
+             (df["Power (nW)"] == power_nw)]
+
+    if len(row) == 0:
+        return None
+
+    return float(row["PP (%)"].values[0])
 
 # -------------------------------
 # Worker Thread: Automated Batch Sequence
@@ -103,8 +113,11 @@ class AutoIdVgWorker(QThread):
                             time.sleep(1)
 
                 # --- Prepare Light (if specified) ---
-                if params.get("laser_cmd") and laser:
-                    cmd = params["laser_cmd"]
+                if params.get("laser_settings") and laser:
+                    laser_settings = params["laser_settings"]
+                    table = pd.read_csv("single_power_multi_wavelength.csv")
+                    pp = get_pp_exact(table, 532, 100)
+                    cmd = {"channel": laser_settings['channel'], "wavelength": laser_settings['wavelength'], "power": pp}
                     current_channel = cmd["channel"]
                     self.status_update.emit("Configuring Laser")
                     laser.send_cmd(cmd, wait_for_reply=True)
