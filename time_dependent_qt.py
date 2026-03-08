@@ -11,6 +11,15 @@ import numpy as np
 from keithley.keithley import Keithley2636B
 from LabAuto.network import Connection
 
+def get_pp_exact(df, wavelength, power_nw):
+    row = df[(df["Wavelength (nm)"] == wavelength) &
+             (df["Power (nW)"] == power_nw)]
+
+    if len(row) == 0:
+        return None
+
+    return float(row["PP (%)"].values[0])
+
 class LaserController:
     """Simplified, lock-free controller for use in background threads."""
     def __init__(self, laser_ip, port=5001):
@@ -241,10 +250,12 @@ if __name__ == "__main__":
     wavelength_arr = np.array([450, 532, 660])
     channel_arr = np.array([0, 3, 6]).astype(str) ##
     pp_arr = np.array([30, 20, 10]).astype(str) ##
-    def single_power_multi_wavelength_basic_block(channel_idx, power, vg_on, vg_off, duration_1, duration_2, duration_3, duration_4):
+    table = pd.read_csv("single_power_multi_wavelength.csv")
+    def single_power_multi_wavelength_basic_block(channel_idx, wavelength, power, vg_on, vg_off, duration_1, duration_2, duration_3, duration_4):
+        pp = get_pp_exact(table,  wavelength, power)
         basic_block = [
             {"Vg": vg_off, "duration": duration_1},
-            {"Vg": vg_on, "duration": duration_2, "laser_cmd1": {"channel": channel_idx, "power": power}},
+            {"Vg": vg_on, "duration": duration_2, "laser_cmd1": {"channel": channel_idx, "power": pp}},
             {"Vg": vg_on, "duration": duration_3, "laser_cmd2": {"channel": channel_idx, "on": 1}}, 
             {"Vg": vg_on, "duration": duration_4, "laser_cmd2": {"channel": channel_idx, "on": 1}}, 
         ]
