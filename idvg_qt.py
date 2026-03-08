@@ -2,6 +2,7 @@ import sys
 import time
 import csv
 import os
+import json
 import numpy as np
 from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QLabel
 from PyQt5.QtCore import QThread, pyqtSignal
@@ -16,18 +17,20 @@ from laser_remote import LaserController
 # -------------------------------
 class AutoIdVgWorker(QThread):
     # Signals to safely talk to the GUI
-    new_sweep = pyqtSignal(int, str)  # step_idx, label (tells GUI to make a new line)
+    new_sweep = pyqtSignal(str)  # label (tells GUI to make a new line)
     new_data = pyqtSignal(int, float, float, float)  # step_idx, Vg, I_D, I_G
     status_update = pyqtSignal(str)
     sequence_finished = pyqtSignal()
 
-    def __init__(self, resource_id, laser_ip, filename, sequence):
+    def __init__(self, resource_id, laser_ip, filename, idvg_config_file):
         super().__init__()
         self.resource_id = resource_id
         self.laser_ip = laser_ip
         self.filename = filename
-        self.sequence = sequence
         self.running = True
+        with open(idvg_config_file, "r") as f:
+            self.parameters = json.load(f)
+        self.Vd_const = self.parameters["vd_const"]
 
     def run(self):
         k = None
@@ -40,8 +43,11 @@ class AutoIdVgWorker(QThread):
             k.connect()
             k.clean_instrument()
             k.config()
-            k.keithley.write("smua.measure.nplc = 8.0")
-            k.keithley.write("smub.measure.nplc = 8.0")
+            # overwrite settings in k.config()
+            k.set_nplc('a', self.parameters["nplc_a"])
+            k.set_nplc('b', self.parameters["nplc_b"])
+            k.set_limit('a', self.parameters["current_limit_a"])
+            k.set_limit('b', self.parameters["current_limit_b"])
 
             if self.laser_ip:
                 self.status_update.emit(f"Connecting to Light PC ({self.laser_ip})...")
@@ -49,93 +55,83 @@ class AutoIdVgWorker(QThread):
 
             with open(self.filename, 'w', newline='') as f:
                 writer = csv.writer(f)
-                writer.writerow(["Sweep_Label", "V_D", "V_G", "I_D", "I_G"])
+                writer.writerow(["V_D", "V_G", "I_D", "I_G"])
 
-                # Iterate through the automated sequence
-                for step_idx, step in enumerate(self.sequence):
+            vg_points = np.linspace(self.parameters["vg_start"], self.parameters["vg_stop"], self.parameters["num_points"])
+            
+            self.status_update.emit(self.parameters["label"])
+            self.new_sweep.emit(self.parameters["label"])
+
+            wait_time = self.parameters['wait_time']
+            if wait_time > 0:
+                for i in range(wait_time, 0, -1):
                     if not self.running: break
+                    self.status_update.emit(f"Dark Stabilization... {i}s")
+                    time.sleep(1)
 
-                    label = step["label"]
-                    V_D = step["Vd"]
+            # --- 1. Prepare Light (if specified) ---
+            if self.paramenters["laser_cmd"] and laser:
+                cmd = self.paramenters["laser_cmd"]
+                current_channel = cmd["channel"]
+                self.status_update.emit(f"Configuring Laser")
+                laser.send_cmd(cmd, wait_for_reply=True)
+                
+                self.status_update.emit("Turning Light ON...")
+                laser.send_cmd({"channel": current_channel, "on": 1}, wait_for_reply=True)
+                
+                laser_stable_time = self.parameters['laser_stable_time']
+                for i in range(laser_stable_time, 0, -1):
+                    if not self.running: break
+                    self.status_update.emit(f"Light is ON! Stabilizing... {i}s")
+                    time.sleep(1)
+            
+            # --- 2. Execute Sweep ---
+            k.set_Vd(self.Vd_const)
 
-                    vg_points = np.linspace(step["start"], step["stop"], step["points"])
+            k.enable_output('a', True)
+            k.enable_output('b', True)
+            k.set_autorange('a', 1)
+            k.set_autorange('b', 1)
+
+            # --- DEPLETION ---
+            dep_v = self.parameters['deplete_voltage']
+            dep_t = self.parameters['deplete_time']
+            
+            if dep_v is not None and self.running:
+                self.status_update.emit(f"Depleting at {dep_v}V for {dep_t}s...")
+                k.set_Vg(dep_v)
+                
+                iterations = int(dep_t / 0.1)
+                for _ in range(iterations): 
+                    if not self.running: break
+                    time.sleep(0.1)
+
+            # Move to the actual start voltage of the sweep
+            k.set_Vg(self.parameters["vg_start"])
+
+            time.sleep(1) # Initial RC settling
+
+            self.status_update.emit(f"Sweeping ...")
+            for vg in vg_points:
+                if not self.running: break
                     
-                    self.status_update.emit(f"Starting Step {step_idx+1}: {label}")
-                    self.new_sweep.emit(step_idx, label) # Tell GUI to prep a new line
+                k.set_Vg(vg)
+                time.sleep(0.1) # Settle delay
+                I_D, I_G = k.measure()
+                
+                if I_D is not None:
+                    writer.writerow([self.Vd_const, vg, I_D, I_G])
+                    self.new_data.emit(vg, I_D, I_G)
 
-                    # --- 1. Prepare Light (if specified) ---
-                    if "laser_cmd" in step and laser:
-                        cmd = step["laser_cmd"]
-                        current_channel = cmd["channel"]
-                        
-                        self.status_update.emit(f"Configuring Laser (Ch:{cmd['channel']}, Wl:{cmd['wavelength']}, Pwr:{cmd['power']})...")
-                        laser.send_cmd(cmd, wait_for_reply=True)
-                        
-                        self.status_update.emit("Turning Light ON...")
-                        laser.send_cmd({"channel": current_channel, "on": 1}, wait_for_reply=True)
-                        
-                        wait_time = step.get("wait_time", 3)
-                        for i in range(wait_time, 0, -1):
-                            if not self.running: break
-                            self.status_update.emit(f"Light is ON! Stabilizing... {i}s")
-                            time.sleep(1)
-                    else:
-                        wait_time = step.get("wait_time", 0)
-                        if wait_time > 0:
-                            for i in range(wait_time, 0, -1):
-                                if not self.running: break
-                                self.status_update.emit(f"Dark Stabilization... {i}s")
-                                time.sleep(1)
-
-                    # --- 2. Execute Sweep ---
-                    k.set_Vd(V_D)
-                    # k.set_Vg(step["start"])
-
-                    k.enable_output('a', True)
-                    k.enable_output('b', True)
-                    k.set_autorange('a', 1)
-                    k.set_autorange('b', 1)
-
-                    # --- DEPLETION ---
-                    # Safely grab the depletion settings for THIS specific step
-                    dep_v = step.get("deplete_voltage", None)
-                    dep_t = step.get("deplete_time", 5.0) # Defaults to 5 seconds if not specified
+            # --- 3. Clean up light after step ---
+            if self.parameters['laser_cmd'] and laser:
+                self.status_update.emit(f"Sweep done. Turning OFF Laser Ch {current_channel}...")
+                laser.send_cmd({"channel": current_channel, "on": 1}, wait_for_reply=True)
+                current_channel = None
+                time.sleep(1)
                     
-                    if dep_v is not None and self.running:
-                        self.status_update.emit(f"Depleting at {dep_v}V for {dep_t}s...")
-                        k.set_Vg(dep_v)
-                        
-                        iterations = int(dep_t / 0.1)
-                        for _ in range(iterations): 
-                            if not self.running: break
-                            time.sleep(0.1)
-
-                    # Move to the actual start voltage of the sweep
-                    k.set_Vg(step["start"])
-
-                    time.sleep(1) # Initial RC settling
-
-                    self.status_update.emit(f"Sweeping {label}...")
-                    for vg in vg_points:
-                        if not self.running: break
-                            
-                        k.set_Vg(vg)
-                        time.sleep(0.1) # Settle delay
-                        I_D, I_G = k.measure()
-                        
-                        if I_D is not None:
-                            writer.writerow([label, V_D, vg, I_D, I_G])
-                            self.new_data.emit(step_idx, vg, I_D, I_G)
-
-                    # --- 3. Clean up light after step ---
-                    if "laser_cmd" in step and laser:
-                        self.status_update.emit(f"Sweep done. Turning OFF Laser Ch {current_channel}...")
-                        laser.send_cmd({"channel": current_channel, "on": 1}, wait_for_reply=True)
-                        current_channel = None
-                        time.sleep(1)
-                        
-                    k.enable_output('a', False)
-                    k.enable_output('b', False)
+            k.enable_output('a', False)
+            k.enable_output('b', False)
 
         except Exception as e:
             print(f"Hardware Error: {e}")
@@ -245,43 +241,17 @@ class AutoIdVgWindow(QWidget):
 if __name__ == "__main__":
     RESOURCE_ID = "USB0::0x05E6::0x2636::4407529::INSTR"
     LIGHT_IP = "192.168.50.17" 
-    FILENAME = "idvg_auto_sequence.csv"
-    num_points = 5
-    # --- DEFINE YOUR AUTOPILOT SEQUENCE HERE ---
-    sequence = [
-        {
-            "label": "Dark Sweep (With Depletion)",
-            "Vd": 1.0, "start": -3.0, "stop": 3.0, "points": num_points,
-            "wait_time": 0,
-            
-            # --- Per-Step Depletion Config ---
-            "deplete_voltage": -3.0, 
-            "deplete_time": 5.0      
-        },
-        {
-            "label": "Light Sweep (No Depletion)",
-            "laser_cmd": {"channel": 6, "wavelength": 660, "power": 10},
-            "Vd": 1.0, "start": -3.0, "stop": 3.0, "points": num_points,
-            "wait_time": 5
-            
-            # Omitted deplete_voltage here, so it will skip the phase!
-        },
-        {
-            "label": "Light Sweep (Strong Depletion)",
-            "laser_cmd": {"channel": 6, "wavelength": 660, "power": 50},
-            "Vd": 1.0, "start": -3.0, "stop": 3.0, "points": num_points,
-            "wait_time": 5,
-
-            # Custom depletion settings for this step only
-            "deplete_voltage": -5.0, 
-            "deplete_time": 10.0      
-        }
-    ]
+    idvg_config_file = 'idvg_config.json'
+    with open(idvg_config_file, 'r') as f:
+        parameters = json.load(f)
+    device_number = parameters['device_nubmer']
+    run_number = parameters['run_number']
+    FILENAME = f"idvg_{device_number}_{run_number}.csv"
 
     app = QApplication(sys.argv)
     
     # Worker is much cleaner now!
-    worker = AutoIdVgWorker(RESOURCE_ID, LIGHT_IP, FILENAME, sequence)
+    worker = AutoIdVgWorker(RESOURCE_ID, LIGHT_IP, FILENAME, idvg_config_file)
     
     window = AutoIdVgWindow(worker)
     window.show()
