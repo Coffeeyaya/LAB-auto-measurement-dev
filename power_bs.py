@@ -5,6 +5,8 @@ import numpy as np
 import pandas as pd
 import time
 import json
+from pathlib import Path
+
 
 def find_pp_for_target_power(conn,
                              pm,
@@ -142,12 +144,12 @@ if __name__ == "__main__":
     if mode == "single_power_multi_wavelength":
         target_power = int(parameters["target_power"]) *  1e-9 # the unit in power_config.json is nW
         measured_table = single_power_multi_wavelength(conn, channel_arr, wavelength_arr, target_power)
-        measured_table.to_csv("single_power_multi_wavelength.csv", index=False)
+        measured_table.to_csv(Path("data") / "single_power_multi_wavelength.csv", index=False)
 
     if mode == "multi_power_single_wavelength":
         target_wavelength = parameters["target_wavelength"]
         target_channel = parameters["target_channel"]
         measured_table = multi_power_single_wavelength(conn, power_arr, target_channel, target_wavelength)
-        measured_table.to_csv("multi_power_single_wavelength.csv", index=False)
+        measured_table.to_csv(Path("data") / "multi_power_single_wavelength.csv", index=False)
 
     
