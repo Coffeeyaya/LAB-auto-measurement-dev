@@ -229,14 +229,14 @@ class AutoIdVgWindow(QWidget):
 
     def add_sweep_line(self, step_idx, label):
         """Creates new lines on the plot for Id."""
+        # Create the line and assign the label straight from the JSON
         self.lines_id[step_idx], = self.ax1.plot([], [], '.-', markersize=8, label=label)
         
+        # Prep the memory dictionaries
         self.data_memory[step_idx] = {"vgs": [], "ids": [], "igs": []}
         
-        # THE FOOLPROOF LEGEND FIX:
-        # Manually grab the line objects we just made and force them into the legend
-        lines = list(self.lines_id.values())
-        self.ax1.legend(handles=lines, loc='best')
+        # Let Matplotlib handle the legend automatically!
+        self.ax1.legend(loc='best')
         
         self.canvas.draw()
 
