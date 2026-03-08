@@ -46,6 +46,7 @@ class TimeDepWorker(QThread):
         self.running = True
         with open("time_dependent_config.json", "r") as f:
             self.parameters = json.load(f)
+        self.Vd_const = self.parameters["vd_const"]
 
     def switch_source(self, target_vg, laser_cmd1=None, laser_cmd2=None):
         """Cleanly sets Vg and handles laser commands without freezing the GUI."""
@@ -76,7 +77,7 @@ class TimeDepWorker(QThread):
             self.k.set_range('b', self.parameters["current_range_b"])
             self.k.enable_output('a', True)
             self.k.enable_output('b', True)
-            self.k.set_Vd(self.parameters["vd_const"])
+            self.k.set_Vd(self.Vd_const)
 
             self.status_update.emit(f"Connecting to Light PC ({self.laser_ip})...")
             self.laser = LaserController(self.laser_ip)
