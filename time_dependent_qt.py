@@ -212,8 +212,8 @@ if __name__ == "__main__":
     FILENAME = f"time_{parameters['device_number']}_{parameters['run_number']}.csv"
     FILENAME_CONFIG = f"time_{parameters['device_number']}_{parameters['run_number']}_config.csv"
 
-    # with open(FILENAME_CONFIG, "w") as f:
-    #     json.dump(parameters, f, indent=4)
+    with open(FILENAME_CONFIG, "w") as f:
+        json.dump(parameters, f, indent=4)
 
     vg_on = parameters["vg_on"]
     vg_off = parameters["vg_off"]
