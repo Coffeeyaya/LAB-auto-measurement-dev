@@ -1,0 +1,281 @@
+import sys
+import time
+import csv
+import os
+import json
+import numpy as np
+from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QLabel
+from PyQt5.QtCore import QThread, pyqtSignal
+from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
+from matplotlib.figure import Figure
+
+from keithley.keithley import Keithley2636B
+from laser_remote import LaserController
+
+# -------------------------------
+# Worker Thread: Automated Batch Sequence
+# -------------------------------
+class AutoIdVdWorker(QThread):
+    new_sweep = pyqtSignal(int, str)  
+    new_data = pyqtSignal(int, float, float, float)  # step_idx, Vd, I_D, I_G
+    status_update = pyqtSignal(str)
+    sequence_finished = pyqtSignal()
+
+    def __init__(self, resource_id, laser_ip, config_files_list):
+        super().__init__()
+        self.resource_id = resource_id
+        self.laser_ip = laser_ip
+        self.config_files = config_files_list 
+        self.f = None
+        self.running = True
+
+    def run(self):
+        k = None
+        laser = None
+        current_channel = None
+
+        try:
+            self.status_update.emit("Initializing Keithley...")
+            k = Keithley2636B(self.resource_id)
+            k.connect()
+            k.clean_instrument()
+            k.config()
+
+            if self.laser_ip:
+                self.status_update.emit(f"Connecting to Light PC ({self.laser_ip})...")
+                laser = LaserController(self.laser_ip)
+
+            # --- BATCH PROCESSING LOOP ---
+            for step_idx, config_file in enumerate(self.config_files):
+                if not self.running: break
+                
+                self.status_update.emit(f"Loading config: {config_file}...")
+                with open(config_file, "r") as f:
+                    params = json.load(f)
+                
+                # SWAP: Vg is now the constant parameter
+                Vg_const = params["vg_const"] 
+                device_num = params['device_number']
+                run_num = params['run_number']
+                
+                filename = f"idvd_{device_num}_{run_num}.csv"
+                config_backup = f"idvd_{device_num}_{run_num}_config.json"
+                
+                with open(config_backup, 'w') as f_back:
+                    json.dump(params, f_back, indent=4)
+
+                self.f = open(filename, 'w', newline='')
+                writer = csv.writer(self.f)
+                # SWAP: Column headers updated
+                writer.writerow(["V_G", "V_D", "I_D", "I_G"])
+
+                k.set_nplc('a', params["nplc_a"])
+                k.set_nplc('b', params["nplc_b"])
+                k.set_limit('a', params["current_limit_a"])
+                k.set_limit('b', params["current_limit_b"])
+
+                # SWAP: Vd is now the swept parameter
+                vd_points = np.linspace(params["vd_start"], params["vd_stop"], params["num_points"])
+                
+                self.status_update.emit(params["label"])
+                self.new_sweep.emit(step_idx, params["label"])
+
+                wait_time = int(params['wait_time'])
+                if wait_time > 0:
+                    for i in range(wait_time, 0, -1):
+                        if not self.running: break
+                        self.status_update.emit(f"Dark Stabilization... {i}s")
+                        time.sleep(1)
+
+                # --- DEPLETION ---
+                dep_v = params.get('deplete_voltage')
+                dep_t = int(params.get('deplete_time', 0))
+                
+                if dep_v is not None and self.running:
+                    self.status_update.emit(f"Depleting Gate at {dep_v}V for {dep_t}s...")
+                    k.set_Vd(0.0) # SAFEGUARD: Hold Vd at 0V during depletion
+                    k.set_Vg(dep_v)
+                    
+                    if dep_t > 0:
+                        for i in range(dep_t, 0, -1):
+                            if not self.running: break
+                            self.status_update.emit(f"Depleting Gate at {dep_v}V for {i}s")
+                            time.sleep(1)
+
+                # --- Prepare Light ---
+                if params.get("laser_cmd") and laser:
+                    cmd = params["laser_cmd"]
+                    current_channel = cmd["channel"]
+                    self.status_update.emit("Configuring Laser")
+                    laser.send_cmd(cmd, wait_for_reply=True)
+                    
+                    self.status_update.emit("Turning Light ON...")
+                    laser.send_cmd({"channel": current_channel, "on": 1}, wait_for_reply=True)
+                    
+                    laser_stable_time = int(params.get('laser_stable_time', 0))
+                    for i in range(laser_stable_time, 0, -1):
+                        if not self.running: break
+                        self.status_update.emit(f"Light is ON! Stabilizing... {i}s")
+                        time.sleep(1)
+                
+                # --- Execute Sweep ---
+                k.enable_output('a', True)
+                k.enable_output('b', True)
+                k.set_autorange('a', 1)
+                k.set_autorange('b', 1)    
+
+                # Setup for the actual Id-Vd sweep
+                k.set_Vg(Vg_const)
+                k.set_Vd(params["vd_start"])
+                time.sleep(1) # Initial RC settling
+
+                self.status_update.emit("Sweeping Vd ...")
+                for vd in vd_points:
+                    if not self.running: break
+                        
+                    k.set_Vd(vd) # SWAP: Step Vd
+                    time.sleep(0.1) 
+                    I_D, I_G = k.measure()
+                    
+                    if I_D is not None:
+                        writer.writerow([Vg_const, vd, I_D, I_G])
+                        self.new_data.emit(step_idx, vd, I_D, I_G)
+
+                # --- Clean up step ---
+                if params.get('laser_cmd') and laser and current_channel is not None:
+                    self.status_update.emit(f"Sweep done. Turning OFF Laser Ch {current_channel}...")
+                    laser.send_cmd({"channel": current_channel, "on": 1}, wait_for_reply=True)
+                    current_channel = None
+                    time.sleep(1)
+                        
+                k.enable_output('a', False)
+                k.enable_output('b', False)
+                
+                if hasattr(self, 'f') and not self.f.closed:
+                    self.f.close()
+
+        except Exception as e:
+            print(f"Hardware Error: {e}")
+            self.status_update.emit(f"Error: {e}")
+
+        finally:
+            self.status_update.emit("Sequence complete. Shutting down hardware...")
+            if hasattr(self, 'f') and not self.f.closed:
+                self.f.close()
+            if laser:
+                if current_channel is not None:
+                    laser.send_cmd({"channel": current_channel, "on": 1}, wait_for_reply=False)
+                laser.close()
+            if k:
+                k.shutdown()
+                
+            self.sequence_finished.emit()
+
+    def stop(self):
+        self.running = False
+        self.wait()
+
+# -------------------------------
+# GUI Window (Monitor Only)
+# -------------------------------
+class AutoIdVdWindow(QWidget):
+    def __init__(self, worker):
+        super().__init__()
+        self.setWindowTitle("Automated Id-Vd Batch Processor")
+        self.worker = worker
+        
+        self.lines_id = {}
+        self.data_memory = {}
+        
+        self.last_draw_time = time.time()
+
+        self._setup_ui()
+        
+        self.worker.new_sweep.connect(self.add_sweep_line)
+        self.worker.new_data.connect(self.update_plot)
+        self.worker.status_update.connect(self.status_label.setText)
+        self.worker.sequence_finished.connect(self.on_finished)
+        
+        self.worker.start()
+
+    def _setup_ui(self):
+        layout = QVBoxLayout()
+        self.setLayout(layout)
+
+        self.status_label = QLabel("Status: Starting up...")
+        self.status_label.setStyleSheet("color: blue; font-size: 14px; font-weight: bold;")
+        layout.addWidget(self.status_label)
+
+        self.figure = Figure(figsize=(8, 6))
+        self.canvas = FigureCanvas(self.figure)
+        layout.addWidget(self.canvas)
+        
+        self.ax1 = self.figure.add_subplot(111)
+        
+        self.ax1.set_title("Automated Steady-State Id-Vd")
+        self.ax1.set_xlabel("Drain Voltage (V)") # SWAP: X-axis is Vd
+        self.ax1.grid(True, which="both", ls="--", alpha=0.5)
+
+        # SWAP: Linear scale (removed set_yscale('log')) and absolute value notation
+        self.ax1.set_ylabel("Drain Current Id (A)", color='blue')
+        self.ax1.tick_params(axis='y', labelcolor='blue')
+
+    def add_sweep_line(self, step_idx, label):
+        """Creates new lines on the plot for Id."""
+        self.lines_id[step_idx], = self.ax1.plot([], [], '.-', markersize=8, label=label)
+        
+        # SWAP: vgs array swapped to vds
+        self.data_memory[step_idx] = {"vds": [], "ids": [], "igs": []}
+        
+        self.ax1.legend(loc='best')
+        self.canvas.draw()
+
+    def update_plot(self, step_idx, Vd, I_D, I_G):
+        """Appends data to the correct line based on step_idx."""
+        self.data_memory[step_idx]["vds"].append(Vd)
+        self.data_memory[step_idx]["ids"].append(I_D) # SWAP: Removed abs() for linear scale
+        self.data_memory[step_idx]["igs"].append(I_G) 
+        
+        self.lines_id[step_idx].set_data(self.data_memory[step_idx]["vds"], self.data_memory[step_idx]["ids"])
+        
+        current_time = time.time()
+        if current_time - self.last_draw_time > 0.1:
+            if self.ax1.get_autoscale_on():
+                self.ax1.relim()
+                self.ax1.autoscale_view()
+                
+            self.canvas.draw()
+            self.last_draw_time = current_time
+
+    def on_finished(self):
+        if self.ax1.get_autoscale_on():
+            self.ax1.relim()
+            self.ax1.autoscale_view()
+            
+        self.canvas.draw()
+        self.status_label.setText("Status: Batch Sequence Finished. Hardware is safe.")
+        
+    def closeEvent(self, event):
+        print("Closing application. Safely shutting down hardware...")
+        if self.worker.isRunning():
+            self.worker.stop()
+        event.accept()
+
+if __name__ == "__main__":
+    RESOURCE_ID = "USB0::0x05E6::0x2636::4407529::INSTR"
+    LIGHT_IP = "192.168.50.17" 
+    
+    # --- BATCH CONFIGURATION QUEUE ---
+    config_queue = [
+        'idvd_config_1.json',
+        'idvd_config_2.json',
+        'idvd_config_3.json'
+    ]
+
+    app = QApplication(sys.argv)
+    
+    worker = AutoIdVdWorker(RESOURCE_ID, LIGHT_IP, config_queue)
+    window = AutoIdVdWindow(worker)
+    window.show()
+    
+    sys.exit(app.exec_())
