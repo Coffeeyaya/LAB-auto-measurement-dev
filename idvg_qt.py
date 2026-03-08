@@ -168,8 +168,11 @@ class AutoIdVgWindow(QWidget):
         self.setWindowTitle("Automated Id-Vg Transfer Characteristics")
         self.worker = worker
         
-        self.lines = {} # Stores Matplotlib lines by step_idx
-        self.data_memory = {} # Stores Vgs, IDs by step_idx
+        # 1. Replaced dictionaries with simple flat lists
+        self.vgs = []
+        self.ids = []
+        self.igs = []
+        
         self.last_draw_time = time.time()
 
         self._setup_ui()
@@ -197,28 +200,32 @@ class AutoIdVgWindow(QWidget):
         
         self.ax1 = self.figure.add_subplot(111)
         self.ax1.set_title("Automated Steady-State Id-Vg")
-        self.ax1.set_ylabel("Drain Current (A) - Log", color='b')
+        self.ax1.set_ylabel("Current (A) - Log", color='k') # Changed label to reflect both currents
         self.ax1.set_xlabel("Gate Voltage (V)")
         self.ax1.set_yscale('log')
         self.ax1.grid(True, which="both", ls="--", alpha=0.5)
 
     def add_sweep_line(self, label):
-        """Creates a new line on the plot for the current sequence step."""
-        line, = self.ax1.plot([], [], '.-', markersize=8, label=label)
-        # self.lines[step_idx] = line
-        # self.data_memory[step_idx] = {"vgs": [], "ids": []}
+        """Creates new lines on the plot for Id and Ig."""
+        # 2. Setup TWO lines, one blue for Id, one red for Ig
+        self.line_id, = self.ax1.plot([], [], 'b.-', markersize=8, label=f"Id ({label})")
+        self.line_ig, = self.ax1.plot([], [], 'r.-', markersize=8, label=f"Ig ({label})")
+        
         self.ax1.legend()
         self.canvas.draw()
 
-    def update_plot(self, step_idx, Vg, I_D, I_G):
-        """Appends data to the correct line and updates the plot smoothly."""
-        self.data_memory[step_idx]["vgs"].append(Vg)
-        self.data_memory[step_idx]["ids"].append(abs(I_D))
+    # 3. Removed step_idx from the function signature!
+    def update_plot(self, Vg, I_D, I_G):
+        """Appends data and updates the plot smoothly."""
         
-        self.lines[step_idx].set_data(
-            self.data_memory[step_idx]["vgs"], 
-            self.data_memory[step_idx]["ids"]
-        )
+        # Append to our simple lists
+        self.vgs.append(Vg)
+        self.ids.append(abs(I_D))
+        self.igs.append(abs(I_G)) # Take absolute value for log scale
+        
+        # Update both lines on the graph
+        self.line_id.set_data(self.vgs, self.ids)
+        self.line_ig.set_data(self.vgs, self.igs)
         
         # Frame-rate throttle
         current_time = time.time()
