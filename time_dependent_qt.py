@@ -239,8 +239,8 @@ if __name__ == "__main__":
     # sequence = []
 
     wavelength_arr = np.array([450, 532, 660])
-    channel_arr = np.array([0, 3, 6])
-    pp_arr = np.array([30, 20, 10])
+    channel_arr = np.array([0, 3, 6]).astype(str) ##
+    pp_arr = np.array([30, 20, 10]).astype(str) ##
     def single_power_multi_wavelength_basic_block(channel_idx, power, vg_on, vg_off, duration_1, duration_2, duration_3, duration_4):
         basic_block = [
             {"Vg": vg_off, "duration": duration_1},
