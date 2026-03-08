@@ -213,7 +213,7 @@ class AutoIdVgWindow(QWidget):
         layout.addWidget(self.canvas)
         
         self.ax1 = self.figure.add_subplot(111)
-        self.ax2 = self.ax1.twinx() 
+        # self.ax2 = self.ax1.twinx() 
         
         self.ax1.set_title("Automated Steady-State Id-Vg")
         self.ax1.set_xlabel("Gate Voltage (V)")
@@ -223,19 +223,19 @@ class AutoIdVgWindow(QWidget):
         self.ax1.set_yscale('log')
         self.ax1.tick_params(axis='y', labelcolor='blue')
 
-        self.ax2.set_ylabel("Gate Current |Ig| (A)", color='red')
-        self.ax2.set_yscale('log')
-        self.ax2.tick_params(axis='y', labelcolor='red')
+        # self.ax2.set_ylabel("Gate Current |Ig| (A)", color='red')
+        # self.ax2.set_yscale('log')
+        # self.ax2.tick_params(axis='y', labelcolor='red')
 
     def add_sweep_line(self, step_idx, label):
         """Creates new lines on the plot for Id and Ig, separated by step_idx."""
         self.lines_id[step_idx], = self.ax1.plot([], [], '.-', markersize=8, label=f"Id ({label})")
-        self.lines_ig[step_idx], = self.ax2.plot([], [], '.--', alpha=0.6, markersize=8, label=f"Ig ({label})")
+        # self.lines_ig[step_idx], = self.ax2.plot([], [], '.--', alpha=0.6, markersize=8, label=f"Ig ({label})")
         
         self.data_memory[step_idx] = {"vgs": [], "ids": [], "igs": []}
         
-        # Combine legends from both axes into a single box
-        lines = list(self.lines_id.values()) + list(self.lines_ig.values())
+        # lines = list(self.lines_id.values()) + list(self.lines_ig.values())
+        lines = list(self.lines_id.values())
         labels = [l.get_label() for l in lines]
         self.ax1.legend(lines, labels, loc='best')
         
@@ -248,16 +248,16 @@ class AutoIdVgWindow(QWidget):
         self.data_memory[step_idx]["igs"].append(abs(I_G)) 
         
         self.lines_id[step_idx].set_data(self.data_memory[step_idx]["vgs"], self.data_memory[step_idx]["ids"])
-        self.lines_ig[step_idx].set_data(self.data_memory[step_idx]["vgs"], self.data_memory[step_idx]["igs"])
+        # self.lines_ig[step_idx].set_data(self.data_memory[step_idx]["vgs"], self.data_memory[step_idx]["igs"])
         
         current_time = time.time()
         if current_time - self.last_draw_time > 0.1:
             if self.ax1.get_autoscale_on():
                 self.ax1.relim()
                 self.ax1.autoscale_view()
-            if self.ax2.get_autoscale_on():
-                self.ax2.relim()
-                self.ax2.autoscale_view()
+            # if self.ax2.get_autoscale_on():
+            #     self.ax2.relim()
+            #     self.ax2.autoscale_view()
                 
             self.canvas.draw()
             self.last_draw_time = current_time
@@ -266,9 +266,9 @@ class AutoIdVgWindow(QWidget):
         if self.ax1.get_autoscale_on():
             self.ax1.relim()
             self.ax1.autoscale_view()
-        if self.ax2.get_autoscale_on():
-            self.ax2.relim()
-            self.ax2.autoscale_view()
+        # if self.ax2.get_autoscale_on():
+        #     self.ax2.relim()
+        #     self.ax2.autoscale_view()
             
         self.canvas.draw()
         self.status_label.setText("Status: Batch Sequence Finished. Hardware is safe.")
