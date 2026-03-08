@@ -70,6 +70,20 @@ class AutoIdVgWorker(QThread):
                     self.status_update.emit(f"Dark Stabilization... {i}s")
                     time.sleep(1)
 
+            # --- DEPLETION ---
+            dep_v = self.parameters['deplete_voltage']
+            dep_t = int(self.parameters['deplete_time'])
+            
+            if dep_v is not None and self.running:
+                self.status_update.emit(f"Depleting at {dep_v}V for {dep_t}s...")
+                k.set_Vg(dep_v)
+                
+                if dep_t > 0:
+                    for i in range(dep_t, 0, -1):
+                        if not self.running: break
+                        self.status_update.emit(f"Depleting at {dep_v} for {i}s")
+                        time.sleep(1)
+
             # --- 1. Prepare Light (if specified) ---
             if self.parameters["laser_cmd"] and laser:
                 cmd = self.parameters["laser_cmd"]
@@ -92,22 +106,7 @@ class AutoIdVgWorker(QThread):
             k.enable_output('a', True)
             k.enable_output('b', True)
             k.set_autorange('a', 1)
-            k.set_autorange('b', 1)
-
-            # --- DEPLETION ---
-            dep_v = self.parameters['deplete_voltage']
-            dep_t = int(self.parameters['deplete_time'])
-            
-            if dep_v is not None and self.running:
-                self.status_update.emit(f"Depleting at {dep_v}V for {dep_t}s...")
-                k.set_Vg(dep_v)
-                
-                if dep_t > 0:
-                    for i in range(dep_t, 0, -1):
-                        if not self.running: break
-                        self.status_update.emit(f"Depleting at {dep_v} for {i}s")
-                        time.sleep(1)
-                
+            k.set_autorange('b', 1)    
 
             # Move to the actual start voltage of the sweep
             k.set_Vg(self.parameters["vg_start"])
@@ -158,7 +157,6 @@ class AutoIdVgWorker(QThread):
         self.running = False
         self.wait()
 
-
 # -------------------------------
 # GUI Window (Monitor Only)
 # -------------------------------
@@ -168,7 +166,6 @@ class AutoIdVgWindow(QWidget):
         self.setWindowTitle("Automated Id-Vg Transfer Characteristics")
         self.worker = worker
         
-        # 1. Replaced dictionaries with simple flat lists
         self.vgs = []
         self.ids = []
         self.igs = []
@@ -198,49 +195,69 @@ class AutoIdVgWindow(QWidget):
         self.canvas = FigureCanvas(self.figure)
         layout.addWidget(self.canvas)
         
+        # --- TWIN AXIS SETUP ---
         self.ax1 = self.figure.add_subplot(111)
+        self.ax2 = self.ax1.twinx() # Create the right-side axis sharing the same X-axis
+        
         self.ax1.set_title("Automated Steady-State Id-Vg")
-        self.ax1.set_ylabel("Current (A) - Log", color='k') # Changed label to reflect both currents
         self.ax1.set_xlabel("Gate Voltage (V)")
-        self.ax1.set_yscale('log')
         self.ax1.grid(True, which="both", ls="--", alpha=0.5)
 
+        # Left Axis (Id) - Blue
+        self.ax1.set_ylabel("Drain Current |Id| (A)", color='blue')
+        self.ax1.set_yscale('log')
+        self.ax1.tick_params(axis='y', labelcolor='blue')
+
+        # Right Axis (Ig) - Red
+        self.ax2.set_ylabel("Gate Current |Ig| (A)", color='red')
+        self.ax2.set_yscale('log')
+        self.ax2.tick_params(axis='y', labelcolor='red')
+
     def add_sweep_line(self, label):
-        """Creates new lines on the plot for Id and Ig."""
-        # 2. Setup TWO lines, one blue for Id, one red for Ig
+        """Creates new lines on the plot for Id and Ig on separate axes."""
+        # Plot Id on ax1 (Left), Ig on ax2 (Right)
         self.line_id, = self.ax1.plot([], [], 'b.-', markersize=8, label=f"Id ({label})")
-        self.line_ig, = self.ax1.plot([], [], 'r.-', markersize=8, label=f"Ig ({label})")
+        self.line_ig, = self.ax2.plot([], [], 'r.-', markersize=8, label=f"Ig ({label})")
         
-        self.ax1.legend()
+        # Combine the legends from both axes into a single box
+        lines = [self.line_id, self.line_ig]
+        labels = [l.get_label() for l in lines]
+        self.ax1.legend(lines, labels, loc='best')
+        
         self.canvas.draw()
 
-    # 3. Removed step_idx from the function signature!
     def update_plot(self, Vg, I_D, I_G):
         """Appends data and updates the plot smoothly."""
-        
-        # Append to our simple lists
         self.vgs.append(Vg)
         self.ids.append(abs(I_D))
-        self.igs.append(abs(I_G)) # Take absolute value for log scale
+        self.igs.append(abs(I_G)) 
         
-        # Update both lines on the graph
         self.line_id.set_data(self.vgs, self.ids)
         self.line_ig.set_data(self.vgs, self.igs)
         
         # Frame-rate throttle
         current_time = time.time()
         if current_time - self.last_draw_time > 0.1:
+            # Must rescale BOTH axes independently!
             if self.ax1.get_autoscale_on():
                 self.ax1.relim()
                 self.ax1.autoscale_view()
+            if self.ax2.get_autoscale_on():
+                self.ax2.relim()
+                self.ax2.autoscale_view()
+                
             self.canvas.draw()
             self.last_draw_time = current_time
 
     def on_finished(self):
-        # Final redraw
+        # Final redraw for both axes
         if self.ax1.get_autoscale_on():
             self.ax1.relim()
             self.ax1.autoscale_view()
+        if self.ax2.get_autoscale_on():
+            self.ax2.relim()
+            self.ax2.autoscale_view()
+            
         self.canvas.draw()
         self.status_label.setText("Status: Sequence Finished. Hardware is safe.")
         
