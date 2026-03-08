@@ -228,16 +228,15 @@ class AutoIdVgWindow(QWidget):
         # self.ax2.tick_params(axis='y', labelcolor='red')
 
     def add_sweep_line(self, step_idx, label):
-        """Creates new lines on the plot for Id and Ig, separated by step_idx."""
-        self.lines_id[step_idx], = self.ax1.plot([], [], '.-', markersize=8, label=f"Id ({label})")
-        # self.lines_ig[step_idx], = self.ax2.plot([], [], '.--', alpha=0.6, markersize=8, label=f"Ig ({label})")
+        """Creates new lines on the plot for Id."""
+        self.lines_id[step_idx], = self.ax1.plot([], [], '.-', markersize=8, label=label)
         
         self.data_memory[step_idx] = {"vgs": [], "ids": [], "igs": []}
         
-        # lines = list(self.lines_id.values()) + list(self.lines_ig.values())
+        # THE FOOLPROOF LEGEND FIX:
+        # Manually grab the line objects we just made and force them into the legend
         lines = list(self.lines_id.values())
-        labels = [l.get_label() for l in lines]
-        self.ax1.legend(lines, labels, loc='best')
+        self.ax1.legend(handles=lines, loc='best')
         
         self.canvas.draw()
 
