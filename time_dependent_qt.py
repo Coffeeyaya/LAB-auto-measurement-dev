@@ -1,6 +1,8 @@
 import sys
 import time
 import csv
+import json
+import pandas as pd
 from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout
 from PyQt5.QtCore import QThread, pyqtSignal
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
@@ -30,32 +32,32 @@ class TimeDepWorker(QThread):
     status_update = pyqtSignal(str)
     sequence_finished = pyqtSignal()
 
-    def __init__(self, resource_id, laser_ip, laser_channel, sequence, filename, Vd_const=1.0):
+    def __init__(self, resource_id, laser_ip, sequence, filename):
         super().__init__()
         self.resource_id = resource_id
         self.laser_ip = laser_ip
-        self.laser_channel = laser_channel
         self.sequence = sequence
         self.filename = filename
-        self.Vd_const = Vd_const
         
         self.k = None
         self.laser = None
-        self.current_light_state = 0
+        self.current_light_state = 0 # on or off
+        self.laser_channel = None
         self.running = True
+        with open("time_dependent_config.json", "r") as f:
+            self.parameters = json.load(f)
 
     def switch_source(self, target_vg, laser_cmd1=None, laser_cmd2=None):
         """Cleanly sets Vg and handles laser commands without freezing the GUI."""
         self.k.set_Vg(target_vg)
 
         if laser_cmd1: 
-            self.status_update.emit("Configuring laser... (GUI is still responsive!)")
-            # Wait for PyAutoGUI to finish typing power/wavelength
+            self.status_update.emit("Configuring laser...")
             self.laser.send_cmd(laser_cmd1, wait_for_reply=False) 
 
         if laser_cmd2: 
             self.status_update.emit("Toggling laser ON/OFF...")
-            # Fire-and-forget: do NOT wait, instantly return to start measuring!
+            self.laser_channel = laser_cmd2["channel"]
             self.laser.send_cmd(laser_cmd2, wait_for_reply=False) 
             self.current_light_state = 1 - self.current_light_state
 
@@ -66,17 +68,21 @@ class TimeDepWorker(QThread):
             self.k.connect()
             self.k.clean_instrument()
             self.k.config()
-            self.k.set_nplc('a', "1.0")
-            self.k.set_nplc('b', "1.0")
+            self.k.set_nplc('a', self.parameters["nplc_a"])
+            self.k.set_nplc('b', self.parameters["nplc_b"])
+            self.k.set_limit('a', self.parameters["current_limit_a"])
+            self.k.set_limit('b', self.parameters["current_limit_b"])
+            self.k.set_range('a', self.parameters["current_range_a"])
+            self.k.set_range('b', self.parameters["current_range_b"])
             self.k.enable_output('a', True)
             self.k.enable_output('b', True)
-            self.k.set_Vd(self.Vd_const)
+            self.k.set_Vd(int(self.parameters["vd_const"]))
 
             self.status_update.emit(f"Connecting to Light PC ({self.laser_ip})...")
             self.laser = LaserController(self.laser_ip)
             
             start_time = time.time()
-
+            
             with open(self.filename, 'w', newline='') as f:
                 writer = csv.writer(f)
                 writer.writerow(["Time", "V_D", "V_G", "I_D", "I_G", "Light_State"])
@@ -127,9 +133,6 @@ class TimeDepWorker(QThread):
         self.wait()
 
 
-# -------------------------------
-# Main GUI Window
-# -------------------------------
 class TimeDepWindow(QWidget):
     def __init__(self, worker):
         super().__init__()
@@ -137,7 +140,8 @@ class TimeDepWindow(QWidget):
         self.worker = worker
         
         self.times, self.I_Ds, self.I_Gs, self.V_Ds, self.V_Gs = [], [], [], [], []
-        # 
+
+        # avoid update plot too frequently, record the last draw time
         self.last_draw_time = time.time()
 
         layout = QVBoxLayout()
@@ -196,34 +200,50 @@ class TimeDepWindow(QWidget):
         if self.worker.isRunning():
             self.worker.stop()
         event.accept()
-'''
-set range?
-'''
+
 if __name__ == "__main__":
     RESOURCE_ID = "USB0::0x05E6::0x2636::4407529::INSTR"
     LASER_IP = "192.168.50.17"
-    LASER_CHANNEL = 6
-    FILENAME = "time_dep_laser_pyqt.csv"
-    sequence = []
-    idx_arr = np.arange(0, 3, 1).astype(str) # ['0' '1' '2']
-    def get_basic_block(idx):
+
+    with open("time_dependent_config.json", "r") as f:
+        parameters = json.load(f)
+
+    FILENAME = f"time_{parameters["device_number"]}_{parameters["run_number"]}.csv"
+    FILENAME_CONFIG = f"time_{parameters["device_number"]}_{parameters["run_number"]}_config.csv"
+
+    with open(FILENAME_CONFIG, "w") as f:
+        json.dump(parameters, f, indent=4)
+
+    vg_on = parameters["vg_on"]
+    vg_off = parameters["vg_off"]
+    duration_1 = parameters["duration_1"]
+    duration_2 = parameters["duration_2"]
+    duration_3 = parameters["duration_3"]
+    duration_4 = parameters["duration_4"]
+
+    table = pd.read_csv("single_power_multi_wavelength.csv")
+    wavelength_arr = table["Wavelength (nm)"] 
+    channel_arr = table["Channel"] 
+    pp_arr = table["PP (%)"] 
+
+    def single_power_multi_wavelength_basic_block(channel_idx, power, vg_on, vg_off, duration_1, duration_2, duration_3, duration_4):
         basic_block = [
-            {"Vg": -1.5, "duration": 5},
-            {"Vg": 0.5, "duration": 5, 
-            "laser_cmd1": {"channel": idx, "power": 10}},
-            {"Vg": 0.5, "duration": 5, 
-            "laser_cmd2": {"channel": idx, "on": 1}}, 
-            {"Vg": 0.5, "duration": 5, 
-            "laser_cmd2": {"channel": idx, "on": 1}}, 
+            {"Vg": vg_off, "duration": duration_1},
+            {"Vg": vg_on, "duration": duration_2, "laser_cmd1": {"channel": channel_idx, "power": power}},
+            {"Vg": vg_on, "duration": duration_3, "laser_cmd2": {"channel": channel_idx, "on": 1}}, 
+            {"Vg": vg_on, "duration": duration_4, "laser_cmd2": {"channel": channel_idx, "on": 1}}, 
         ]
         return basic_block
-    for i in range(len(idx_arr)):
-        idx = idx_arr[i]
-        sequence.extend(get_basic_block(idx))
     
+    sequence = []
+
+    for i in range(len(wavelength_arr)):
+        channel_idx = channel_arr[i]
+        pp = pp_arr[i]
+        sequence.extend(single_power_multi_wavelength_basic_block(channel_idx, pp, vg_on, vg_off, duration_1, duration_2, duration_3, duration_4))
 
     app = QApplication(sys.argv)
-    worker = TimeDepWorker(RESOURCE_ID, LASER_IP, LASER_CHANNEL, sequence, FILENAME)
+    worker = TimeDepWorker(RESOURCE_ID, LASER_IP, sequence, FILENAME)
     window = TimeDepWindow(worker)
     window.show()
 
