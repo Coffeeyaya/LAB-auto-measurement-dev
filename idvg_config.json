@@ -14,7 +14,7 @@
     "wait_time": 3,
     "laser_stable_time": 3,
     "deplete_voltage": -3.0,
-    "deplete_time": 5.0,
+    "deplete_time": 5,
     "laser_cmd": {"channel": 6, "wavelength": 660, "power": 10} 
 
 }
