@@ -76,7 +76,7 @@ class TimeDepWorker(QThread):
             self.k.set_range('b', self.parameters["current_range_b"])
             self.k.enable_output('a', True)
             self.k.enable_output('b', True)
-            self.k.set_Vd(float(self.parameters["vd_const"]))
+            self.k.set_Vd(self.parameters["vd_const"])
 
             self.status_update.emit(f"Connecting to Light PC ({self.laser_ip})...")
             self.laser = LaserController(self.laser_ip)
