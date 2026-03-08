@@ -73,6 +73,7 @@ def single_power_multi_wavelength(conn, channel_arr, wavelength_arr, target_powe
     n_wl = len(wavelength_arr)
     pp_table = np.zeros(n_wl)
     power_table = np.zeros(n_wl)
+    print(channel_arr)
 
     pm = PowerMeter()
     try:
