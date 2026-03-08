@@ -221,11 +221,25 @@ if __name__ == "__main__":
     duration_3 = parameters["duration_3"]
     duration_4 = parameters["duration_4"]
 
-    table = pd.read_csv("single_power_multi_wavelength.csv")
-    wavelength_arr = table["Wavelength (nm)"] 
-    channel_arr = table["Channel"] 
-    pp_arr = table["PP (%)"] 
+    # table = pd.read_csv("single_power_multi_wavelength.csv")
+    # wavelength_arr = table["Wavelength (nm)"] 
+    # channel_arr = table["Channel"] 
+    # pp_arr = table["PP (%)"]
 
+    # def single_power_multi_wavelength_basic_block(channel_idx, power, vg_on, vg_off, duration_1, duration_2, duration_3, duration_4):
+    #     basic_block = [
+    #         {"Vg": vg_off, "duration": duration_1},
+    #         {"Vg": vg_on, "duration": duration_2, "laser_cmd1": {"channel": channel_idx, "power": power}},
+    #         {"Vg": vg_on, "duration": duration_3, "laser_cmd2": {"channel": channel_idx, "on": 1}}, 
+    #         {"Vg": vg_on, "duration": duration_4, "laser_cmd2": {"channel": channel_idx, "on": 1}}, 
+    #     ]
+    #     return basic_block
+    
+    # sequence = []
+    
+    wavelength_arr = np.array([450, 532, 660])
+    channel_arr = np.array([0, 3, 6])
+    pp_arr = np.array([30, 20, 10])
     def single_power_multi_wavelength_basic_block(channel_idx, power, vg_on, vg_off, duration_1, duration_2, duration_3, duration_4):
         basic_block = [
             {"Vg": vg_off, "duration": duration_1},
