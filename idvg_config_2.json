@@ -1,8 +1,8 @@
 {   
-    "description": "",
-    "device_number": "1-1",
+    "description": "dark",
+    "device_number": "4-5",
     "run_number": "2",
-    "label": "2",
+    "label": "dark 2",
     "current_limit_a": 1e-3,
     "current_limit_b": 1e-3,
     "nplc_a": 1.0,
@@ -10,10 +10,10 @@
     "vd_const": 1.0,
     "vg_start": -3.0, 
     "vg_stop": 3.0, 
-    "num_points": 7,
-    "wait_time": 3,
-    "laser_stable_time": 3,
+    "num_points": 51,
+    "wait_time": 10,
+    "laser_stable_time": 0,
     "deplete_voltage": -3.0,
-    "deplete_time": 5,
+    "deplete_time": 10,
     "laser_cmd": null
 }
