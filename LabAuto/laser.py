@@ -89,7 +89,8 @@ def change_lambda_function(grid, channel, new_lambda_value):
     pyautogui.moveTo(*lambda_coord)
     time.sleep(0.5)
     pyautogui.click(*lambda_coord)
-
+    
+    time.sleep(0.5)
     get_popup_window('popup wavelength slider.vi')
     time.sleep(0.5)
 
@@ -119,6 +120,7 @@ def change_power_function(grid, channel, new_power_value):
 
     power_edit_coord = get_power_edit_coord([0,0])
 
+    time.sleep(0.5)
     get_popup_window('popup power slider.vi')
     time.sleep(0.5)
 
@@ -136,7 +138,7 @@ def change_power_function(grid, channel, new_power_value):
 
 def press_on_button(grid, channel):
     on_coord = get_coord(grid, channel, "on")
-    time.sleep(1)
+    time.sleep(0.5)
     move_and_click(on_coord)
 
 if __name__ == "__main__":
