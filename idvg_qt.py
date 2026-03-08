@@ -18,7 +18,7 @@ from laser_remote import LaserController
 class AutoIdVgWorker(QThread):
     # Signals to safely talk to the GUI
     new_sweep = pyqtSignal(str)  # label (tells GUI to make a new line)
-    new_data = pyqtSignal(int, float, float, float)  # step_idx, Vg, I_D, I_G
+    new_data = pyqtSignal(float, float, float)  # Vg, I_D, I_G
     status_update = pyqtSignal(str)
     sequence_finished = pyqtSignal()
 
@@ -102,10 +102,12 @@ class AutoIdVgWorker(QThread):
                 self.status_update.emit(f"Depleting at {dep_v}V for {dep_t}s...")
                 k.set_Vg(dep_v)
                 
-                iterations = int(dep_t / 0.1)
-                for _ in range(iterations): 
-                    if not self.running: break
-                    time.sleep(0.1)
+                if dep_t > 0:
+                    for i in range(dep_t, 0, -1):
+                        if not self.running: break
+                        self.status_update.emit(f"Depleting at {dep_v} for {i}s")
+                        time.sleep(1)
+                
 
             # Move to the actual start voltage of the sweep
             k.set_Vg(self.parameters["vg_start"])
