@@ -88,7 +88,7 @@ def single_power_multi_wavelength(laser, channel_arr, wavelength_arr, target_pow
             power_table[i] = power
             
         measured_table = pd.DataFrame({
-            "Power (nW)": [target_power] * n_wl,
+            "Power (nW)": [target_power * 1e-9] * n_wl,
             "Channel": channel_arr,
             "Wavelength (nm)": wavelength_arr,
             "PP (%)": pp_table,
