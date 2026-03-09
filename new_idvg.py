@@ -148,7 +148,7 @@ class AutoIdVgWorker(QThread):
                     k.set_Vg(vg)
                     time.sleep(0.1) 
                     # 1. Catch the raw result in a single variable first
-                    reading = self.k.measure()
+                    reading = k.measure()
                     
                     # 2. Make sure it isn't None, AND it actually has 2 items
                     if reading is not None and len(reading) == 2:
