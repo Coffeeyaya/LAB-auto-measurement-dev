@@ -1,8 +1,8 @@
 {   
     "description": "",
-    "device_number": "5-5",
+    "device_number": "4-5",
     "run_number": "1",
-    "label": "1",
+    "label": "dark 1",
     "current_limit_a": 1e-3,
     "current_limit_b": 1e-3,
     "nplc_a": 1.0,
