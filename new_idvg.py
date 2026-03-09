@@ -17,11 +17,10 @@ from pathlib import Path
 
 def get_pp_exact(df, wavelength, power_nw):
     row = df[(df["Wavelength (nm)"] == wavelength) &
-             (df["Power (nW)"] == power_nw)]
-
+             (abs(df["Power (nW)"] - power_nw) < 1e-3)]
+    print(row)
     if len(row) == 0:
         return None
-
     return float(row["PP (%)"].values[0])
 
 # -------------------------------
@@ -117,7 +116,7 @@ class AutoIdVgWorker(QThread):
                 if params.get("laser_settings") and laser:
                     laser_settings = params["laser_settings"]
                     table = pd.read_csv(Path("calibration") / "single_power_multi_wavelength.csv")
-                    pp = get_pp_exact(table, laser_settings['wavelength'], laser_settings['power'])
+                    pp = get_pp_exact(table, int(laser_settings['wavelength']), int(laser_settings['power']))
                     cmd = {"channel": laser_settings['channel'], "wavelength": laser_settings['wavelength'], "power": pp}
                     current_channel = cmd["channel"]
                     self.status_update.emit("Configuring Laser")

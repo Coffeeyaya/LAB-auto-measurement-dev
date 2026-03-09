@@ -1,6 +1,6 @@
 {   
     "description": "dark",
-    "device_number": "4-5",
+    "device_number": "12-6",
     "run_number": "1",
     "label": "dark 1",
     "current_limit_a": 1e-3,
@@ -8,8 +8,8 @@
     "nplc_a": 1.0,
     "nplc_b": 1.0,
     "vd_const": 1.0,
-    "vg_start": -3.0, 
-    "vg_stop": 3.0, 
+    "vg_start": -5.0, 
+    "vg_stop": 5.0, 
     "num_points": 51,
     "wait_time": 10,
     "laser_stable_time": 0,
