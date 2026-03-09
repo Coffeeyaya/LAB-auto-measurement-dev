@@ -107,6 +107,7 @@ class TimeDepWorker(QThread):
                 self.k.set_range('b', params["current_range_b"])
                 self.k.enable_output('a', True)
                 self.k.enable_output('b', True)
+                self.k.set_auto_zero_once()
                 
                 vd_const = float(params["vd_const"])
                 self.k.set_Vd(vd_const)

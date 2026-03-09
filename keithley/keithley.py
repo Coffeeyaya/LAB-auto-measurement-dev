@@ -101,6 +101,10 @@ class Keithley2636B:
         smu = f"smu{smu_char.lower()}"
         val = "1" if state else "0"
         self.keithley.write(f"{smu}.source.output = {val}")
+        
+    def set_auto_zero_once(self):
+        self.keithley.write("smua.measure.autozero = smua.AUTOZERO_ONCE")
+        self.keithley.write("smub.measure.autozero = smub.AUTOZERO_ONCE")
 
     def set_autorange(self, smu_char, state):
         """
