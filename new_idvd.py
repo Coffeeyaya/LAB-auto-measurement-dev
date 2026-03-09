@@ -241,6 +241,7 @@ class AutoIdVdWindow(QWidget):
         self.ax1.grid(True, which="both", ls="--", alpha=0.5)
 
         # SWAP: Linear scale (removed set_yscale('log'))
+        self.ax1.set_yscale('log')
         self.ax1.set_ylabel("Drain Current Id (A)", color='blue')
         self.ax1.tick_params(axis='y', labelcolor='blue')
 
@@ -252,8 +253,8 @@ class AutoIdVdWindow(QWidget):
 
     def update_plot(self, step_idx, Vd, I_D, I_G):
         self.data_memory[step_idx]["vds"].append(Vd)
-        self.data_memory[step_idx]["ids"].append(I_D) # SWAP: Removed abs()
-        self.data_memory[step_idx]["igs"].append(I_G) # SWAP: Removed abs()
+        self.data_memory[step_idx]["ids"].append(abs(I_D)) # SWAP: Removed abs()
+        self.data_memory[step_idx]["igs"].append(abs(I_G)) # SWAP: Removed abs()
         
         self.lines_id[step_idx].set_data(self.data_memory[step_idx]["vds"], self.data_memory[step_idx]["ids"])
         
