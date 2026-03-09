@@ -15,7 +15,7 @@ from laser_remote import LaserController # Imported perfectly from your module!
 
 def get_pp_exact(df, wavelength, power_nw):
     row = df[(df["Wavelength (nm)"] == wavelength) &
-             (abs(df["Power (nW)"] - power_nw) < 1e-9)]
+             (abs(df["Power (nW)"] - power_nw) < 5 * 1e-9)]
     print(row)
     if len(row) == 0:
         return None
