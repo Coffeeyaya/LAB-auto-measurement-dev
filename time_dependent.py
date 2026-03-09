@@ -10,6 +10,8 @@ from matplotlib.figure import Figure
 import numpy as np
 from keithley.keithley import Keithley2636B
 from LabAuto.network import Connection
+from pathlib import Path
+from laser_remote import LaserController
 
 def get_pp_exact(df, wavelength, power_nw):
     row = df[(df["Wavelength (nm)"] == wavelength) &
@@ -20,19 +22,6 @@ def get_pp_exact(df, wavelength, power_nw):
 
     return float(row["PP (%)"].values[0])
 
-class LaserController:
-    """Simplified, lock-free controller for use in background threads."""
-    def __init__(self, laser_ip, port=5001):
-        self.conn = Connection.connect(laser_ip, port)
-
-    def send_cmd(self, payload, wait_for_reply=True):
-        self.conn.send_json(payload)
-        if wait_for_reply:
-            return self.conn.receive_json()
-
-    def close(self):
-        self.conn.close()
-
 # -------------------------------
 # Worker Thread: Handles Hardware
 # -------------------------------
@@ -41,10 +30,10 @@ class TimeDepWorker(QThread):
     status_update = pyqtSignal(str)
     sequence_finished = pyqtSignal()
 
-    def __init__(self, resource_id, laser_ip, sequence, filename):
+    def __init__(self, resource_id, laser, sequence, filename):
         super().__init__()
         self.resource_id = resource_id
-        self.laser_ip = laser_ip
+        self.laser_ip = laser
         self.sequence = sequence
         self.filename = filename
         
@@ -88,11 +77,11 @@ class TimeDepWorker(QThread):
             self.k.enable_output('b', True)
             self.k.set_Vd(self.Vd_const)
 
-            self.status_update.emit(f"Connecting to Light PC ({self.laser_ip})...")
-            self.laser = LaserController(self.laser_ip)
+            # self.status_update.emit(f"Connecting to Light PC ({self.laser_ip})...")
+            # self.laser = LaserController(self.laser_ip)
             
             start_time = time.time()
-            
+
             with open(self.filename, 'w', newline='') as f:
                 writer = csv.writer(f)
                 writer.writerow(["Time", "V_D", "V_G", "I_D", "I_G", "Light_State"])
@@ -214,11 +203,18 @@ class TimeDepWindow(QWidget):
 if __name__ == "__main__":
     RESOURCE_ID = "USB0::0x05E6::0x2636::4407529::INSTR"
     LASER_IP = "192.168.50.17"
+    
+    print("Connecting to Laser PC...")
+    laser = LaserController(LASER_IP)
+    print("Laser connected.")
 
     with open("time_dependent_config.json", "r") as f:
         parameters = json.load(f)
-    
-    FILENAME = f"time_{parameters['device_number']}_{parameters['run_number']}.csv"
+    ###
+    output_dir = Path("data")
+    output_dir.mkdir(parents=True, exist_ok=True) # Creates 'data' folder safely
+
+    FILENAME = output_dir / f"time_{parameters['device_number']}_{parameters['run_number']}.csv"
     FILENAME_CONFIG = f"time_{parameters['device_number']}_{parameters['run_number']}_config.json"
 
     with open(FILENAME_CONFIG, "w") as f:
@@ -250,7 +246,8 @@ if __name__ == "__main__":
     wavelength_arr = np.array([450, 532, 660])
     channel_arr = np.array([0, 3, 6]).astype(str) ##
     pp_arr = np.array([30, 20, 10]).astype(str) ##
-    table = pd.read_csv("single_power_multi_wavelength.csv")
+    
+    table = pd.read_csv(Path("data") / "single_power_multi_wavelength.csv")
     def single_power_multi_wavelength_basic_block(channel_idx, wavelength, power, vg_on, vg_off, duration_1, duration_2, duration_3, duration_4):
         pp = get_pp_exact(table,  wavelength, power)
         basic_block = [
@@ -265,8 +262,9 @@ if __name__ == "__main__":
 
     for i in range(len(wavelength_arr)):
         channel_idx = channel_arr[i]
+        wavelength = wavelength_arr[i]
         pp = pp_arr[i]
-        sequence.extend(single_power_multi_wavelength_basic_block(channel_idx, pp, vg_on, vg_off, duration_1, duration_2, duration_3, duration_4))
+        sequence.extend(single_power_multi_wavelength_basic_block(channel_idx, wavelength, pp, vg_on, vg_off, duration_1, duration_2, duration_3, duration_4))
 
     app = QApplication(sys.argv)
     worker = TimeDepWorker(RESOURCE_ID, LASER_IP, sequence, FILENAME)

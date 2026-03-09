@@ -5,10 +5,12 @@ import numpy as np
 import pandas as pd
 import time
 import json
+import os
 from pathlib import Path
+from laser_remote import LaserController
 
 
-def find_pp_for_target_power(conn,
+def find_pp_for_target_power(laser,
                              pm,
                              channel,
                              target_power,
@@ -28,7 +30,6 @@ def find_pp_for_target_power(conn,
     best_pp : float
     measured_power : float
     """
-
     pm.config_meter(wavelength, average_count)
 
     low = pp_min
@@ -42,8 +43,7 @@ def find_pp_for_target_power(conn,
         mid = (low + high) / 2
 
         # Send power command
-        conn.send_json({"channel": channel, "power": mid, "on": 1})
-        conn.receive_json()
+        laser.send_cmd({"channel": channel, "power": mid, "on": 1}, wait_for_reply=True)
         time.sleep(1)
 
         # Measure power (average final value)
@@ -53,8 +53,7 @@ def find_pp_for_target_power(conn,
         # Check convergence
         if abs(measured_power - target_power) <= tolerance:
             best_pp = mid
-            conn.send_json({"channel": channel, "on": 1})
-            conn.receive_json()
+            laser.send_cmd({"channel": channel, "on": 1}, wait_for_reply=True)
             time.sleep(1)
             break
 
@@ -65,13 +64,12 @@ def find_pp_for_target_power(conn,
 
         best_pp = mid
 
-        conn.send_json({"channel": channel, "on": 1})
-        conn.receive_json()
+        laser.send_cmd({"channel": channel, "on": 1}, wait_for_reply=True)
         time.sleep(1)
 
     return best_pp, measured_power
 
-def single_power_multi_wavelength(conn, channel_arr, wavelength_arr, target_power):
+def single_power_multi_wavelength(laser, channel_arr, wavelength_arr, target_power):
     n_wl = len(wavelength_arr)
     pp_table = np.zeros(n_wl)
     power_table = np.zeros(n_wl)
@@ -81,7 +79,7 @@ def single_power_multi_wavelength(conn, channel_arr, wavelength_arr, target_powe
     try:
         pm.zero_sensor() # zero power meter
         for i, wavelength in enumerate(wavelength_arr):
-            pp, power = find_pp_for_target_power(conn=conn, pm=pm, channel=channel_arr[i], target_power=target_power, wavelength=wavelength,
+            pp, power = find_pp_for_target_power(laser=laser, pm=pm, channel=channel_arr[i], target_power=target_power, wavelength=wavelength,
                                     pp_min = 1, pp_max = 150)
             pp_table[i] = pp
             power_table[i] = power
@@ -99,7 +97,7 @@ def single_power_multi_wavelength(conn, channel_arr, wavelength_arr, target_powe
         print('power meter closed')
         pm.close_meter()
     
-def multi_power_single_wavelength(conn, target_channel, power_arr, target_wavelength):
+def multi_power_single_wavelength(laser, target_channel, power_arr, target_wavelength):
     n_power = len(power_arr)
     pp_table = np.zeros(n_power)
     power_table = np.zeros(n_power)
@@ -108,7 +106,7 @@ def multi_power_single_wavelength(conn, target_channel, power_arr, target_wavele
     try:
         pm.zero_sensor() # zero power meter
         for i, power in enumerate(power_arr):
-            pp, power = find_pp_for_target_power(conn=conn, pm=pm, channel=target_channel, target_power=power, wavelength=target_wavelength,
+            pp, power = find_pp_for_target_power(laser=laser, pm=pm, channel=target_channel, target_power=power, wavelength=target_wavelength,
                                     pp_min = 1, pp_max = 150)
             pp_table[i] = pp
             power_table[i] = power
@@ -129,7 +127,10 @@ def multi_power_single_wavelength(conn, target_channel, power_arr, target_wavele
 
 if __name__ == "__main__":
     LIGHT_IP = "192.168.50.17" #
-    conn = Connection.connect(LIGHT_IP, 5001)
+    print("Connecting to Laser PC...")
+    laser = LaserController(LIGHT_IP, 5001)
+    print("Laser connected.")
+    
 
     with open("power_config.json", "r") as f:
         parameters = json.load(f)
@@ -137,19 +138,18 @@ if __name__ == "__main__":
     # channel_arr = np.linspace(0, 7, 8).astype(int).astype(str) ### 
     wavelength_arr = np.array([450, 532, 660])
     channel_arr = np.array([0, 3, 6]).astype(int).astype(str) ### 
-
     power_arr = np.array([10, 20, 30]).astype(int).astype(str)
 
+    os.makedirs("calibration", exist_ok=True)
     mode = parameters["mode"]
     if mode == "single_power_multi_wavelength":
         target_power = int(parameters["target_power"]) *  1e-9 # the unit in power_config.json is nW
-        measured_table = single_power_multi_wavelength(conn, channel_arr, wavelength_arr, target_power)
-        measured_table.to_csv(Path("data") / "single_power_multi_wavelength.csv", index=False)
+        measured_table = single_power_multi_wavelength(laser, channel_arr, wavelength_arr, target_power)
+        measured_table.to_csv(Path("calibration") / "single_power_multi_wavelength.csv", index=False)
 
     if mode == "multi_power_single_wavelength":
         target_wavelength = parameters["target_wavelength"]
         target_channel = parameters["target_channel"]
-        measured_table = multi_power_single_wavelength(conn, power_arr, target_channel, target_wavelength)
-        measured_table.to_csv(Path("data") / "multi_power_single_wavelength.csv", index=False)
-
-    
+        measured_table = multi_power_single_wavelength(laser, power_arr, target_channel, target_wavelength)
+        measured_table.to_csv(Path("calibration") / "multi_power_single_wavelength.csv", index=False)
+    laser.close()

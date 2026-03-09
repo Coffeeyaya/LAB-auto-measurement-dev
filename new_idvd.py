@@ -3,6 +3,7 @@ import time
 import csv
 import os
 import json
+import pandas as pd
 import numpy as np
 from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QLabel
 from PyQt5.QtCore import QThread, pyqtSignal
@@ -12,26 +13,37 @@ from matplotlib.figure import Figure
 from keithley.keithley import Keithley2636B
 from laser_remote import LaserController
 
+from pathlib import Path
+
+def get_pp_exact(df, wavelength, power_nw):
+    row = df[(df["Wavelength (nm)"] == wavelength) &
+             (df["Power (nW)"] == power_nw)]
+
+    if len(row) == 0:
+        return None
+
+    return float(row["PP (%)"].values[0])
+
 # -------------------------------
 # Worker Thread: Automated Batch Sequence
 # -------------------------------
 class AutoIdVdWorker(QThread):
     new_sweep = pyqtSignal(int, str)  
-    new_data = pyqtSignal(int, float, float, float)  # step_idx, Vd, I_D, I_G
+    new_data = pyqtSignal(int, float, float, float)  # config_idx, Vd, I_D, I_G
     status_update = pyqtSignal(str)
     sequence_finished = pyqtSignal()
 
-    def __init__(self, resource_id, laser_ip, config_files_list):
+    def __init__(self, resource_id, laser, config_files_list):
         super().__init__()
         self.resource_id = resource_id
-        self.laser_ip = laser_ip
+        self.laser = laser 
         self.config_files = config_files_list 
         self.f = None
         self.running = True
 
     def run(self):
         k = None
-        laser = None
+        laser = self.laser 
         current_channel = None
 
         try:
@@ -40,10 +52,6 @@ class AutoIdVdWorker(QThread):
             k.connect()
             k.clean_instrument()
             k.config()
-
-            if self.laser_ip:
-                self.status_update.emit(f"Connecting to Light PC ({self.laser_ip})...")
-                laser = LaserController(self.laser_ip)
 
             # --- BATCH PROCESSING LOOP ---
             for step_idx, config_file in enumerate(self.config_files):
@@ -57,20 +65,19 @@ class AutoIdVdWorker(QThread):
                 Vg_const = params["vg_const"] 
                 device_num = params['device_number']
                 run_num = params['run_number']
+                
                 output_dir = Path("data")
-                output_dir.mkdir(parents=True, exist_ok=True) # Creates 'data' folder safely
+                output_dir.mkdir(parents=True, exist_ok=True) 
                     
                 filename = output_dir / f"idvd_{device_num}_{run_num}.csv"
                 config_backup = output_dir / f"idvd_{device_num}_{run_num}_config.json"
-                # filename = f"idvd_{device_num}_{run_num}.csv"
-                # config_backup = f"idvd_{device_num}_{run_num}_config.json"
                 
                 with open(config_backup, 'w') as f_back:
                     json.dump(params, f_back, indent=4)
 
                 self.f = open(filename, 'w', newline='')
                 writer = csv.writer(self.f)
-                # SWAP: Column headers updated
+                # SWAP: Headers updated
                 writer.writerow(["V_G", "V_D", "I_D", "I_G"])
 
                 k.set_nplc('a', params["nplc_a"])
@@ -97,7 +104,7 @@ class AutoIdVdWorker(QThread):
                 
                 if dep_v is not None and self.running:
                     self.status_update.emit(f"Depleting Gate at {dep_v}V for {dep_t}s...")
-                    k.set_Vd(0.0) # SAFEGUARD: Hold Vd at 0V during depletion
+                    k.set_Vd(0.0) # SAFEGUARD: Hold Vd at 0V during gate depletion!
                     k.set_Vg(dep_v)
                     
                     if dep_t > 0:
@@ -107,9 +114,22 @@ class AutoIdVdWorker(QThread):
                             time.sleep(1)
 
                 # --- Prepare Light ---
-                if params.get("laser_cmd") and laser:
-                    cmd = params["laser_cmd"]
+                if params.get("laser_settings") and laser:
+                    laser_settings = params["laser_settings"]
+                    table = pd.read_csv(Path("calibration") / "single_power_multi_wavelength.csv")
+                    
+                    # DYNAMIC FIX: Un-hardcoded the wavelength and target power lookups!
+                    wl = laser_settings['wavelength']
+                    pwr = laser_settings['target_power']
+                    pp = get_pp_exact(table, wl, pwr)
+                    
+                    if pp is None:
+                        self.status_update.emit(f"Warning: No PP found for {wl}nm at {pwr}nW. Defaulting.")
+                        pp = 0
+                        
+                    cmd = {"channel": laser_settings['channel'], "wavelength": wl, "power": pp}
                     current_channel = cmd["channel"]
+                    
                     self.status_update.emit("Configuring Laser")
                     laser.send_cmd(cmd, wait_for_reply=True)
                     
@@ -128,7 +148,7 @@ class AutoIdVdWorker(QThread):
                 k.set_autorange('a', 1)
                 k.set_autorange('b', 1)    
 
-                # Setup for the actual Id-Vd sweep
+                # Move to the start conditions
                 k.set_Vg(Vg_const)
                 k.set_Vd(params["vd_start"])
                 time.sleep(1) # Initial RC settling
@@ -146,7 +166,7 @@ class AutoIdVdWorker(QThread):
                         self.new_data.emit(step_idx, vd, I_D, I_G)
 
                 # --- Clean up step ---
-                if params.get('laser_cmd') and laser and current_channel is not None:
+                if params.get('laser_settings') and laser and current_channel is not None:
                     self.status_update.emit(f"Sweep done. Turning OFF Laser Ch {current_channel}...")
                     laser.send_cmd({"channel": current_channel, "on": 1}, wait_for_reply=True)
                     current_channel = None
@@ -225,9 +245,7 @@ class AutoIdVdWindow(QWidget):
         self.ax1.tick_params(axis='y', labelcolor='blue')
 
     def add_sweep_line(self, step_idx, label):
-        """Creates new lines on the plot for Id."""
         self.lines_id[step_idx], = self.ax1.plot([], [], '.-', markersize=8, label=label)
-        
         # SWAP: vgs array swapped to vds
         self.data_memory[step_idx] = {"vds": [], "ids": [], "igs": []}
         
@@ -235,7 +253,6 @@ class AutoIdVdWindow(QWidget):
         self.canvas.draw()
 
     def update_plot(self, step_idx, Vd, I_D, I_G):
-        """Appends data to the correct line based on step_idx."""
         self.data_memory[step_idx]["vds"].append(Vd)
         self.data_memory[step_idx]["ids"].append(I_D) # SWAP: Removed abs() for linear scale
         self.data_memory[step_idx]["igs"].append(I_G) 
@@ -268,17 +285,27 @@ class AutoIdVdWindow(QWidget):
 if __name__ == "__main__":
     RESOURCE_ID = "USB0::0x05E6::0x2636::4407529::INSTR"
     LIGHT_IP = "192.168.50.17" 
-    
-    # --- BATCH CONFIGURATION QUEUE ---
-    config_queue = [
-        'idvd_config_1.json',
-        'idvd_config_2.json',
-        'idvd_config_3.json'
-    ]
 
+    print("Connecting to Laser PC...")
+    laser = LaserController(LIGHT_IP)
+    print("Laser connected.")
+    
+    config_dir = Path("config")
+    
+    # --- OPTIONAL: Auto-detect all files ---
+    # To run every file automatically, uncomment the line below:
+    # config_queue = sorted(list(config_dir.glob("idvd*.json")))
+    
+    # Or keep using explicit listing:
+    config_queue = [
+        config_dir / 'idvd_config_1.json',
+        config_dir / 'idvd_config_2.json',
+        config_dir / 'idvd_config_3.json'
+    ]
+    
     app = QApplication(sys.argv)
     
-    worker = AutoIdVdWorker(RESOURCE_ID, LIGHT_IP, config_queue)
+    worker = AutoIdVdWorker(RESOURCE_ID, laser, config_queue)
     window = AutoIdVdWindow(worker)
     window.show()
     

@@ -13,6 +13,8 @@ from matplotlib.figure import Figure
 from keithley.keithley import Keithley2636B
 from laser_remote import LaserController
 
+from pathlib import Path
+
 def get_pp_exact(df, wavelength, power_nw):
     row = df[(df["Wavelength (nm)"] == wavelength) &
              (df["Power (nW)"] == power_nw)]
@@ -69,9 +71,11 @@ class AutoIdVgWorker(QThread):
                 device_num = params['device_number']
                 run_num = params['run_number']
                 
-                # 2. Create unique filenames and backup the JSON
-                filename = f"idvg_{device_num}_{run_num}.csv"
-                config_backup = f"idvg_{device_num}_{run_num}_config.json"
+                output_dir = Path("data")
+                output_dir.mkdir(parents=True, exist_ok=True) # Creates 'data' folder safely
+                    
+                filename = output_dir / f"idvd_{device_num}_{run_num}.csv"
+                config_backup = output_dir / f"idvd_{device_num}_{run_num}_config.json"
                 
                 with open(config_backup, 'w') as f_back:
                     json.dump(params, f_back, indent=4)
@@ -115,7 +119,7 @@ class AutoIdVgWorker(QThread):
                 # --- Prepare Light (if specified) ---
                 if params.get("laser_settings") and laser:
                     laser_settings = params["laser_settings"]
-                    table = pd.read_csv("single_power_multi_wavelength.csv")
+                    table = pd.read_csv(Path("data") / "single_power_multi_wavelength.csv")
                     pp = get_pp_exact(table, 532, 100)
                     cmd = {"channel": laser_settings['channel'], "wavelength": laser_settings['wavelength'], "power": pp}
                     current_channel = cmd["channel"]
@@ -295,14 +299,13 @@ if __name__ == "__main__":
     RESOURCE_ID = "USB0::0x05E6::0x2636::4407529::INSTR"
     LIGHT_IP = "192.168.50.17" 
     
-    # --- BATCH CONFIGURATION QUEUE ---
-    # Put all the JSON files you want to run sequentially in this list
+    config_dir = Path("config")
     config_queue = [
-        'idvg_config_1.json',
-        'idvg_config_2.json',
-        'idvg_config_3.json'
+        config_dir / 'idvg_config_1.json',
+        config_dir / 'idvg_config_2.json',
+        config_dir / 'idvg_config_3.json'
     ]
-
+    
     app = QApplication(sys.argv)
     
     # We now pass the entire LIST to the worker!

@@ -1,0 +1,19 @@
+{   
+    "description": "light 660 nm",
+    "device_number": "4-5",
+    "run_number": "1",
+    "label": "light 1",
+    "current_limit_a": 1e-3,
+    "current_limit_b": 1e-3,
+    "nplc_a": 1.0,
+    "nplc_b": 1.0,
+    "vd_const": 1.0,
+    "vg_start": -3.0, 
+    "vg_stop": 3.0, 
+    "num_points": 51,
+    "wait_time": 10,
+    "laser_stable_time": 10,
+    "deplete_voltage": 0,
+    "deplete_time": 0,
+    "laser_settings": {"channel": 6, "wavelength": 660, "power": 100} 
+}
