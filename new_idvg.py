@@ -117,7 +117,7 @@ class AutoIdVgWorker(QThread):
                 if params.get("laser_settings") and laser:
                     laser_settings = params["laser_settings"]
                     table = pd.read_csv(Path("calibration") / "single_power_multi_wavelength.csv")
-                    pp = get_pp_exact(table, 532, 100)
+                    pp = get_pp_exact(table, laser_settings['wavelength'], laser_settings['power'])
                     cmd = {"channel": laser_settings['channel'], "wavelength": laser_settings['wavelength'], "power": pp}
                     current_channel = cmd["channel"]
                     self.status_update.emit("Configuring Laser")

@@ -117,13 +117,16 @@ class TimeDepWorker(QThread):
                 sequence = []
                 wavelength_arr = np.array(params.get("wavelength_arr", [450, 532, 660]))
                 channel_arr = np.array(params.get("channel_arr", [0, 3, 6])).astype(str)
-                target_power = params["target_power"]
+                
+                table = pd.read_csv(Path("calibration") / "single_power_multi_wavelength.csv")
+                
                 
                 for i in range(len(wavelength_arr)):
                     ch_idx = channel_arr[i]
                     wl = wavelength_arr[i]
+                    pp = get_pp_exact(table, wl, 100) # set to 100 nW
                     sequence.extend(single_power_multi_wavelength_basic_block(
-                        power_table, ch_idx, wl, target_power,
+                        power_table, ch_idx, wl, pp,
                         params["vg_on"], params["vg_off"], 
                         params["duration_1"], params["duration_2"], 
                         params["duration_3"], params["duration_4"]
