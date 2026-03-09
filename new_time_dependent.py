@@ -20,9 +20,8 @@ def get_pp_exact(df, wavelength, power_nw):
         return None
     return float(row["PP (%)"].values[0])
 
-def single_power_multi_wavelength_basic_block(channel_idx, wavelength, target_power, vg_on, vg_off, duration_1, duration_2, duration_3, duration_4):
-    table = pd.read_csv(Path("calibration") / "single_power_multi_wavelength.csv")
-    pp = get_pp_exact(table, wavelength, target_power)
+def single_power_multi_wavelength_basic_block(power_table, channel_idx, wavelength, target_power, vg_on, vg_off, duration_1, duration_2, duration_3, duration_4):
+    pp = get_pp_exact(power_table, wavelength, target_power)
     basic_block = [
         {"Vg": vg_off, "duration": duration_1},
         {"Vg": vg_on, "duration": duration_2, "laser_cmd1": {"channel": channel_idx, "power": pp}},
