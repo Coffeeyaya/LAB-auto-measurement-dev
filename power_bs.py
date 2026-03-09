@@ -137,7 +137,7 @@ if __name__ == "__main__":
 
     with open(Path("config") / "power_config.json", "r") as f:
         parameters = json.load(f)
-    wavelength_arr = np.array([450, 488, 514, 532, 600, 633, 660, 690])
+    wavelength_arr = np.array([450, 488, 514, 532, 600, 633, 660, 690]).astype(int).astype(str)
     channel_arr = np.linspace(0, 7, 8).astype(int).astype(str) ### 
     # wavelength_arr = np.array([450, 532, 660])
     # channel_arr = np.array([0, 3, 6]).astype(int).astype(str) ### 
