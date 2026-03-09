@@ -7,7 +7,7 @@
     "current_limit_b": 1e-3,
     "nplc_a": 1.0,
     "nplc_b": 1.0,
-    "vg_const": 1.0,
+    "vg_const": 3.0,
     "vd_start": -2.0, 
     "vd_stop": 2.0, 
     "num_points": 51,
