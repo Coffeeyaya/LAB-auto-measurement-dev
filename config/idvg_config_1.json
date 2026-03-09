@@ -14,6 +14,6 @@
     "wait_time": 5,
     "laser_stable_time": 0,
     "deplete_voltage": -5,
-    "deplete_time": 5,
+    "deplete_time": 0,
     "laser_settings": null
 }
