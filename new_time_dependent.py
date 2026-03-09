@@ -20,7 +20,8 @@ def get_pp_exact(df, wavelength, power_nw):
         return None
     return float(row["PP (%)"].values[0])
 
-def single_power_multi_wavelength_basic_block(table, channel_idx, wavelength, target_power, vg_on, vg_off, duration_1, duration_2, duration_3, duration_4):
+def single_power_multi_wavelength_basic_block(channel_idx, wavelength, target_power, vg_on, vg_off, duration_1, duration_2, duration_3, duration_4):
+    table = pd.read_csv(Path("calibration") / "single_power_multi_wavelength.csv")
     pp = get_pp_exact(table, wavelength, target_power)
     basic_block = [
         {"Vg": vg_off, "duration": duration_1},
@@ -118,7 +119,7 @@ class TimeDepWorker(QThread):
                 wavelength_arr = np.array(params.get("wavelength_arr", [450, 532, 660])).astype(int).astype(str)
                 channel_arr = np.array(params.get("channel_arr", [0, 3, 6])).astype(int).astype(str)
                 
-                table = pd.read_csv(Path("calibration") / "single_power_multi_wavelength.csv")
+                
                 for i in range(len(wavelength_arr)):
                     ch_idx = channel_arr[i]
                     wl = wavelength_arr[i]
@@ -150,11 +151,17 @@ class TimeDepWorker(QThread):
                         while time.time() < step_end:
                             if not self.running: break
                             
-                            I_D, I_G = self.k.measure()
-                            if I_D is not None:
-                                t = time.time() - start_time
-                                writer.writerow([t, vd_const, target_vg, I_D, I_G, self.current_light_state])
-                                self.new_data.emit(config_idx, t, vd_const, target_vg, I_D, I_G)
+                            # 1. Catch the raw result in a single variable first
+                            reading = self.k.measure()
+                            
+                            # 2. Make sure it isn't None, AND it actually has 2 items
+                            if reading is not None and len(reading) == 2:
+                                I_D, I_G = reading # 3. Safe to unpack!
+                                
+                                if I_D is not None:
+                                    t = time.time() - start_time
+                                    writer.writerow([t, vd_const, target_vg, I_D, I_G, self.current_light_state])
+                                    self.new_data.emit(config_idx, t, vd_const, target_vg, I_D, I_G)
 
                 # Clean up after config sweep finishes
                 self.k.enable_output('a', False)
@@ -167,7 +174,7 @@ class TimeDepWorker(QThread):
         finally:
             self.status_update.emit("All Sequences complete. Shutting down hardware...")
             if self.laser and self.current_light_state:
-                self.laser.send_cmd({"channel": self.laser_channel, "on": 1}, wait_for_reply=True)
+                self.laser.send_cmd({"channel": self.laser_channel, "on": 1}, wait_for_reply=False)
             if self.k:
                 self.k.shutdown()
                 
