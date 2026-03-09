@@ -132,7 +132,7 @@ if __name__ == "__main__":
     print("Laser connected.")
     
 
-    with open("power_config.json", "r") as f:
+    with open(Path("config") / "power_config.json", "r") as f:
         parameters = json.load(f)
     # wavelength_arr = np.array([450, 488, 514, 532, 600, 633, 660, 690])
     # channel_arr = np.linspace(0, 7, 8).astype(int).astype(str) ### 
