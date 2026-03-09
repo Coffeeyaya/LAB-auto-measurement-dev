@@ -122,9 +122,8 @@ class TimeDepWorker(QThread):
                 for i in range(len(wavelength_arr)):
                     ch_idx = channel_arr[i]
                     wl = wavelength_arr[i]
-                    pp = get_pp_exact(table, wl, 100) # set to 100 nW
                     sequence.extend(single_power_multi_wavelength_basic_block(
-                        power_table, ch_idx, wl, pp,
+                        power_table, ch_idx, wl, 100,
                         params["vg_on"], params["vg_off"], 
                         params["duration_1"], params["duration_2"], 
                         params["duration_3"], params["duration_4"]
