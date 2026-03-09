@@ -156,8 +156,8 @@ class AutoIdVgWorker(QThread):
                         
                         if I_D is not None:
                             t = time.time() - start_time
-                            writer.writerow([t, Vd_const, vg, I_D, I_G])
-                            self.new_data.emit(t, Vd_const, vg, I_D, I_G)
+                            writer.writerow([Vd_const, vg, I_D, I_G])
+                            self.new_data.emit(Vd_const, vg, I_D, I_G)
 
                 # --- Clean up step ---
                 # NOTE: Ensure params.get() here matches the key used earlier! ('laser_settings' vs 'laser_cmd')

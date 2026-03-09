@@ -11,9 +11,9 @@
     "vg_start": -5.0, 
     "vg_stop": 5.0, 
     "num_points": 51,
-    "wait_time": 10,
+    "wait_time": 5,
     "laser_stable_time": 0,
     "deplete_voltage": -3,
-    "deplete_time": 10,
+    "deplete_time": 5,
     "laser_cmd": null
 }
