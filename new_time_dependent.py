@@ -119,8 +119,6 @@ class TimeDepWorker(QThread):
                 channel_arr = np.array(params.get("channel_arr", [0, 3, 6])).astype(str)
                 
                 table = pd.read_csv(Path("calibration") / "single_power_multi_wavelength.csv")
-                
-                
                 for i in range(len(wavelength_arr)):
                     ch_idx = channel_arr[i]
                     wl = wavelength_arr[i]
@@ -131,7 +129,7 @@ class TimeDepWorker(QThread):
                         params["duration_1"], params["duration_2"], 
                         params["duration_3"], params["duration_4"]
                     ))
-
+                print(sequence)
                 # Start the measurement loop
                 start_time = time.time()
                 with open(filename, 'w', newline='') as f_csv:
