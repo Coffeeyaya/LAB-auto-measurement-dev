@@ -38,7 +38,7 @@ def find_pp_for_target_power(laser,
     best_pp = None
     measured_power = None
 
-    laser.send_cmd({"channel": channel, "wavelength": wavelength, "power": mid, "on": 1}, wait_for_reply=True)
+    laser.send_cmd({"channel": channel, "wavelength": wavelength}, wait_for_reply=True)
     time.sleep(1)
 
     for _ in range(max_iter):
