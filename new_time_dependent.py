@@ -24,9 +24,9 @@ def single_power_multi_wavelength_basic_block(table, channel_idx, wavelength, ta
     pp = get_pp_exact(table, wavelength, target_power)
     basic_block = [
         {"Vg": vg_off, "duration": duration_1},
-        {"Vg": vg_on, "duration": duration_2, "laser_cmd1": {"channel": int(channel_idx), "power": pp}},
-        {"Vg": vg_on, "duration": duration_3, "laser_cmd2": {"channel": int(channel_idx), "on": 1}}, 
-        {"Vg": vg_on, "duration": duration_4, "laser_cmd2": {"channel": int(channel_idx), "on": 1}}, 
+        {"Vg": vg_on, "duration": duration_2, "laser_cmd1": {"channel": channel_idx, "power": pp}},
+        {"Vg": vg_on, "duration": duration_3, "laser_cmd2": {"channel": channel_idx, "on": 1}}, 
+        {"Vg": vg_on, "duration": duration_4, "laser_cmd2": {"channel": channel_idx, "on": 1}}, 
     ]
     return basic_block
 
