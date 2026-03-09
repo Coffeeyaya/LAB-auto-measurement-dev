@@ -238,10 +238,10 @@ class TimeDepWindow(QWidget):
     def add_config_line(self, config_idx, label):
         self.data_memory[config_idx] = {"t": [], "id": [], "ig": [], "vd": [], "vg": []}
         
-        self.lines_id[config_idx], = self.ax1.plot([], [], 'b.-', label=f'Id ({label})')
-        self.lines_ig[config_idx], = self.ax2.plot([], [], 'r.-', label=f'Ig ({label})')
-        self.lines_vd[config_idx], = self.ax1_v.plot([], [], 'g.-', alpha=0.3)
-        self.lines_vg[config_idx], = self.ax2_v.plot([], [], 'k.-', alpha=0.3)
+        self.lines_id[config_idx], = self.ax1.plot([], [], '.-', label=f'Id ({label})')
+        self.lines_ig[config_idx], = self.ax2.plot([], [], '.-', label=f'Ig ({label})')
+        self.lines_vd[config_idx], = self.ax1_v.plot([], [], '.-', alpha=0.3)
+        self.lines_vg[config_idx], = self.ax2_v.plot([], [], '.-', alpha=0.3)
         
         self.ax1.legend(loc='best')
         self.ax2.legend(loc='best')
