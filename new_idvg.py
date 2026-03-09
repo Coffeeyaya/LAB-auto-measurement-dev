@@ -71,8 +71,8 @@ class AutoIdVgWorker(QThread):
                 output_dir = Path("data")
                 output_dir.mkdir(parents=True, exist_ok=True) 
                     
-                filename = output_dir / f"idvd_{device_num}_{run_num}.csv"
-                config_backup = output_dir / f"idvd_{device_num}_{run_num}_config.json"
+                filename = output_dir / f"idvg_{device_num}_{run_num}.csv"
+                config_backup = output_dir / f"idvg_{device_num}_{run_num}_config.json"
                 
                 with open(config_backup, 'w') as f_back:
                     json.dump(params, f_back, indent=4)

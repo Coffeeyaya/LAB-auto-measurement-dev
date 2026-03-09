@@ -1,6 +1,6 @@
 {   
     "description": "",
-    "device_number": "1-1",
+    "device_number": "5-5",
     "run_number": "1",
     "label": "1",
     "current_limit_a": 1e-3,
@@ -8,12 +8,12 @@
     "nplc_a": 1.0,
     "nplc_b": 1.0,
     "vg_const": 1.0,
-    "vd_start": -3.0, 
-    "vd_stop": 3.0, 
-    "num_points": 7,
-    "wait_time": 3,
-    "laser_stable_time": 3,
-    "deplete_voltage": 0,
+    "vd_start": -1.0, 
+    "vd_stop": 1.0, 
+    "num_points": 51,
+    "wait_time": 5,
+    "laser_stable_time": 0,
+    "deplete_voltage": -3,
     "deplete_time": 0,
     "laser_cmd": null
 }

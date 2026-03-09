@@ -17,11 +17,10 @@ from pathlib import Path
 
 def get_pp_exact(df, wavelength, power_nw):
     row = df[(df["Wavelength (nm)"] == wavelength) &
-             (df["Power (nW)"] == power_nw)]
-
+             (abs(df["Power (nW)"] - power_nw) < 1e-3)]
+    print(row)
     if len(row) == 0:
         return None
-
     return float(row["PP (%)"].values[0])
 
 # -------------------------------
@@ -29,7 +28,7 @@ def get_pp_exact(df, wavelength, power_nw):
 # -------------------------------
 class AutoIdVdWorker(QThread):
     new_sweep = pyqtSignal(int, str)  
-    new_data = pyqtSignal(int, float, float, float)  # config_idx, Vd, I_D, I_G
+    new_data = pyqtSignal(int, float, float, float)  # step_idx, Vd, I_D, I_G
     status_update = pyqtSignal(str)
     sequence_finished = pyqtSignal()
 
@@ -74,7 +73,7 @@ class AutoIdVdWorker(QThread):
                 
                 with open(config_backup, 'w') as f_back:
                     json.dump(params, f_back, indent=4)
-
+                start_time = time.time()
                 self.f = open(filename, 'w', newline='')
                 writer = csv.writer(self.f)
                 # SWAP: Headers updated
@@ -113,23 +112,18 @@ class AutoIdVdWorker(QThread):
                             self.status_update.emit(f"Depleting Gate at {dep_v}V for {i}s")
                             time.sleep(1)
 
-                # --- Prepare Light ---
+                # --- Prepare Light (if specified) ---
                 if params.get("laser_settings") and laser:
                     laser_settings = params["laser_settings"]
                     table = pd.read_csv(Path("calibration") / "single_power_multi_wavelength.csv")
-                    
-                    # DYNAMIC FIX: Un-hardcoded the wavelength and target power lookups!
-                    wl = laser_settings['wavelength']
-                    pwr = laser_settings['target_power']
-                    pp = get_pp_exact(table, wl, pwr)
+                    pp = get_pp_exact(table, int(laser_settings['wavelength']), int(laser_settings['power']))
                     
                     if pp is None:
-                        self.status_update.emit(f"Warning: No PP found for {wl}nm at {pwr}nW. Defaulting.")
+                        self.status_update.emit(f"Warning: No PP found. Defaulting to 0.")
                         pp = 0
                         
-                    cmd = {"channel": laser_settings['channel'], "wavelength": wl, "power": pp}
+                    cmd = {"channel": laser_settings['channel'], "wavelength": laser_settings['wavelength'], "power": pp}
                     current_channel = cmd["channel"]
-                    
                     self.status_update.emit("Configuring Laser")
                     laser.send_cmd(cmd, wait_for_reply=True)
                     
@@ -151,7 +145,7 @@ class AutoIdVdWorker(QThread):
                 # Move to the start conditions
                 k.set_Vg(Vg_const)
                 k.set_Vd(params["vd_start"])
-                time.sleep(1) # Initial RC settling
+                time.sleep(1) 
 
                 self.status_update.emit("Sweeping Vd ...")
                 for vd in vd_points:
@@ -159,11 +153,16 @@ class AutoIdVdWorker(QThread):
                         
                     k.set_Vd(vd) # SWAP: Step Vd
                     time.sleep(0.1) 
-                    I_D, I_G = k.measure()
+                    # 1. Catch the raw result in a single variable first
+                    reading = k.measure()
                     
-                    if I_D is not None:
-                        writer.writerow([Vg_const, vd, I_D, I_G])
-                        self.new_data.emit(step_idx, vd, I_D, I_G)
+                    # 2. Make sure it isn't None, AND it actually has 2 items
+                    if reading is not None and len(reading) == 2:
+                        I_D, I_G = reading 
+                        
+                        if I_D is not None:
+                            writer.writerow([Vg_const, vd, I_D, I_G])
+                            self.new_data.emit(step_idx, vd, I_D, I_G) # SWAP: Emit vd instead of vg
 
                 # --- Clean up step ---
                 if params.get('laser_settings') and laser and current_channel is not None:
@@ -236,26 +235,25 @@ class AutoIdVdWindow(QWidget):
         
         self.ax1 = self.figure.add_subplot(111)
         
+        # SWAP: Titles and labels for Id-Vd
         self.ax1.set_title("Automated Steady-State Id-Vd")
-        self.ax1.set_xlabel("Drain Voltage (V)") # SWAP: X-axis is Vd
+        self.ax1.set_xlabel("Drain Voltage (V)")
         self.ax1.grid(True, which="both", ls="--", alpha=0.5)
 
-        # SWAP: Linear scale (removed set_yscale('log')) and absolute value notation
+        # SWAP: Linear scale (removed set_yscale('log'))
         self.ax1.set_ylabel("Drain Current Id (A)", color='blue')
         self.ax1.tick_params(axis='y', labelcolor='blue')
 
     def add_sweep_line(self, step_idx, label):
         self.lines_id[step_idx], = self.ax1.plot([], [], '.-', markersize=8, label=label)
-        # SWAP: vgs array swapped to vds
-        self.data_memory[step_idx] = {"vds": [], "ids": [], "igs": []}
-        
+        self.data_memory[step_idx] = {"vds": [], "ids": [], "igs": []} # SWAP: vgs to vds
         self.ax1.legend(loc='best')
         self.canvas.draw()
 
     def update_plot(self, step_idx, Vd, I_D, I_G):
         self.data_memory[step_idx]["vds"].append(Vd)
-        self.data_memory[step_idx]["ids"].append(I_D) # SWAP: Removed abs() for linear scale
-        self.data_memory[step_idx]["igs"].append(I_G) 
+        self.data_memory[step_idx]["ids"].append(I_D) # SWAP: Removed abs()
+        self.data_memory[step_idx]["igs"].append(I_G) # SWAP: Removed abs()
         
         self.lines_id[step_idx].set_data(self.data_memory[step_idx]["vds"], self.data_memory[step_idx]["ids"])
         
@@ -291,12 +289,7 @@ if __name__ == "__main__":
     print("Laser connected.")
     
     config_dir = Path("config")
-    
-    # --- OPTIONAL: Auto-detect all files ---
-    # To run every file automatically, uncomment the line below:
-    # config_queue = sorted(list(config_dir.glob("idvd*.json")))
-    
-    # Or keep using explicit listing:
+    # SWAP: Queue looks for idvd files
     config_queue = [
         config_dir / 'idvd_config_1.json',
         config_dir / 'idvd_config_2.json',
