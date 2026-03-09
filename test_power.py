@@ -10,12 +10,12 @@ else:
 
 print(power_table["Wavelength (nm)"].dtype)
 print(power_table["Power (nW)"].dtype)
-# def get_pp_exact(df, wavelength, power_nw):
-#     row = df[(df["Wavelength (nm)"] == wavelength) &
-#              (abs(df["Power (nW)"] - power_nw) < 5 * 1e-9)]
-#     print(row)
-#     if len(row) == 0:
-#         return None
-#     return float(row["PP (%)"].values[0])
+def get_pp_exact(df, wavelength, power_nw):
+    row = df[(df["Wavelength (nm)"] == wavelength) &
+             (abs(df["Power (nW)"] - power_nw) < 5 * 1e-9)]
+    print(row)
+    if len(row) == 0:
+        return None
+    return float(row["PP (%)"].values[0])
 
-# print(get_pp_exact(power_table, "532", 100))
+print(get_pp_exact(power_table, 532, 100))
