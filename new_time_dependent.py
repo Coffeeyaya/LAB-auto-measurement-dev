@@ -116,7 +116,7 @@ class TimeDepWorker(QThread):
                 # Generate the sequence block dynamically from this config's parameters
                 sequence = []
                 wavelength_arr = np.array(params.get("wavelength_arr", [450, 532, 660])).astype(str)
-                channel_arr = np.array(params.get("channel_arr", [0, 3, 6])).astype(str)
+                channel_arr = np.array(params.get("channel_arr", [0, 3, 6])).astype(int).astype(str)
                 
                 table = pd.read_csv(Path("calibration") / "single_power_multi_wavelength.csv")
                 for i in range(len(wavelength_arr)):
