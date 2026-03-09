@@ -149,6 +149,7 @@ class TimeDepWorker(QThread):
                         step_end = time.time() + duration
                         self.status_update.emit(f"[{label}] Step {step_idx+1}: Measuring...")
                         
+                        last_emit_time = time.time()
                         while time.time() < step_end:
                             if not self.running: break
                             
@@ -162,7 +163,12 @@ class TimeDepWorker(QThread):
                                 if I_D is not None:
                                     t = time.time() - start_time
                                     writer.writerow([t, vd_const, target_vg, I_D, I_G, self.current_light_state])
-                                    self.new_data.emit(config_idx, t, vd_const, target_vg, I_D, I_G)
+                                    # self.new_data.emit(config_idx, t, vd_const, target_vg, I_D, I_G)
+                                    # 2. THROTTLE the GUI signals to ~20 FPS to prevent freezing!
+                                    current_t = time.time()
+                                    if current_t - last_emit_time > 0.05:
+                                        self.new_data.emit(config_idx, t, vd_const, target_vg, I_D, I_G)
+                                        last_emit_time = current_t
 
                 # Clean up after config sweep finishes
                 self.k.enable_output('a', False)
