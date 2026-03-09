@@ -1,6 +1,6 @@
 {   
     "description": "light 660 nm",
-    "device_number": "5-5",
+    "device_number": "4-5",
     "run_number": "3",
     "label": "light 1",
     "current_limit_a": 1e-3,
@@ -11,7 +11,7 @@
     "vg_start": -5.0, 
     "vg_stop": 5.0, 
     "num_points": 51,
-    "wait_time": 5,
+    "wait_time": 10,
     "laser_stable_time": 10,
     "deplete_voltage": 0,
     "deplete_time": 0,
