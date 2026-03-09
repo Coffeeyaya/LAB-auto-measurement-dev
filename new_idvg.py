@@ -76,7 +76,7 @@ class AutoIdVgWorker(QThread):
                 
                 with open(config_backup, 'w') as f_back:
                     json.dump(params, f_back, indent=4)
-
+                start_time = time.time()
                 self.f = open(filename, 'w', newline='')
                 writer = csv.writer(self.f)
                 writer.writerow(["V_D", "V_G", "I_D", "I_G"])
@@ -147,11 +147,17 @@ class AutoIdVgWorker(QThread):
                         
                     k.set_Vg(vg)
                     time.sleep(0.1) 
-                    I_D, I_G = k.measure()
+                    # 1. Catch the raw result in a single variable first
+                    reading = self.k.measure()
                     
-                    if I_D is not None:
-                        writer.writerow([Vd_const, vg, I_D, I_G])
-                        self.new_data.emit(step_idx, vg, I_D, I_G)
+                    # 2. Make sure it isn't None, AND it actually has 2 items
+                    if reading is not None and len(reading) == 2:
+                        I_D, I_G = reading # 3. Safe to unpack!
+                        
+                        if I_D is not None:
+                            t = time.time() - start_time
+                            writer.writerow([t, Vd_const, vg, I_D, I_G])
+                            self.new_data.emit(t, Vd_const, vg, I_D, I_G)
 
                 # --- Clean up step ---
                 # NOTE: Ensure params.get() here matches the key used earlier! ('laser_settings' vs 'laser_cmd')
