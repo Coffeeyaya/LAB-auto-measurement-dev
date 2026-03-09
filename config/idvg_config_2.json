@@ -15,5 +15,5 @@
     "laser_stable_time": 0,
     "deplete_voltage": -3,
     "deplete_time": 5,
-    "laser_cmd": null
+    "laser_settings": null
 }

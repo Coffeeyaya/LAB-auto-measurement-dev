@@ -160,7 +160,7 @@ class AutoIdVgWorker(QThread):
 
                 # --- Clean up step ---
                 # NOTE: Ensure params.get() here matches the key used earlier! ('laser_settings' vs 'laser_cmd')
-                if params.get('laser_cmd') and laser and current_channel is not None:
+                if params.get('laser_settings') and laser and current_channel is not None:
                     self.status_update.emit(f"Sweep done. Turning OFF Laser Ch {current_channel}...")
                     laser.send_cmd({"channel": current_channel, "on": 1}, wait_for_reply=True)
                     current_channel = None
