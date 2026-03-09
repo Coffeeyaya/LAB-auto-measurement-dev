@@ -116,7 +116,7 @@ class TimeDepWorker(QThread):
 
                 # Generate the sequence block dynamically from this config's parameters
                 sequence = []
-                wavelength_arr = np.array(params.get("wavelength_arr", [450, 532, 660])).astype(int).astype(str)
+                wavelength_arr = np.array(params.get("wavelength_arr", [450, 532, 660])).astype(int)
                 channel_arr = np.array(params.get("channel_arr", [0, 3, 6])).astype(int).astype(str)
                 
                 
