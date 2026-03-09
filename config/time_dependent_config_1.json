@@ -1,5 +1,5 @@
 {   
-    "description": "",
+    "description": "auto zero once",
     "device_number": "4-5",
     "run_number": "5",
     "current_limit_a": 1e-3,
