@@ -8,12 +8,12 @@
     "nplc_a": 1.0,
     "nplc_b": 1.0,
     "vg_const": 3.0,
-    "vd_start": -2.0, 
+    "vd_start": 0.0, 
     "vd_stop": 2.0, 
     "num_points": 51,
-    "wait_time": 5,
+    "wait_time": 10,
     "laser_stable_time": 0,
-    "deplete_voltage": -3.0,
+    "deplete_voltage": -1.0,
     "deplete_time": 5,
-    "laser_cmd": null
+    "laser_settings": null
 }
