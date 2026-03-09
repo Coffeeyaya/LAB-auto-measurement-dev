@@ -128,6 +128,7 @@ class TimeDepWorker(QThread):
                         params["duration_1"], params["duration_2"], 
                         params["duration_3"], params["duration_4"]
                     ))
+                sequence.extend([{"Vg": params['vg_off'], "duration": params['duration_1']},])
                 print(sequence)
                 # Start the measurement loop
                 start_time = time.time()
