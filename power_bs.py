@@ -183,6 +183,8 @@ if __name__ == "__main__":
     channel_arr = parameters["channel_arr"] # int arr
     power_arr = parameters["power_arr"] # int arr
 
+    channel_arr = channel_arr.astype(str)
+
     pp_df, measured_power_df = multi_power_multi_wavelength(laser, channel_arr, wavelength_arr, power_arr)
     os.makedirs("calibration", exist_ok=True)
     pp_df.to_csv(Path("calibration") / Path('pp_df.csv'), index=False)
