@@ -118,13 +118,15 @@ class TimeDepWorker(QThread):
                 sequence = []
                 wavelength_arr = np.array(params.get("wavelength_arr", [450, 532, 660])).astype(int)
                 channel_arr = np.array(params.get("channel_arr", [0, 3, 6])).astype(int).astype(str)
+                power_arr = np.array(params.get("power_arr"), [100]).astype(int).astype(str)
                 
                 
                 for i in range(len(wavelength_arr)):
                     ch_idx = channel_arr[i]
                     wl = wavelength_arr[i]
+                    power = power_arr[i]
                     sequence.extend(single_power_multi_wavelength_basic_block(
-                        power_table, ch_idx, wl, 100,
+                        power_table, ch_idx, wl, power,
                         params["vg_on"], params["vg_off"], 
                         params["duration_1"], params["duration_2"], 
                         params["duration_3"], params["duration_4"]
