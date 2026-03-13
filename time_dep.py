@@ -14,6 +14,7 @@ from keithley.keithley import Keithley2636B
 from laser_remote import LaserController # Imported perfectly from your module!
 
 def get_pp_exact(df, wavelength, power_nw):
+    print(wavelength, power_nw)
     try:
         return float(df.loc[wavelength, power_nw])
     except KeyError:
@@ -21,7 +22,7 @@ def get_pp_exact(df, wavelength, power_nw):
 
 def single_power_multi_wavelength_basic_block(power_table, channel_idx, wavelength, target_power, vg_on, vg_off, duration_1, duration_2, duration_3, duration_4):
     pp = get_pp_exact(power_table, wavelength, target_power)
-    print(pp)
+    
     basic_block = [
         {"Vg": vg_off, "duration": duration_1},
         {"Vg": vg_on, "duration": duration_2, "laser_cmd1": {"channel": channel_idx, "power": pp}},
