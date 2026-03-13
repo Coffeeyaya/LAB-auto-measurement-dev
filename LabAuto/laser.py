@@ -34,17 +34,30 @@ def init_AOTF():
             grid[i][fields[j]] = (col_x, row_y)
     return grid
 
-def get_popup_window(window_title):
-    while True:
-        try:
-            win = gw.getWindowsWithTitle(f"{window_title}")
-            win = win[0]
-            win.restore()
-            win.moveTo(0, 0)
-            win.activate()
-            break
-        except gw.PyGetWindowException:
-            print(f'can not get window: {window_title}')
+def get_popup_window(window_title, timeout=5.0):
+    start_time = time.time()
+    
+    while time.time() - start_time < timeout:
+        win_list = gw.getWindowsWithTitle(window_title)
+        
+        # 1. Check if the list actually contains a window!
+        if len(win_list) > 0:
+            try:
+                win = win_list[0]
+                win.restore()
+                win.moveTo(0, 0)
+                win.activate()
+                return win  # Success! Break out and return the window.
+            except gw.PyGetWindowException as e:
+                # Catch activation errors if the window is still drawing
+                print(f"Window found but not ready to activate: {e}")
+        
+        # 2. CPU SAVER: Wait 100ms before checking again
+        time.sleep(0.1)
+        
+    # 3. Timeout safeguard
+    print(f"Timeout Error: '{window_title}' never appeared after {timeout} seconds!")
+    return None
 
 def move_and_click(coord):
     pyautogui.moveTo(*coord)
