@@ -179,9 +179,9 @@ if __name__ == "__main__":
 
     with open(Path("config") / "power_config.json", "r") as f:
         parameters = json.load(f)
-    wavelength_arr = parameters["wavelength_arr"] # int arr
-    channel_arr = parameters["channel_arr"] # int arr
-    power_arr = parameters["power_arr"] # int arr
+    wavelength_arr = np.array(parameters["wavelength_arr"]) # int arr
+    channel_arr = np.array(parameters["channel_arr"]) # int arr
+    power_arr = np.array(parameters["power_arr"]) # int arr
 
     channel_arr = channel_arr.astype(str)
 
