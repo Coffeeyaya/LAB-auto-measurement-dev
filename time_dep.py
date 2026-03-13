@@ -141,6 +141,7 @@ class TimeDepWorker(QThread):
                     writer.writerow(["Time", "V_D", "V_G", "I_D", "I_G", "Light_State"])
 
                     for step_idx, step in enumerate(sequence):
+                        # time.sleep(5)
                         if not self.running: break
                         self.k.set_auto_zero_once() ###
                         target_vg = step["Vg"]
