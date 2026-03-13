@@ -21,6 +21,7 @@ def get_pp_exact(df, wavelength, power_nw):
 
 def single_power_multi_wavelength_basic_block(power_table, channel_idx, wavelength, target_power, vg_on, vg_off, duration_1, duration_2, duration_3, duration_4):
     pp = get_pp_exact(power_table, wavelength, target_power)
+    print(pp)
     basic_block = [
         {"Vg": vg_off, "duration": duration_1},
         {"Vg": vg_on, "duration": duration_2, "laser_cmd1": {"channel": channel_idx, "power": pp}},
@@ -296,7 +297,7 @@ if __name__ == "__main__":
     config_dir = Path("config")
     config_queue = [
         config_dir / "time_dependent_config_1.json",
-        config_dir / "time_dependent_config_2.json"
+        # config_dir / "time_dependent_config_2.json"
     ]
 
     app = QApplication(sys.argv)

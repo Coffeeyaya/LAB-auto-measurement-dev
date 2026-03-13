@@ -16,12 +16,10 @@ from laser_remote import LaserController
 from pathlib import Path
 
 def get_pp_exact(df, wavelength, power_nw):
-    row = df[(df["Wavelength (nm)"] == wavelength) &
-             (abs(df["Power (nW)"] - power_nw) < 1e-3)]
-    print(row)
-    if len(row) == 0:
+    try:
+        return float(df.loc[wavelength, power_nw])
+    except KeyError:
         return None
-    return float(row["PP (%)"].values[0])
 
 # -------------------------------
 # Worker Thread: Automated Batch Sequence
@@ -115,7 +113,7 @@ class AutoIdVdWorker(QThread):
                 # --- Prepare Light (if specified) ---
                 if params.get("laser_settings") and laser:
                     laser_settings = params["laser_settings"]
-                    table = pd.read_csv(Path("calibration") / "single_power_multi_wavelength.csv")
+                    table = pd.read_csv(Path("calibration") / "pp_df.csv", index_col=0)
                     pp = get_pp_exact(table, int(laser_settings['wavelength']), int(laser_settings['power']))
                     
                     if pp is None:
