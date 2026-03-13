@@ -276,7 +276,7 @@ class AutoIdVgWindow(QWidget):
 
 if __name__ == "__main__":
     RESOURCE_ID = "USB0::0x05E6::0x2636::4407529::INSTR"
-    LIGHT_IP = "192.168.50.17" 
+    LIGHT_IP = "10.0.0.2" 
 
     # --- MODIFIED: Establish connection before launching GUI ---
     print("Connecting to Laser PC...")
