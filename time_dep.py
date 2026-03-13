@@ -80,6 +80,14 @@ class TimeDepWorker(QThread):
             # --- BATCH PROCESSING LOOP ---
             for config_idx, config_file in enumerate(self.config_files):
                 if not self.running: break
+
+                self.k.set_auto_zero_once() ###
+                
+                wait_time = 30
+                for i in range(wait_time, 0, -1):
+                    if not self.running: break
+                    self.status_update.emit(f"Wait ... {i}s")
+                    time.sleep(1)
                 
                 self.status_update.emit(f"Loading config: {config_file}...")
                 with open(config_file, "r") as f:
@@ -143,13 +151,6 @@ class TimeDepWorker(QThread):
                     for step_idx, step in enumerate(sequence):
                         # time.sleep(5)
                         if not self.running: break
-                        self.k.set_auto_zero_once() ###
-                        
-                        wait_time = 30
-                        for i in range(wait_time, 0, -1):
-                            if not self.running: break
-                            self.status_update.emit(f"Wait ... {i}s")
-                            time.sleep(1)
 
                         target_vg = step["Vg"]
                         duration = step["duration"]
