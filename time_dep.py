@@ -69,7 +69,7 @@ class TimeDepWorker(QThread):
             self.k.config()
 
             # Load the power table once for the entire batch
-            power_table_path = Path("calibration") / "multi_power_multi_wavelength.csv"
+            power_table_path = Path("calibration") / "pp_df.csv"
             if power_table_path.exists():
                 power_table = pd.read_csv(power_table_path, index_col=0)
             else:
