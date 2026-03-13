@@ -142,6 +142,7 @@ def multi_power_multi_wavelength(laser, channel_arr, wavelength_arr, power_arr):
         pm.zero_sensor() # zero power meter
         for i, wavelength in enumerate(wavelength_arr):
             for j, target_power in enumerate(power_arr):
+                target_power = target_power * 1e-9
                 channel = str(channel_arr[i]) # channel is bind to wavelength, it's int
                 pp, measured_power = find_pp_for_target_power(laser=laser, pm=pm, channel=channel, target_power=target_power, 
                                                      wavelength=wavelength, pp_min = 1, pp_max = 150)
