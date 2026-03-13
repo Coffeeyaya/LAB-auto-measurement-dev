@@ -37,7 +37,7 @@ def find_pp_for_target_power(laser,
 
     best_pp = None
     measured_power = None
-
+    channel = str(channel) ###
     laser.send_cmd({"channel": channel, "wavelength": wavelength}, wait_for_reply=True)
     time.sleep(1)
 
@@ -142,7 +142,7 @@ def multi_power_multi_wavelength(laser, channel_arr, wavelength_arr, power_arr):
         pm.zero_sensor() # zero power meter
         for i, wavelength in enumerate(wavelength_arr):
             for j, target_power in enumerate(power_arr):
-                channel = channel_arr[i] # channel is bind to wavelength, it's int
+                channel = str(channel_arr[i]) # channel is bind to wavelength, it's int
                 pp, measured_power = find_pp_for_target_power(laser=laser, pm=pm, channel=channel, target_power=target_power, 
                                                      wavelength=wavelength, pp_min = 1, pp_max = 150)
                 pp_table[i, j] = pp
@@ -179,11 +179,9 @@ if __name__ == "__main__":
 
     with open(Path("config") / "power_config.json", "r") as f:
         parameters = json.load(f)
-    wavelength_arr = np.array(parameters["wavelength_arr"]) # int arr
-    channel_arr = np.array(parameters["channel_arr"]) # int arr
-    power_arr = np.array(parameters["power_arr"]) # int arr
-
-    channel_arr = channel_arr.astype(str)
+    wavelength_arr = parameters["wavelength_arr"] # int arr
+    channel_arr = parameters["channel_arr"] # int arr
+    power_arr = parameters["power_arr"] # int arr
 
     pp_df, measured_power_df = multi_power_multi_wavelength(laser, channel_arr, wavelength_arr, power_arr)
     os.makedirs("calibration", exist_ok=True)
