@@ -1,7 +1,7 @@
 {   
     "description": "dark",
     "device_number": "13-10",
-    "run_number": "1",
+    "run_number": "4",
     "label": "dark 1",
     "current_limit_a": 1e-3,
     "current_limit_b": 1e-3,
@@ -14,6 +14,6 @@
     "wait_time": 10,
     "laser_stable_time": 0,
     "deplete_voltage": -5,
-    "deplete_time": 5,
+    "deplete_time": 0,
     "laser_settings": null
 }
