@@ -17,10 +17,9 @@ from pathlib import Path
 
 def get_pp_exact(df, wavelength, power_nw):
     try:
-        return float(df.loc[wavelength, power_nw])
+        return float(df.loc[int(wavelength), str(power_nw)])
     except KeyError:
         return None
-
 # -------------------------------
 # Worker Thread: Automated Batch Sequence
 # -------------------------------
