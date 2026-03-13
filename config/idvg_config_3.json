@@ -1,6 +1,6 @@
 {   
     "description": "light 660 nm",
-    "device_number": "4-5",
+    "device_number": "13-10",
     "run_number": "3",
     "label": "light 1",
     "current_limit_a": 1e-3,
