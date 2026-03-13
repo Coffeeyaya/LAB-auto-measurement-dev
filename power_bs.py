@@ -71,7 +71,7 @@ def find_pp_for_target_power(laser,
         time.sleep(1)
 
     return best_pp, measured_power
-
+'''
 def single_power_multi_wavelength(laser, channel_arr, wavelength_arr, target_power):
     n_wl = len(wavelength_arr)
     pp_table = np.zeros(n_wl)
@@ -88,11 +88,11 @@ def single_power_multi_wavelength(laser, channel_arr, wavelength_arr, target_pow
             power_table[i] = power
             
         measured_table = pd.DataFrame({
-            "Power (nW)": [target_power * 1e-9] * n_wl,
+            "Power (nW)": [target_power] * n_wl,
             "Channel": channel_arr,
             "Wavelength (nm)": wavelength_arr,
             "PP (%)": pp_table,
-            "Measured Power (W)": power_table
+            "Measured Power (nW)": power_table * 1e+9
         })
 
         return measured_table
@@ -119,7 +119,7 @@ def multi_power_single_wavelength(laser, target_channel, power_arr, target_wavel
             "Channel": [target_channel] * n_power,
             "Power (nW)": power_arr,
             "PP (%)": pp_table,
-            "Measured Power (W)": power_table
+            "Measured Power (nW)": power_table * 1e+9
         })
 
         return measured_table
@@ -127,32 +127,66 @@ def multi_power_single_wavelength(laser, target_channel, power_arr, target_wavel
     finally:
         print('power meter closed')
         pm.close_meter()
+    '''
+
+def multi_power_multi_wavelength(laser, channel_arr, wavelength_arr, power_arr):
+
+    n_wavelength = len(wavelength_arr)
+    n_power = len(power_arr)
+
+    pp_table = np.zeros((n_wavelength, n_power))
+    power_table = np.zeros((n_wavelength, n_power))
+
+    pm = PowerMeter()
+    try:
+        pm.zero_sensor() # zero power meter
+        for i, wavelength in enumerate(wavelength_arr):
+            for j, target_power in enumerate(power_arr):
+                channel = channel_arr[i] # channel is bind to wavelength, it's int
+                pp, measured_power = find_pp_for_target_power(laser=laser, pm=pm, channel=channel, target_power=target_power, 
+                                                     wavelength=wavelength, pp_min = 1, pp_max = 150)
+                pp_table[i, j] = pp
+                power_table[i, j] = measured_power
+
+        measured_power_df = pd.DataFrame(
+        power_table,                 
+        index=wavelength_arr,       # rows
+        columns=power_arr           # columns
+        )
+
+        pp_df = pd.DataFrame(
+        pp_table,                 
+        index=wavelength_arr,       # rows
+        columns=power_arr           # columns
+        )
+
+        measured_power_df.index.name = "Wavelength (nm)"
+        measured_power_df.columns.name = "Target Power (nW)"
+        pp_df.index.name = "Wavelength (nm)"
+        pp_df.columns.name = "Target Power (nW)"
+
+        return pp_df, measured_power_df
+
+    finally:
+        print('power meter closed')
+        pm.close_meter()
 
 if __name__ == "__main__":
-    LIGHT_IP = "192.168.50.17" #
+    LIGHT_IP = "10.0.0.2" # use ethernet cable
     print("Connecting to Laser PC...")
     laser = LaserController(LIGHT_IP, 5001)
     print("Laser connected.")
+
+    # with open(Path("config") / "power_config.json", "r") as f:
+    #     parameters = json.load(f)
+    # wavelength_arr = parameters["wavelength_arr"] # int arr
+    # channel_arr = parameters["channel_arr"] # int arr
+    # power_arr = parameters["power_arr"] # int arr
+
+    # pp_df, measured_power_df = multi_power_multi_wavelength(laser, channel_arr, wavelength_arr, power_arr)
+    # os.makedirs("calibration", exist_ok=True)
+    # pp_df.to_csv(Path("calibration") / Path('pp_df.csv'), index=False)
+    # measured_power_df.to_csv(Path("calibration") / Path('measured_power_df.csv'), index=False)
     
-
-    with open(Path("config") / "power_config.json", "r") as f:
-        parameters = json.load(f)
-    wavelength_arr = np.array([450, 488, 514, 532, 600, 633, 660, 690]).astype(int).astype(str)
-    channel_arr = np.linspace(0, 7, 8).astype(int).astype(str) ### 
-    # wavelength_arr = np.array([450, 532, 660])
-    # channel_arr = np.array([0, 3, 6]).astype(int).astype(str) ### 
-    power_arr = np.array([10, 20, 30]).astype(int).astype(str)
-
-    os.makedirs("calibration", exist_ok=True)
-    mode = parameters["mode"]
-    if mode == "single_power_multi_wavelength":
-        target_power = int(parameters["target_power"]) *  1e-9 # the unit in power_config.json is nW
-        measured_table = single_power_multi_wavelength(laser, channel_arr, wavelength_arr, target_power)
-        measured_table.to_csv(Path("calibration") / "single_power_multi_wavelength.csv", index=False)
-
-    if mode == "multi_power_single_wavelength":
-        target_wavelength = parameters["target_wavelength"]
-        target_channel = parameters["target_channel"]
-        measured_table = multi_power_single_wavelength(laser, power_arr, target_channel, target_wavelength)
-        measured_table.to_csv(Path("calibration") / "multi_power_single_wavelength.csv", index=False)
-    laser.close()
+    # laser.close()
+    # print("Laser closed")

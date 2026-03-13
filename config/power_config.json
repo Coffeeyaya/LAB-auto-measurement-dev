@@ -1,4 +1,5 @@
 {   
-    "mode": "single_power_multi_wavelength",
-    "target_power": "100"
+    "wavelength_arr": [450, 532],
+    "channel_arr": [0, 3],
+    "power_arr": [100, 200]
 }
