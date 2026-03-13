@@ -287,7 +287,7 @@ class TimeDepWindow(QWidget):
 
 if __name__ == "__main__":
     RESOURCE_ID = "USB0::0x05E6::0x2636::4407529::INSTR"
-    LASER_IP = "192.168.50.17"
+    LASER_IP = "10.0.0.2"
 
     print("Connecting to Laser PC...")
     laser = LaserController(LASER_IP)
