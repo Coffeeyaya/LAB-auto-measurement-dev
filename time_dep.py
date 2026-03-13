@@ -144,6 +144,13 @@ class TimeDepWorker(QThread):
                         # time.sleep(5)
                         if not self.running: break
                         self.k.set_auto_zero_once() ###
+                        
+                        wait_time = 30
+                        for i in range(wait_time, 0, -1):
+                            if not self.running: break
+                            self.status_update.emit(f"Wait ... {i}s")
+                            time.sleep(1)
+
                         target_vg = step["Vg"]
                         duration = step["duration"]
                         
