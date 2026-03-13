@@ -186,8 +186,8 @@ if __name__ == "__main__":
 
     pp_df, measured_power_df = multi_power_multi_wavelength(laser, channel_arr, wavelength_arr, power_arr)
     os.makedirs("calibration", exist_ok=True)
-    pp_df.to_csv(Path("calibration") / Path('pp_df.csv'), index=False)
-    measured_power_df.to_csv(Path("calibration") / Path('measured_power_df.csv'), index=False)
+    pp_df.to_csv(Path("calibration") / Path('pp_df.csv'), index=True)
+    measured_power_df.to_csv(Path("calibration") / Path('measured_power_df.csv'), index=True)
     
     laser.close()
     print("Laser closed")

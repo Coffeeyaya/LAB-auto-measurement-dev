@@ -14,12 +14,10 @@ from keithley.keithley import Keithley2636B
 from laser_remote import LaserController # Imported perfectly from your module!
 
 def get_pp_exact(df, wavelength, power_nw):
-    row = df[(df["Wavelength (nm)"] == wavelength) &
-             (abs(df["Power (nW)"] - power_nw) < 1e-3)]
-    print(row)
-    if len(row) == 0:
+    try:
+        return float(df.loc[wavelength, power_nw])
+    except KeyError:
         return None
-    return float(row["PP (%)"].values[0])
 
 def single_power_multi_wavelength_basic_block(power_table, channel_idx, wavelength, target_power, vg_on, vg_off, duration_1, duration_2, duration_3, duration_4):
     pp = get_pp_exact(power_table, wavelength, target_power)
@@ -71,9 +69,9 @@ class TimeDepWorker(QThread):
             self.k.config()
 
             # Load the power table once for the entire batch
-            power_table_path = Path("calibration") / "single_power_multi_wavelength.csv"
+            power_table_path = Path("calibration") / "multi_power_multi_wavelength.csv"
             if power_table_path.exists():
-                power_table = pd.read_csv(power_table_path)
+                power_table = pd.read_csv(power_table_path, index_col=0)
             else:
                 self.status_update.emit("Warning: Power table CSV not found!")
                 power_table = None
