@@ -177,16 +177,16 @@ if __name__ == "__main__":
     laser = LaserController(LIGHT_IP, 5001)
     print("Laser connected.")
 
-    # with open(Path("config") / "power_config.json", "r") as f:
-    #     parameters = json.load(f)
-    # wavelength_arr = parameters["wavelength_arr"] # int arr
-    # channel_arr = parameters["channel_arr"] # int arr
-    # power_arr = parameters["power_arr"] # int arr
+    with open(Path("config") / "power_config.json", "r") as f:
+        parameters = json.load(f)
+    wavelength_arr = parameters["wavelength_arr"] # int arr
+    channel_arr = parameters["channel_arr"] # int arr
+    power_arr = parameters["power_arr"] # int arr
 
-    # pp_df, measured_power_df = multi_power_multi_wavelength(laser, channel_arr, wavelength_arr, power_arr)
-    # os.makedirs("calibration", exist_ok=True)
-    # pp_df.to_csv(Path("calibration") / Path('pp_df.csv'), index=False)
-    # measured_power_df.to_csv(Path("calibration") / Path('measured_power_df.csv'), index=False)
+    pp_df, measured_power_df = multi_power_multi_wavelength(laser, channel_arr, wavelength_arr, power_arr)
+    os.makedirs("calibration", exist_ok=True)
+    pp_df.to_csv(Path("calibration") / Path('pp_df.csv'), index=False)
+    measured_power_df.to_csv(Path("calibration") / Path('measured_power_df.csv'), index=False)
     
-    # laser.close()
-    # print("Laser closed")
+    laser.close()
+    print("Laser closed")
