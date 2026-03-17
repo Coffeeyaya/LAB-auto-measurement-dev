@@ -11,7 +11,7 @@ from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
 
 from keithley.keithley import Keithley2636B
-from laser_remote import LaserController
+from LabAuto.laser_remote import LaserController
 
 from pathlib import Path
 
@@ -20,6 +20,7 @@ def get_pp_exact(df, wavelength, power_nw):
         return float(df.loc[int(wavelength), str(power_nw)])
     except KeyError:
         return None
+
 # -------------------------------
 # Worker Thread: Automated Batch Sequence
 # -------------------------------
@@ -29,7 +30,6 @@ class AutoIdVgWorker(QThread):
     status_update = pyqtSignal(str)
     sequence_finished = pyqtSignal()
 
-    # --- MODIFIED: Accept 'laser' directly instead of 'laser_ip' ---
     def __init__(self, resource_id, laser, config_files_list):
         super().__init__()
         self.resource_id = resource_id
@@ -40,7 +40,6 @@ class AutoIdVgWorker(QThread):
 
     def run(self):
         k = None
-        # --- MODIFIED: Use the laser object passed from __main__ ---
         laser = self.laser 
         current_channel = None
 
@@ -51,12 +50,9 @@ class AutoIdVgWorker(QThread):
             k.clean_instrument()
             k.config()
 
-            # --- MODIFIED: Removed the internal connection step here ---
-
-            # --- BATCH PROCESSING LOOP ---
+            ### process measurement based on config files
             for step_idx, config_file in enumerate(self.config_files):
                 if not self.running: break
-                
                 
                 self.status_update.emit(f"Loading config: {config_file}...")
                 with open(config_file, "r") as f:
@@ -72,8 +68,17 @@ class AutoIdVgWorker(QThread):
                 filename = output_dir / f"idvg_{device_num}_{run_num}.csv"
                 config_backup = output_dir / f"idvg_{device_num}_{run_num}_config.json"
                 
+                ### Overwrite Protection
+                if filename.exists() or config_backup.exists():
+                    error_msg = f"FILE EXISTS ERROR: {filename.name} already exists. Stopping experiment to prevent overwrite!"
+                    print(error_msg)
+                    self.status_update.emit(error_msg)
+                    self.running = False
+                    break  # Instantly breaks the config loop and triggers safe shutdown
+                
                 with open(config_backup, 'w') as f_back:
                     json.dump(params, f_back, indent=4)
+                    
                 start_time = time.time()
                 self.f = open(filename, 'w', newline='')
                 writer = csv.writer(self.f)
@@ -89,14 +94,14 @@ class AutoIdVgWorker(QThread):
                 self.status_update.emit(params["label"])
                 self.new_sweep.emit(step_idx, params["label"])
 
-                wait_time = int(params['wait_time'])
+                wait_time = params.get("wait_time", 0)
                 if wait_time > 0:
                     for i in range(wait_time, 0, -1):
                         if not self.running: break
                         self.status_update.emit(f"Dark Stabilization... {i}s")
                         time.sleep(1)
 
-                # --- DEPLETION ---
+                ### depletion
                 dep_v = params.get('deplete_voltage')
                 dep_t = int(params.get('deplete_time', 0))
                 
@@ -110,11 +115,11 @@ class AutoIdVgWorker(QThread):
                             self.status_update.emit(f"Depleting at {dep_v}V for {i}s")
                             time.sleep(1)
 
-                # --- Prepare Light (if specified) ---
+                ### Prepare Light (if specified)
                 if params.get("laser_settings") and laser:
                     laser_settings = params["laser_settings"]
-                    table = pd.read_csv(Path("calibration") / "pp_df.csv", index_col=0)
-                    pp = get_pp_exact(table, int(laser_settings['wavelength']), int(laser_settings['power']))
+                    power_table = pd.read_csv(Path("calibration") / "pp_df.csv", index_col=0)
+                    pp = get_pp_exact(power_table, int(laser_settings['wavelength']), int(laser_settings['power']))
                     cmd = {"channel": laser_settings['channel'], "wavelength": laser_settings['wavelength'], "power": pp}
                     current_channel = cmd["channel"]
                     self.status_update.emit("Configuring Laser")
@@ -140,24 +145,23 @@ class AutoIdVgWorker(QThread):
                 time.sleep(1) 
 
                 self.status_update.emit("Sweeping ...")
+                source_to_measure_delay = params["source_to_measure_delay"]
                 for vg in vg_points:
                     if not self.running: break
                         
                     k.set_Vg(vg)
-                    time.sleep(0.1) 
-                    # 1. Catch the raw result in a single variable first
+                    time.sleep(source_to_measure_delay) 
+                    
                     reading = k.measure()
                     
-                    # 2. Make sure it isn't None, AND it actually has 2 items
                     if reading is not None and len(reading) == 2:
-                        I_D, I_G = reading # 3. Safe to unpack!
+                        I_D, I_G = reading 
                         
                         if I_D is not None:
                             writer.writerow([Vd_const, vg, I_D, I_G])
-                            self.new_data.emit(step_idx, vg, I_D, I_G) # FIXED
+                            self.new_data.emit(step_idx, vg, I_D, I_G) 
 
                 # --- Clean up step ---
-                # NOTE: Ensure params.get() here matches the key used earlier! ('laser_settings' vs 'laser_cmd')
                 if params.get('laser_settings') and laser and current_channel is not None:
                     self.status_update.emit(f"Sweep done. Turning OFF Laser Ch {current_channel}...")
                     laser.send_cmd({"channel": current_channel, "on": 1}, wait_for_reply=True)
@@ -167,7 +171,8 @@ class AutoIdVgWorker(QThread):
                 k.enable_output('a', False)
                 k.enable_output('b', False)
                 
-                if hasattr(self, 'f') and not self.f.closed:
+                # --- MODIFIED: Fixed the NoneType crash ---
+                if getattr(self, 'f', None) is not None and not self.f.closed:
                     self.f.close()
 
         except Exception as e:
@@ -176,12 +181,14 @@ class AutoIdVgWorker(QThread):
 
         finally:
             self.status_update.emit("Sequence complete. Shutting down hardware...")
-            if hasattr(self, 'f') and not self.f.closed:
+            
+            # --- MODIFIED: Fixed the NoneType crash ---
+            if getattr(self, 'f', None) is not None and not self.f.closed:
                 self.f.close()
+                
             if laser:
                 if current_channel is not None:
                     laser.send_cmd({"channel": current_channel, "on": 1}, wait_for_reply=False)
-                # The worker can still safely call .close() here before exiting
                 laser.close()
             if k:
                 k.shutdown()
@@ -266,7 +273,10 @@ class AutoIdVgWindow(QWidget):
             self.ax1.autoscale_view()
             
         self.canvas.draw()
-        self.status_label.setText("Status: Batch Sequence Finished. Hardware is safe.")
+        
+        # --- MODIFIED: Ensure error message isn't hidden ---
+        if "FILE EXISTS ERROR" not in self.status_label.text():
+            self.status_label.setText("Status: Batch Sequence Finished. Hardware is safe.")
         
     def closeEvent(self, event):
         print("Closing application. Safely shutting down hardware...")
@@ -278,7 +288,6 @@ if __name__ == "__main__":
     RESOURCE_ID = "USB0::0x05E6::0x2636::4407529::INSTR"
     LIGHT_IP = "10.0.0.2" 
 
-    # --- MODIFIED: Establish connection before launching GUI ---
     print("Connecting to Laser PC...")
     laser = LaserController(LIGHT_IP)
     print("Laser connected.")
@@ -292,7 +301,6 @@ if __name__ == "__main__":
     
     app = QApplication(sys.argv)
     
-    # --- MODIFIED: Pass the 'laser' object to the worker ---
     worker = AutoIdVgWorker(RESOURCE_ID, laser, config_queue)
     window = AutoIdVgWindow(worker)
     window.show()

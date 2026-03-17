@@ -50,7 +50,7 @@ class AutoIdVdWorker(QThread):
             k.clean_instrument()
             k.config()
 
-            ### process measurement based on config files
+            # --- BATCH PROCESSING LOOP ---
             for step_idx, config_file in enumerate(self.config_files):
                 if not self.running: break
                 
@@ -58,6 +58,7 @@ class AutoIdVdWorker(QThread):
                 with open(config_file, "r") as f:
                     params = json.load(f)
                 
+                # SWAP: Vg is now the constant parameter
                 Vg_const = params["vg_const"] 
                 device_num = params['device_number']
                 run_num = params['run_number']
@@ -68,20 +69,12 @@ class AutoIdVdWorker(QThread):
                 filename = output_dir / f"idvd_{device_num}_{run_num}.csv"
                 config_backup = output_dir / f"idvd_{device_num}_{run_num}_config.json"
                 
-                ### Overwrite Protection
-                if filename.exists() or config_backup.exists():
-                    error_msg = f"FILE EXISTS ERROR: {filename.name} already exists. Stopping experiment to prevent overwrite!"
-                    print(error_msg)
-                    self.status_update.emit(error_msg)
-                    self.running = False
-                    break  # Instantly breaks the config loop and triggers safe shutdown
-                
                 with open(config_backup, 'w') as f_back:
                     json.dump(params, f_back, indent=4)
-                    
                 start_time = time.time()
                 self.f = open(filename, 'w', newline='')
                 writer = csv.writer(self.f)
+                # SWAP: Headers updated
                 writer.writerow(["V_G", "V_D", "I_D", "I_G"])
 
                 k.set_nplc('a', params["nplc_a"])
@@ -89,6 +82,7 @@ class AutoIdVdWorker(QThread):
                 k.set_limit('a', params["current_limit_a"])
                 k.set_limit('b', params["current_limit_b"])
 
+                # SWAP: Vd is now the swept parameter
                 vd_points = np.linspace(params["vd_start"], params["vd_stop"], params["num_points"])
                 
                 self.status_update.emit(params["label"])
@@ -101,7 +95,7 @@ class AutoIdVdWorker(QThread):
                         self.status_update.emit(f"Dark Stabilization... {i}s")
                         time.sleep(1)
 
-                ### deplete
+                # --- DEPLETION ---
                 dep_v = params.get('deplete_voltage')
                 dep_t = int(params.get('deplete_time', 0))
                 
@@ -155,17 +149,18 @@ class AutoIdVdWorker(QThread):
                 for vd in vd_points:
                     if not self.running: break
                         
-                    k.set_Vd(vd)
+                    k.set_Vd(vd) # SWAP: Step Vd
                     time.sleep(0.1) 
-                    
+                    # 1. Catch the raw result in a single variable first
                     reading = k.measure()
                     
+                    # 2. Make sure it isn't None, AND it actually has 2 items
                     if reading is not None and len(reading) == 2:
                         I_D, I_G = reading 
                         
                         if I_D is not None:
                             writer.writerow([Vg_const, vd, I_D, I_G])
-                            self.new_data.emit(step_idx, vd, I_D, I_G)
+                            self.new_data.emit(step_idx, vd, I_D, I_G) # SWAP: Emit vd instead of vg
 
                 # --- Clean up step ---
                 if params.get('laser_settings') and laser and current_channel is not None:
@@ -177,8 +172,7 @@ class AutoIdVdWorker(QThread):
                 k.enable_output('a', False)
                 k.enable_output('b', False)
                 
-                # --- MODIFIED: Fixed the NoneType crash ---
-                if getattr(self, 'f', None) is not None and not self.f.closed:
+                if hasattr(self, 'f') and not self.f.closed:
                     self.f.close()
 
         except Exception as e:
@@ -187,11 +181,8 @@ class AutoIdVdWorker(QThread):
 
         finally:
             self.status_update.emit("Sequence complete. Shutting down hardware...")
-            
-            # --- MODIFIED: Fixed the NoneType crash ---
-            if getattr(self, 'f', None) is not None and not self.f.closed:
+            if hasattr(self, 'f') and not self.f.closed:
                 self.f.close()
-                
             if laser:
                 if current_channel is not None:
                     laser.send_cmd({"channel": current_channel, "on": 1}, wait_for_reply=False)
@@ -247,7 +238,8 @@ class AutoIdVdWindow(QWidget):
         self.ax1.set_xlabel("Drain Voltage (V)")
         self.ax1.grid(True, which="both", ls="--", alpha=0.5)
 
-        # --- MODIFIED: True Linear scale (removed set_yscale('log')) ---
+        # SWAP: Linear scale (removed set_yscale('log'))
+        self.ax1.set_yscale('log')
         self.ax1.set_ylabel("Drain Current Id (A)", color='blue')
         self.ax1.tick_params(axis='y', labelcolor='blue')
 
@@ -259,10 +251,8 @@ class AutoIdVdWindow(QWidget):
 
     def update_plot(self, step_idx, Vd, I_D, I_G):
         self.data_memory[step_idx]["vds"].append(Vd)
-        
-        # --- MODIFIED: Removed abs() to allow plotting negative currents ---
-        self.data_memory[step_idx]["ids"].append(I_D) 
-        self.data_memory[step_idx]["igs"].append(I_G) 
+        self.data_memory[step_idx]["ids"].append(abs(I_D)) # SWAP: Removed abs()
+        self.data_memory[step_idx]["igs"].append(abs(I_G)) # SWAP: Removed abs()
         
         self.lines_id[step_idx].set_data(self.data_memory[step_idx]["vds"], self.data_memory[step_idx]["ids"])
         
@@ -281,10 +271,7 @@ class AutoIdVdWindow(QWidget):
             self.ax1.autoscale_view()
             
         self.canvas.draw()
-        
-        # --- MODIFIED: Ensure error message isn't hidden ---
-        if "FILE EXISTS ERROR" not in self.status_label.text():
-            self.status_label.setText("Status: Batch Sequence Finished. Hardware is safe.")
+        self.status_label.setText("Status: Batch Sequence Finished. Hardware is safe.")
         
     def closeEvent(self, event):
         print("Closing application. Safely shutting down hardware...")
@@ -294,7 +281,7 @@ class AutoIdVdWindow(QWidget):
 
 if __name__ == "__main__":
     RESOURCE_ID = "USB0::0x05E6::0x2636::4407529::INSTR"
-    LIGHT_IP = "10.0.0.2" # --- MODIFIED: Ethernet IP ---
+    LIGHT_IP = "192.168.50.17" 
 
     print("Connecting to Laser PC...")
     laser = LaserController(LIGHT_IP)

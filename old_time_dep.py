@@ -17,7 +17,7 @@ def get_pp_exact(power_table, wavelength, power_nw):
     try:
         return float(power_table.loc[int(wavelength), str(power_nw)])
     except KeyError:
-        print(f"Warning: Cannot convert {power_nw}nW to PP for {wavelength}nm.")
+        print('can not convert power to pp.')
         return None
 
 def basic_block(power_table, channel_idx, wavelength, target_power, vg_on, vg_off, duration_1, duration_2, duration_3, duration_4):
@@ -37,33 +37,21 @@ def basic_block(power_table, channel_idx, wavelength, target_power, vg_on, vg_of
 class TimeDepWorker(QThread):
     new_config = pyqtSignal(int, str) # config_idx, label
     new_data = pyqtSignal(int, float, float, float, float, float) # config_idx, t, Vd, Vg, Id, Ig
-    status_update = pyqtSignal(str) # update status string to GUI
+    status_update = pyqtSignal(str)
     sequence_finished = pyqtSignal()
 
     def __init__(self, resource_id, laser, config_files_list):
-        """
-        - resource_id: address of Keithley. \n
-        - laser: ip of the laser computer (win11). \n
-        - config_file_list: list of config files (they are input parameters of measurements). \n
-        """
         super().__init__()
         self.resource_id = resource_id
-        self.laser = laser
+        self.laser = laser  # Passed directly from main
         self.config_files = config_files_list
         
         self.k = None
-        self.current_light_state = 0 # 0: dark, 1: light
+        self.current_light_state = 0 
         self.laser_channel = None
         self.running = True
 
     def switch_source(self, target_vg, laser_cmd1=None, laser_cmd2=None):
-        """
-        switch to a specific electric and light source. \n
-        - set Vg to target_vg. \n
-        - laser_cmd1 = set wavelength or power. \n
-        - laser_cmd2 = turn on/off a particular channel. \n
-        They are all asynchronous (not wait for reply). \n
-        """
         self.k.set_Vg(target_vg)
         if laser_cmd1: 
             self.status_update.emit("Configuring laser...")
@@ -76,14 +64,13 @@ class TimeDepWorker(QThread):
 
     def run(self):
         try:
-            ### set up Keithley
             self.status_update.emit("Initializing Keithley...")
             self.k = Keithley2636B(self.resource_id)
             self.k.connect()
             self.k.clean_instrument()
             self.k.config()
 
-            ### open power table (mapping from power(nW) to pp(%))
+            # Load the power table
             power_table_path = Path("calibration") / "pp_df.csv"
             if power_table_path.exists():
                 power_table = pd.read_csv(power_table_path, index_col=0)
@@ -91,47 +78,36 @@ class TimeDepWorker(QThread):
                 self.status_update.emit("Warning: Power table CSV not found!")
                 power_table = None
 
-            ### process measurement based on config files
+            # --- BATCH PROCESSING LOOP ---
             for config_idx, config_file in enumerate(self.config_files):
                 if not self.running: break
 
-                # before each measurement, auto zero once
-                self.k.set_auto_zero_once()
+                self.k.set_auto_zero_once() ### auto zero at the begining of each run(1 config file -> 1 run)
                 
-                # open config file for input parameters
                 self.status_update.emit(f"Loading config: {config_file}...")
                 with open(config_file, "r") as f:
                     params = json.load(f)
                 
-                # wait time before measure
-                wait_time = params.get("wait_time", 0)
+                wait_time = params["wait_time"]
+                
                 for i in range(wait_time, 0, -1):
                     if not self.running: break
                     self.status_update.emit(f"Wait ... {i}s")
                     time.sleep(1)
 
-                # data folder for storing data and backup config files
+                # Route files to data folder
                 output_dir = Path("data")
                 output_dir.mkdir(parents=True, exist_ok=True)
                 
-                device_num = params.get('device_number', '0')
-                run_num = int(params.get('run_number', 1))
-                
+                device_num = params['device_number']
+                run_num = params['run_number']
                 filename = output_dir / f"time_{device_num}_{run_num}.csv"
                 config_backup = output_dir / f"time_{device_num}_{run_num}_config.json"
-                
-                # Overwrite Protection: if the filename already exists, then stop the measurement
-                if filename.exists() or config_backup.exists():
-                    error_msg = f"FILE EXISTS ERROR: {filename.name} already exists. Stopping experiment to prevent overwrite!"
-                    print(error_msg)
-                    self.status_update.emit(error_msg)
-                    self.running = False
-                    break  # Instantly breaks the config loop and triggers safe shutdown
                 
                 with open(config_backup, "w") as f_back:
                     json.dump(params, f_back, indent=4)
 
-                # set config parameters from config files
+                # Set Keithley params
                 self.k.set_nplc('a', params["nplc_a"])
                 self.k.set_nplc('b', params["nplc_b"])
                 self.k.set_limit('a', params["current_limit_a"])
@@ -141,19 +117,18 @@ class TimeDepWorker(QThread):
                 self.k.enable_output('a', True)
                 self.k.enable_output('b', True)
                 
-                # set constant Vd
                 vd_const = float(params["vd_const"])
                 self.k.set_Vd(vd_const)
                 
                 label = params.get("label", f"Run {run_num}")
-                self.new_config.emit(config_idx, label) #?
+                self.new_config.emit(config_idx, label)
 
-                ### build the measurement sequence
+                # Generate the sequence block dynamically from this config's parameters
                 sequence = []
-                # for each period, there's a particular channel, wavelength and power
-                channel_arr = np.array(params.get("channel_arr", [0, 3, 6])).astype(int).astype(str)
                 wavelength_arr = np.array(params.get("wavelength_arr", [450, 532, 660])).astype(int)
+                channel_arr = np.array(params.get("channel_arr", [0, 3, 6])).astype(int).astype(str)
                 power_arr = np.array(params.get("power_arr", [100, 100, 100])).astype(int).astype(str)
+                
                 
                 for i in range(len(wavelength_arr)):
                     ch_idx = channel_arr[i]
@@ -167,11 +142,11 @@ class TimeDepWorker(QThread):
                     )
                     sequence.extend(unit)
                     print(unit)
-                    
                 unit = [{"Vg": params['vg_off'], "duration": params['duration_1']},]
                 sequence.extend(unit)
                 print(unit)
 
+                # Start the measurement loop
                 start_time = time.time()
                 with open(filename, 'w', newline='') as f_csv:
                     writer = csv.writer(f_csv)
@@ -186,28 +161,30 @@ class TimeDepWorker(QThread):
                         self.switch_source(target_vg, step.get("laser_cmd1"), step.get("laser_cmd2"))
 
                         step_end = time.time() + duration
-                        self.status_update.emit(f"[{label}] Step {step_idx+1}/{len(sequence)}: Measuring...")
+                        self.status_update.emit(f"[{label}] Step {step_idx+1}: Measuring...")
                         
                         last_emit_time = time.time()
                         while time.time() < step_end:
                             if not self.running: break
                             
+                            # 1. Catch the raw result in a single variable first
                             reading = self.k.measure()
-                            # proceed if it's a successful measurement
+                            
+                            # 2. Make sure it isn't None, AND it actually has 2 items
                             if reading is not None and len(reading) == 2:
-                                I_D, I_G = reading 
+                                I_D, I_G = reading # 3. Safe to unpack!
                                 
                                 if I_D is not None:
                                     t = time.time() - start_time
-                                     # always update data to csv file
                                     writer.writerow([t, vd_const, target_vg, I_D, I_G, self.current_light_state])
 
-                                    # not update the figure too frequently (there are lots of points)
+                                    # 2. THROTTLE the GUI signals to ~5 FPS to prevent freezing!
                                     current_t = time.time()
                                     if current_t - last_emit_time > 0.2:
                                         self.new_data.emit(config_idx, t, vd_const, target_vg, I_D, I_G)
                                         last_emit_time = current_t
 
+                # Clean up after config sweep finishes
                 self.k.enable_output('a', False)
                 self.k.enable_output('b', False)
 
@@ -217,12 +194,8 @@ class TimeDepWorker(QThread):
             
         finally:
             self.status_update.emit("All Sequences complete. Shutting down hardware...")
-            if self.laser:
-                # stop the measurement -> turn off the light
-                if self.current_light_state and self.laser_channel is not None:
-                    self.laser.send_cmd({"channel": self.laser_channel, "on": 1}, wait_for_reply=False)
-                # Cleanly close the laser network socket
-                self.laser.close() 
+            if self.laser and self.current_light_state:
+                self.laser.send_cmd({"channel": self.laser_channel, "on": 1}, wait_for_reply=False)
             if self.k:
                 self.k.shutdown()
                 
@@ -238,10 +211,10 @@ class TimeDepWorker(QThread):
 class TimeDepWindow(QWidget):
     def __init__(self, worker):
         super().__init__()
-        self.setWindowTitle("Time Dependent measurement")
+        self.setWindowTitle("Batch Time Dependent Transient Response")
         self.worker = worker
         
-        # store measurement data: {"t": [], "id": [], "ig": [], "vd": [], "vg": []}
+        # Switched to dictionaries to handle batch plotting
         self.data_memory = {}
         self.lines_id = {}
         self.lines_ig = {}
@@ -253,8 +226,6 @@ class TimeDepWindow(QWidget):
         self._setup_ui()
         
         self.worker.new_config.connect(self.add_config_line)
-        # new_data: only sample data every 0.2 seconds, so that there are not too many points when updating plot
-        # raw data still collected in csv file, just not plot all of them in real time
         self.worker.new_data.connect(self.update_plot)
         self.worker.status_update.connect(self.status_label.setText)
         self.worker.sequence_finished.connect(self.on_finished)
@@ -266,10 +237,10 @@ class TimeDepWindow(QWidget):
         self.setLayout(layout)
         
         self.status_label = QLabel("Status: Starting up...")
-        self.status_label.setStyleSheet("color: blue; font-size: 16px; font-weight: bold;")
+        self.status_label.setStyleSheet("color: blue; font-size: 14px; font-weight: bold;")
         layout.addWidget(self.status_label)
 
-        self.figure = Figure(figsize=(16, 10))
+        self.figure = Figure(figsize=(10, 7))
         self.canvas = FigureCanvas(self.figure)
         layout.addWidget(self.canvas)
 
@@ -310,7 +281,7 @@ class TimeDepWindow(QWidget):
         self.lines_vg[config_idx].set_data(mem["t"], mem["vg"])
         
         current_time = time.time()
-        if current_time - self.last_draw_time > 0.2:
+        if current_time - self.last_draw_time > 0.1:
             for ax in [self.ax1, self.ax2, self.ax1_v, self.ax2_v]:
                 ax.relim()
                 ax.autoscale_view()
@@ -322,12 +293,10 @@ class TimeDepWindow(QWidget):
             ax.relim()
             ax.autoscale_view()
         self.canvas.draw()
-        
-        # Check if it finished due to an existing file or naturally
-        if "FILE EXISTS ERROR" not in self.status_label.text():
-            self.status_label.setText("Batch Sequence Finished. Hardware is safe.")
+        self.status_label.setText("Batch Sequence Finished. Hardware is safe.")
 
-    def closeEvent(self, event): 
+    def closeEvent(self, event): # when you click "x" on the GUI window
+        # check if the worker thread (TimeDepWorker) is running
         if self.worker.isRunning():
             self.worker.stop()
         event.accept()

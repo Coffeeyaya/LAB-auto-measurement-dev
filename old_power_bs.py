@@ -7,7 +7,7 @@ import time
 import json
 import os
 from pathlib import Path
-from laser_remote import LaserController
+from LabAuto.laser_remote import LaserController
 
 
 def find_pp_for_target_power(laser,

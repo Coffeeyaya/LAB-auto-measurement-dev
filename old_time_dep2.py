@@ -11,7 +11,7 @@ import numpy as np
 from keithley.keithley import Keithley2636B
 from LabAuto.network import Connection
 from pathlib import Path
-from laser_remote import LaserController
+from LabAuto.laser_remote import LaserController
 
 def get_pp_exact(df, wavelength, power_nw):
     row = df[(df["Wavelength (nm)"] == wavelength) &

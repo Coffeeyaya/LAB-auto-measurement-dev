@@ -1,4 +1,4 @@
-from LabAuto.network import Connection
+from network import Connection
 
 # class LaserController:
 #     """Simplified, lock-free controller for use in background threads."""
