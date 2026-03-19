@@ -18,9 +18,9 @@
     "duration_3": 5.0,
     "duration_4": 5.0,
     
-    "wavelength_arr": [532],
-    "channel_arr": [3],
-    "power_arr": [100],
-    "cycle_number": 5,
+    "wavelength_arr": [532, 532, 532],
+    "channel_arr": [3, 3, 3],
+    "power_arr": [100, 200, 300],
+    "cycle_number": 3,
     "wait_time": 30
 }

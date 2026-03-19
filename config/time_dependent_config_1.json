@@ -21,6 +21,6 @@
     "wavelength_arr": [450, 450, 450],
     "channel_arr": [0, 0, 0],
     "power_arr": [100, 200, 300],
-    "cycle_number": 5,
+    "cycle_number": 3,
     "wait_time": 30
 }
