@@ -47,6 +47,7 @@ def select_and_plot_data():
             elif "idvd" in path.name.lower():
                 plot_type = "Id-Vd"
                 plt.plot(df["V_D"], df["I_D"], marker='.', linestyle='-', label=label)
+                plt.yscale('log')
                 plt.xlabel("Drain Voltage Vd (V)", fontsize=12)
                 plt.ylabel("Drain Current Id (A)", fontsize=12)
                 
