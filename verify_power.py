@@ -55,6 +55,9 @@ def verify_pp_table(laser, pm, config_path, pp_df_path):
                 verified_table[i, j] = measured_power_nw
                 
                 print(f"Target: {target_power_str:>5} nW | Used PP: {pp:>6.2f}% | Actual: {measured_power_nw:>8.2f} nW")
+
+                laser.send_cmd({"channel": channel, "on": 1}, wait_for_reply=True)
+                time.sleep(1)
                 
             # Turn the laser off for this channel before moving to the next wavelength
             laser.send_cmd({"channel": channel, "on": 1}, wait_for_reply=True) 
