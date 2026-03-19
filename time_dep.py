@@ -154,19 +154,21 @@ class TimeDepWorker(QThread):
                 channel_arr = np.array(params.get("channel_arr", [0, 3, 6])).astype(int).astype(str)
                 wavelength_arr = np.array(params.get("wavelength_arr", [450, 532, 660])).astype(int)
                 power_arr = np.array(params.get("power_arr", [100, 100, 100])).astype(int).astype(str)
-                
-                for i in range(len(wavelength_arr)):
-                    ch_idx = channel_arr[i]
-                    wl = wavelength_arr[i]
-                    power = power_arr[i]
-                    unit = basic_block(
-                        power_table, ch_idx, wl, power,
-                        params["vg_on"], params["vg_off"], 
-                        params["duration_1"], params["duration_2"], 
-                        params["duration_3"], params["duration_4"]
-                    )
-                    sequence.extend(unit)
-                    print(unit)
+
+                cycles = int(params["cycle_number"])
+                for c in range(cycles):
+                    for i in range(len(wavelength_arr)):
+                        ch_idx = channel_arr[i]
+                        wl = wavelength_arr[i]
+                        power = power_arr[i]
+                        unit = basic_block(
+                            power_table, ch_idx, wl, power,
+                            params["vg_on"], params["vg_off"], 
+                            params["duration_1"], params["duration_2"], 
+                            params["duration_3"], params["duration_4"]
+                        )
+                        sequence.extend(unit)
+                        print(unit)
                     
                 unit = [{"Vg": params['vg_off'], "duration": params['duration_1']},]
                 sequence.extend(unit)

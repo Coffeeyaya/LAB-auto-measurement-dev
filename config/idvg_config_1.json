@@ -1,8 +1,8 @@
 {   
-    "description": "dark",
-    "device_number": "13-10",
-    "run_number": "5",
-    "label": "dark 2",
+    "description": "",
+    "device_number": "",
+    "run_number": "",
+    "label": "dark",
 
     "vd_const": 1.0,
     "vg_start": -5.0,

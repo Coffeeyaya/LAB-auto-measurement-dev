@@ -1,7 +1,7 @@
 {   
     "description": "",
-    "device_number": "13-10",
-    "run_number": "6",
+    "device_number": "",
+    "run_number": "",
     "current_limit_a": 1e-3,
     "current_limit_b": 1e-3,
     "current_range_a": 1e-5,
@@ -18,8 +18,9 @@
     "duration_3": 5.0,
     "duration_4": 5.0,
     
-    "wavelength_arr": [660, 660],
-    "channel_arr": [6, 6],
-    "power_arr": [100, 100],
+    "wavelength_arr": [660],
+    "channel_arr": [6],
+    "power_arr": [100],
+    "cycle_number": 5,
     "wait_time": 30
 }

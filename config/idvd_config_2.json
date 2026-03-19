@@ -2,10 +2,10 @@
     "description": "",
     "device_number": "",
     "run_number": "",
-    "label": "light 1",
+    "label": "light",
 
     "vg_const": 1.0,
-    "vd_start": 0.0, 
+    "vd_start": -2.0, 
     "vd_stop": 2.0, 
 
     "laser_settings": {"channel": 6, "wavelength": 660, "power": 100},

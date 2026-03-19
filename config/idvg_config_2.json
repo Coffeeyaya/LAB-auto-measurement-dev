@@ -1,0 +1,24 @@
+{   
+    "description": "",
+    "device_number": "",
+    "run_number": "",
+    "label": "light",
+
+    "vd_const": 1.0,
+    "vg_start": -5.0,
+    "vg_stop": 5.0,
+    
+    "laser_settings": {"channel": 6, "wavelength": 660, "power": 100},
+    "laser_stable_time": 30,
+    
+    "deplete_voltage": 0,
+    "deplete_time": 0,
+
+    "current_limit_a": 1e-3,
+    "current_limit_b": 1e-3,
+    "nplc_a": 3.0,
+    "nplc_b": 3.0,
+    "num_points": 51,
+    "wait_time": 30,
+    "source_to_measure_delay": 0.1
+}
