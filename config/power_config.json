@@ -1,5 +1,5 @@
 {   
     "wavelength_arr": [450, 532, 660],
     "channel_arr": [0, 3, 6],
-    "power_arr": [100, 200]
+    "power_arr": [100, 200, 300]
 }
