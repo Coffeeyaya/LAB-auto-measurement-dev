@@ -16,8 +16,8 @@
 
     "current_limit_a": 1e-3,
     "current_limit_b": 1e-3,
-    "nplc_a": 3.0,
-    "nplc_b": 3.0,
+    "nplc_a": 1.0,
+    "nplc_b": 1.0,
     "num_points": 51,
     "wait_time": 30,
     "source_to_measure_delay": 0.1
