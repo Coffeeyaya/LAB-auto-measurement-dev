@@ -28,24 +28,24 @@ class LaserController:
         self.worker.start()
 
     def _network_worker(self):
-        """This runs completely in the background, handling the slow network handshakes."""
         while self.running:
             try:
-                # Wait for a command to appear in the queue
                 task = self.cmd_queue.get(timeout=0.2)
                 payload, wait_for_reply, response_container = task
-                
-                # Send the command and ALWAYS receive the reply to keep the TCP buffer clean!
-                self.conn.send_json(payload)
-                reply = self.conn.receive_json() 
-                
-                # If the main thread wanted to see the reply, give it back
-                if wait_for_reply and response_container is not None:
-                    response_container.append(reply)
-                    
-                self.cmd_queue.task_done()
+
+                try:
+                    self.conn.send_json(payload)
+                    reply = self.conn.receive_json()
+
+                    if wait_for_reply and response_container is not None:
+                        response_container.append(reply)
+
+                finally:
+                    # GUARANTEED execution
+                    self.cmd_queue.task_done()
+
             except queue.Empty:
-                continue # No commands waiting, keep looping
+                continue
             except Exception as e:
                 print(f"Background Network Error: {e}")
 
