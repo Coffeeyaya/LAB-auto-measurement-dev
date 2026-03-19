@@ -1,7 +1,7 @@
 {   
     "description": "",
     "device_number": "8-8",
-    "run_number": "5",
+    "run_number": "8",
     "label": "dark",
 
     "vg_const": 1.0,
@@ -20,5 +20,5 @@
     "nplc_b": 1.0,
     "num_points": 51,
     "wait_time": 30,
-    "source_to_measure_delay": 0.1
+    "source_to_measure_delay": 0.01
 }
