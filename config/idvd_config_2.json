@@ -1,7 +1,7 @@
 {   
     "description": "",
-    "device_number": "",
-    "run_number": "",
+    "device_number": "8-5",
+    "run_number": "2",
     "label": "light",
 
     "vg_const": 1.0,

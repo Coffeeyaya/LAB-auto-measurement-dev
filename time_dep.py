@@ -156,6 +156,7 @@ class TimeDepWorker(QThread):
                 power_arr = np.array(params.get("power_arr", [100, 100, 100])).astype(int).astype(str)
 
                 cycles = int(params["cycle_number"])
+                print(cycles)
                 for c in range(cycles):
                     for i in range(len(wavelength_arr)):
                         ch_idx = channel_arr[i]
