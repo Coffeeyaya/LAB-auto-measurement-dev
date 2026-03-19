@@ -1,7 +1,7 @@
 {   
     "description": "",
     "device_number": "8-8",
-    "run_number": "5",
+    "run_number": "7",
     "current_limit_a": 1e-3,
     "current_limit_b": 1e-3,
     "current_range_a": 1e-5,
@@ -10,7 +10,7 @@
     "nplc_b": 1.0,
 
     "vd_const": -2,
-    "vg_on": 1,
+    "vg_on": 0,
     "vg_off": -1,
 
     "duration_1": 5.0,
