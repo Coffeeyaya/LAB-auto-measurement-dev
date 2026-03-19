@@ -20,5 +20,5 @@
     "nplc_b": 3.0,
     "num_points": 51,
     "wait_time": 30,
-    "source_to_measure_delay": 0.1
+    "source_to_measure_delay": 1
 }

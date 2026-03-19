@@ -298,7 +298,7 @@ if __name__ == "__main__":
     config_queue = [
         config_dir / 'idvg_config_1.json',
         config_dir / 'idvg_config_2.json',
-        # config_dir / 'idvg_config_3.json'
+        config_dir / 'idvg_config_3.json'
     ]
     
     app = QApplication(sys.argv)
