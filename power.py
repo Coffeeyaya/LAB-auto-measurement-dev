@@ -1,4 +1,3 @@
-from LabAuto.network import Connection 
 from pm.power import PowerMeter
 import matplotlib.pyplot as plt
 import numpy as np
