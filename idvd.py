@@ -53,6 +53,8 @@ class AutoIdVdWorker(QThread):
             ### process measurement based on config files
             for step_idx, config_file in enumerate(self.config_files):
                 if not self.running: break
+
+                k.set_auto_zero_once()
                 
                 self.status_update.emit(f"Loading config: {config_file}...")
                 with open(config_file, "r") as f:
