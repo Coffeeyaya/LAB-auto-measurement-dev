@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 import tkinter as tk
 from tkinter import filedialog
 import os
+import numpy as np
 from pathlib import Path
 
 def select_and_plot_data():
@@ -46,7 +47,7 @@ def select_and_plot_data():
                 
             elif "idvd" in path.name.lower():
                 plot_type = "Id-Vd"
-                plt.plot(df["V_D"], df["I_D"], marker='.', linestyle='-', label=label)
+                plt.plot(df["V_D"], np.abs(df["I_D"]), marker='.', linestyle='-', label=label)
                 plt.yscale('log')
                 plt.xlabel("Drain Voltage Vd (V)", fontsize=12)
                 plt.ylabel("Drain Current Id (A)", fontsize=12)
