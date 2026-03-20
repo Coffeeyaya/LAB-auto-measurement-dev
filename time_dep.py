@@ -20,15 +20,27 @@ def get_pp_exact(power_table, wavelength, power_nw):
         print(f"Warning: Cannot convert {power_nw}nW to PP for {wavelength}nm.")
         return None
 
-def basic_block(power_table, channel_idx, wavelength, target_power, vg_on, vg_off, duration_1, duration_2, duration_3, duration_4):
+# def basic_block(power_table, channel_idx, wavelength, target_power, vg_on, vg_off, duration_1, duration_2, duration_3, duration_4):
+#     pp = get_pp_exact(power_table, wavelength, target_power)
+    
+#     basic_block = [
+#         {"Vg": vg_off, "duration": duration_1},
+#         {"Vg": vg_on, "duration": duration_2, "laser_cmd1": {"channel": channel_idx, "power": pp}},
+#         {"Vg": vg_on, "duration": duration_3, "laser_cmd2": {"channel": channel_idx, "on": 1}}, 
+#         {"Vg": vg_on, "duration": duration_4, "laser_cmd2": {"channel": channel_idx, "on": 1}}, 
+#     ]
+#     return basic_block
+
+def basic_block(power_table, channel_idx, wavelength, target_power, vg_on, vg_off, duration_1, duration_2, duration_3, duration_4, on_off_number):
     pp = get_pp_exact(power_table, wavelength, target_power)
     
     basic_block = [
         {"Vg": vg_off, "duration": duration_1},
-        {"Vg": vg_on, "duration": duration_2, "laser_cmd1": {"channel": channel_idx, "power": pp}},
-        {"Vg": vg_on, "duration": duration_3, "laser_cmd2": {"channel": channel_idx, "on": 1}}, 
-        {"Vg": vg_on, "duration": duration_4, "laser_cmd2": {"channel": channel_idx, "on": 1}}, 
-    ]
+        {"Vg": vg_on, "duration": duration_2, "laser_cmd1": {"channel": channel_idx, "power": pp}}]
+    for i in range(on_off_number):
+        basic_block.append({"Vg": vg_on, "duration": duration_3, "laser_cmd2": {"channel": channel_idx, "on": 1}}) 
+        basic_block.append({"Vg": vg_on, "duration": duration_4, "laser_cmd2": {"channel": channel_idx, "on": 1}})
+        
     return basic_block
 
 # -------------------------------
@@ -156,6 +168,7 @@ class TimeDepWorker(QThread):
                 power_arr = np.array(params.get("power_arr", [100, 100, 100])).astype(int).astype(str)
 
                 cycles = int(params["cycle_number"])
+                on_off_number = int(params.get("on_off_number", 1))
                 print(cycles)
                 for c in range(cycles):
                     for i in range(len(wavelength_arr)):
@@ -166,7 +179,8 @@ class TimeDepWorker(QThread):
                             power_table, ch_idx, wl, power,
                             params["vg_on"], params["vg_off"], 
                             params["duration_1"], params["duration_2"], 
-                            params["duration_3"], params["duration_4"]
+                            params["duration_3"], params["duration_4"],
+                            on_off_number=on_off_number
                         )
                         sequence.extend(unit)
                         print(unit)

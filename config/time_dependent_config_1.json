@@ -22,5 +22,6 @@
     "channel_arr": [0, 3, 6],
     "power_arr": [100, 200, 300],
     "cycle_number": 3,
+    "on_off_number": 1,
     "wait_time": 30
 }
