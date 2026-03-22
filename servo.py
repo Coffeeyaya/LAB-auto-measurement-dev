@@ -4,7 +4,7 @@ import serial.tools.list_ports
 import time
 
 class ServoController:
-    def __init__(self, angle_on=90, angle_off=0):
+    def __init__(self, angle_on=70, angle_off=90):
         self.baudrate = 9600
         
         # --- ON/OFF ANGLE DEFINITIONS ---
