@@ -198,7 +198,7 @@ class TimeDepWorker(QThread):
                             params["duration_1"], params["duration_2"], 
                             params["duration_3"], params["duration_4"],
                             on_off_number=on_off_number,
-                            servo_time=1 ###
+                            servo_time=params["servo_time"] ###
                         )
                         sequence.extend(unit)
                         print(unit)
