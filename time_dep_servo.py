@@ -397,7 +397,7 @@ if __name__ == "__main__":
 
     app = QApplication(sys.argv)
     
-    worker = TimeDepWorker(RESOURCE_ID, laser, config_queue, servo)
+    worker = TimeDepWorker(RESOURCE_ID, laser, servo, config_queue)
     window = TimeDepWindow(worker)
     window.show()
 
