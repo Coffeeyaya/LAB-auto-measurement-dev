@@ -64,7 +64,7 @@ duration_4 = col4.number_input("Duration 4 (s)", value=5.0, step=0.5)
 col5, col6, col7 = st.columns(3)
 cycle_number = col5.number_input("Cycle Number", value=3, min_value=1, step=1)
 on_off_number = col6.number_input("ON/OFF Number", value=3, min_value=1, step=1)
-servo_time = col7.number_input("Servo Time (s)", value=0.1, step=0.05)
+servo_time = col7.number_input("Servo Time (s)", value=5, step=0.05)
 
 st.divider()
 
@@ -129,7 +129,7 @@ with col_btn2:
     # --- NEW: Drop-down menu instead of text input ---
     script_to_run = st.selectbox(
         "Select Measurement Script", 
-        ("time_dep_servo_app.py", "time_dep_app.py", "time_dep_dark_app.py")
+        ("time_dep_servo_app.py", "time_dep_servo_app2.py", "time_dep_app.py", "time_dep_dark_app.py")
     )
     
     if st.button("▶ Run Selected Script", type="secondary", use_container_width=True):
