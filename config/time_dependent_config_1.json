@@ -18,8 +18,8 @@
     "duration_3": 5.0,
     "duration_4": 5.0,
     
-    "wavelength_arr": [450, 532, 660],
-    "channel_arr": [0, 3, 6],
+    "wavelength_arr": [450, 450, 450],
+    "channel_arr": [0, 0, 0],
     "power_arr": [100, 200, 300],
     "cycle_number": 3,
     "on_off_number": 3,
