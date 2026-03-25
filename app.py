@@ -129,7 +129,7 @@ with col_btn2:
     # --- NEW: Drop-down menu instead of text input ---
     script_to_run = st.selectbox(
         "Select Measurement Script", 
-        ("time_dep_servo.py", "time_dep.py", "time_dep_dark.py")
+        ("time_dep_servo_app.py", "time_dep_app.py", "time_dep_dark_app.py")
     )
     
     if st.button("▶ Run Selected Script", type="secondary", use_container_width=True):
