@@ -1,7 +1,7 @@
 {
     "description": "Standard Time-Dep",
-    "device_number": "1-1",
-    "run_number": "0",
+    "device_number": "0-0",
+    "run_number": "1",
     "current_limit_a": 0.001,
     "current_limit_b": 0.001,
     "current_range_a": 1e-05,
@@ -16,22 +16,16 @@
     "duration_3": 5.0,
     "duration_4": 5.0,
     "wavelength_arr": [
-        660,
-        660,
         660
     ],
     "channel_arr": [
-        6,
-        6,
         6
     ],
     "power_arr": [
-        100,
-        100,
         100
     ],
-    "cycle_number": 3,
+    "cycle_number": 5,
     "on_off_number": 3,
-    "servo_time": 0.1,
+    "servo_time": 10.0,
     "wait_time": 5
 }
