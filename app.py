@@ -243,10 +243,18 @@ with tab_idvg:
     idvg_wait = col5.number_input("Pre-Sweep Wait (s)", value=int(cfg_idvg["wait_time"]), step=1, key="idvg_wait")
     idvg_tdep = col6.number_input("Deplete Time (s)", value=int(cfg_idvg["deplete_time"]), step=1, key="idvg_tdep")
     
-    laser_val = "null" if cfg_idvg["laser_settings"] is None else json.dumps(cfg_idvg["laser_settings"])
-    idvg_laser = col7.text_input("Laser Settings (JSON or 'null')", value=laser_val, key="idvg_laser")
+    # laser_val = "null" if cfg_idvg["laser_settings"] is None else json.dumps(cfg_idvg["laser_settings"])
+    # idvg_laser = col7.text_input("Laser Settings (JSON or 'null')", value=laser_val, key="idvg_laser")
 
+    # 1. Initialize the memory on the very first page load
+    if "idvg_laser" not in st.session_state:
+        st.session_state["idvg_laser"] = "null" if cfg_idvg["laser_settings"] is None else json.dumps(cfg_idvg["laser_settings"])
+        
+    # 2. Create the box WITHOUT the `value=` parameter! 
+    # Streamlit will automatically pull the text directly from the session_state memory.
+    idvg_laser = col4.text_input("Laser Settings (JSON or 'null')", key="idvg_laser")
     st.divider()
+
 
     st.subheader("🚀 Actions")
     col_btn1, col_btn2, col_btn3 = st.columns(3)
