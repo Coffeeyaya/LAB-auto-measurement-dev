@@ -262,8 +262,8 @@ with tab_power:
             st.warning("File not found.")
 
     with data_col3:
-        st.markdown("**3. `verified_power.csv` (Verification)**")
-        vp_file = Path("calibration") / "verified_power.csv"
+        st.markdown("**3. `verified_power_df.csv` (Verification)**")
+        vp_file = Path("calibration") / "verified_power_df.csv"
         if vp_file.exists():
             st.dataframe(pd.read_csv(vp_file, index_col=0), use_container_width=True)
         else:
