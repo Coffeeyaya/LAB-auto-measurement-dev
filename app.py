@@ -194,8 +194,8 @@ with tab_idvg:
     uploaded_idvg = st.file_uploader("Upload a previous JSON config", type=["json"], key="idvg_uploader")
 
     cfg_idvg = {
-        "description": "", "device_number": "8-8", "run_number": "7", "label": "dark",
-        "vd_const": 1.0, "vg_start": -5.0, "vg_stop": 5.0, 
+        "description": "", "device_number": "", "run_number": "", "label": "dark",
+        "vd_const": 2.0, "vg_start": -5.0, "vg_stop": 5.0, 
         "laser_settings": None, "laser_stable_time": 30,
         "deplete_voltage": 0.0, "deplete_time": 0,
         "current_limit_a": 1e-3, "current_limit_b": 1e-3, "nplc_a": 1.0, "nplc_b": 1.0,
