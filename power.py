@@ -19,7 +19,7 @@ def find_pp_for_target_power(laser,
                              num_points=10,
                              pp_min=1, 
                              pp_max=150, 
-                             tolerance=3 * 1e-9, 
+                             tolerance=2 * 1e-9, 
                              max_iter=10):
     
     pm.config_meter(wavelength, average_count)
@@ -37,7 +37,7 @@ def find_pp_for_target_power(laser,
     for _ in range(max_iter):
         
         mid = (low + high) / 2 
-        print(target_power)
+        print(f'target power = {target_power * 1e+9} nW')
         laser.send_cmd({"channel": channel, "power": mid, "on": 1}, wait_for_reply=True)
         time.sleep(1)
 
