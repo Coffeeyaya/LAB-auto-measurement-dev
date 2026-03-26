@@ -37,7 +37,7 @@ def find_pp_for_target_power(laser,
     for _ in range(max_iter):
         
         mid = (low + high) / 2 
-
+        print(target_power)
         laser.send_cmd({"channel": channel, "power": mid, "on": 1}, wait_for_reply=True)
         time.sleep(1)
 
