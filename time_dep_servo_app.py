@@ -79,6 +79,7 @@ class TimeDepWorker(QThread):
         self.servo_state = 0 # 0: blocked, 1: unblocked
         self.laser_channel = None
         self.running = True
+        self.current_applied_vg = None
 
     def switch_source(self, target_vg, laser_cmd1=None, laser_cmd2=None, laser_cmd3=None):
         """
@@ -88,6 +89,11 @@ class TimeDepWorker(QThread):
         - laser_cmd2 = turn on/off a particular channel. \n
         They are all asynchronous (not wait for reply). \n
         """
+        ###
+        if target_vg != self.current_applied_vg:
+            self.k.set_Vg(target_vg)
+            self.current_applied_vg = target_vg
+
         self.k.set_Vg(target_vg)
         if laser_cmd1: 
             self.status_update.emit("Configuring laser...")
@@ -226,7 +232,13 @@ class TimeDepWorker(QThread):
                         last_emit_time = time.time()
                         while time.time() < step_end:
                             if not self.running: break
-                            
+
+                            #  Sleep for the remaining fraction of a second to keep the servo timing mathematically perfect
+                            time_left = step_end - time.time()
+                            if time_left < 0.01:
+                                time.sleep(max(0, time_left))
+                                break
+
                             reading = self.k.measure()
                             # proceed if it's a successful measurement
                             if reading is not None and len(reading) == 2:
