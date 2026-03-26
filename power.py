@@ -98,7 +98,7 @@ def multi_power_multi_wavelength(laser, channel_arr, wavelength_arr, power_arr):
                     current_pp_min = pp 
                 
                 pp_table[i, j] = pp
-                power_table[i, j] = measured_power
+                power_table[i, j] = measured_power * 1e+9
 
         measured_power_df = pd.DataFrame(
             power_table,                 
