@@ -203,11 +203,17 @@ with tab_idvg:
     }
 
     if uploaded_idvg is not None:
-        try:
-            cfg_idvg.update(json.load(uploaded_idvg))
-            st.success(f"✅ Loaded: **{uploaded_idvg.name}**")
-        except Exception as e:
-            st.error(f"Failed to read JSON: {e}")
+            try:
+                cfg_idvg.update(json.load(uploaded_idvg))
+                
+                # --- THE FIX ---
+                # Force Streamlit's memory to overwrite the stubborn text box
+                new_laser = "null" if cfg_idvg["laser_settings"] is None else json.dumps(cfg_idvg["laser_settings"])
+                st.session_state["idvg_laser"] = new_laser
+                
+                st.success(f"✅ Loaded: **{uploaded_idvg.name}**")
+            except Exception as e:
+                st.error(f"Failed to read JSON: {e}")
 
     st.divider()
 
