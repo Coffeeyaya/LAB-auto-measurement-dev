@@ -69,45 +69,80 @@ with tab_time_dep:
 
     if uploaded_file is not None:
         try:
-            uploaded_cfg = json.load(uploaded_file)
-            cfg.update(uploaded_cfg) 
+            cfg.update(json.load(uploaded_file))
+            
+            # --- THE FIX: Forcefully overwrite Streamlit's memory for all boxes ---
+            st.session_state["td_desc"] = str(cfg["description"])
+            st.session_state["td_dev"] = str(cfg["device_number"])
+            st.session_state["td_run"] = str(cfg["run_number"])
+            st.session_state["td_wait"] = int(cfg["wait_time"])
+            
+            st.session_state["td_clim_a"] = float(cfg["current_limit_a"])
+            st.session_state["td_clim_b"] = float(cfg["current_limit_b"])
+            st.session_state["td_crng_a"] = float(cfg["current_range_a"])
+            st.session_state["td_crng_b"] = float(cfg["current_range_b"])
+            st.session_state["td_nplc_a"] = float(cfg["nplc_a"])
+            st.session_state["td_nplc_b"] = float(cfg["nplc_b"])
+            
+            st.session_state["td_vd"] = float(cfg["vd_const"])
+            st.session_state["td_vgon"] = float(cfg["vg_on"])
+            st.session_state["td_vgoff"] = float(cfg["vg_off"])
+            
+            # Arrays must be converted to text strings
+            st.session_state["td_wav"] = ", ".join(map(str, cfg["wavelength_arr"]))
+            st.session_state["td_ch"] = ", ".join(map(str, cfg["channel_arr"]))
+            st.session_state["td_pw"] = ", ".join(map(str, cfg["power_arr"]))
+            
+            st.session_state["td_dur1"] = float(cfg["duration_1"])
+            st.session_state["td_dur2"] = float(cfg["duration_2"])
+            st.session_state["td_dur3"] = float(cfg["duration_3"])
+            st.session_state["td_dur4"] = float(cfg["duration_4"])
+            
+            st.session_state["td_cycl"] = int(cfg["cycle_number"])
+            st.session_state["td_onoff"] = int(cfg["on_off_number"])
+            st.session_state["td_servo_time"] = float(cfg["servo_time"])
+            
             st.success(f"✅ Successfully loaded settings from: **{uploaded_file.name}**")
         except Exception as e:
             st.error(f"Failed to read JSON file: {e}")
 
     st.divider()
 
+    # --- 1. General Settings ---
     st.subheader("📝 General Information")
     col1, col2, col3, col4 = st.columns(4)
-    description = col1.text_input("Description", value=str(cfg["description"]))
-    device_number = col2.text_input("Device Number", value=str(cfg["device_number"]))
-    run_number = col3.text_input("Run Number", value=str(cfg["run_number"]))
-    wait_time = col4.number_input("Wait Time (s)", value=int(cfg["wait_time"]), min_value=0, step=1)
+    description = col1.text_input("Description", value=str(cfg["description"]), key="td_desc")
+    device_number = col2.text_input("Device Number", value=str(cfg["device_number"]), key="td_dev")
+    run_number = col3.text_input("Run Number", value=str(cfg["run_number"]), key="td_run")
+    wait_time = col4.number_input("Wait Time (s)", value=int(cfg["wait_time"]), min_value=0, step=1, key="td_wait")
 
     st.divider()
 
+    # --- 2. Keithley SMU Settings ---
     st.subheader("🔌 Keithley SMU Settings")
     col1, col2, col3 = st.columns(3)
     with col1:
-        current_limit_a = st.number_input("Current Limit A (A)", value=float(cfg["current_limit_a"]), format="%e")
-        current_limit_b = st.number_input("Current Limit B (A)", value=float(cfg["current_limit_b"]), format="%e")
+        current_limit_a = st.number_input("Current Limit A (A)", value=float(cfg["current_limit_a"]), format="%e", key="td_clim_a")
+        current_limit_b = st.number_input("Current Limit B (A)", value=float(cfg["current_limit_b"]), format="%e", key="td_clim_b")
     with col2:
-        current_range_a = st.number_input("Current Range A (A)", value=float(cfg["current_range_a"]), format="%e")
-        current_range_b = st.number_input("Current Range B (A)", value=float(cfg["current_range_b"]), format="%e")
+        current_range_a = st.number_input("Current Range A (A)", value=float(cfg["current_range_a"]), format="%e", key="td_crng_a")
+        current_range_b = st.number_input("Current Range B (A)", value=float(cfg["current_range_b"]), format="%e", key="td_crng_b")
     with col3:
-        nplc_a = st.number_input("NPLC A", value=float(cfg["nplc_a"]), step=0.1)
-        nplc_b = st.number_input("NPLC B", value=float(cfg["nplc_b"]), step=0.1)
+        nplc_a = st.number_input("NPLC A", value=float(cfg["nplc_a"]), step=0.1, key="td_nplc_a")
+        nplc_b = st.number_input("NPLC B", value=float(cfg["nplc_b"]), step=0.1, key="td_nplc_b")
 
     st.divider()
 
+    # --- 3. Voltage Settings ---
     st.subheader("⚡ Voltage Settings")
     col1, col2, col3 = st.columns(3)
-    vd_const = col1.number_input("Vd Const (V)", value=float(cfg["vd_const"]), step=0.1)
-    vg_on = col2.number_input("Vg ON (V)", value=float(cfg["vg_on"]), step=0.1)
-    vg_off = col3.number_input("Vg OFF (V)", value=float(cfg["vg_off"]), step=0.1)
+    vd_const = col1.number_input("Vd Const (V)", value=float(cfg["vd_const"]), step=0.1, key="td_vd")
+    vg_on = col2.number_input("Vg ON (V)", value=float(cfg["vg_on"]), step=0.1, key="td_vgon")
+    vg_off = col3.number_input("Vg OFF (V)", value=float(cfg["vg_off"]), step=0.1, key="td_vgoff")
 
     st.divider()
 
+    # --- 4. Laser / Array Settings ---
     st.subheader("🔦 Optics & Arrays (Comma-separated)")
     default_wav = ", ".join(map(str, cfg["wavelength_arr"]))
     default_ch = ", ".join(map(str, cfg["channel_arr"]))
@@ -120,20 +155,22 @@ with tab_time_dep:
 
     st.divider()
 
+    # --- 5. Timing & Sequences ---
     st.subheader("⏱️ Timing & Sequence Durations")
     col1, col2, col3, col4 = st.columns(4)
-    duration_1 = col1.number_input("Duration 1 (s)", value=float(cfg["duration_1"]), step=0.5)
-    duration_2 = col2.number_input("Duration 2 (s)", value=float(cfg["duration_2"]), step=0.5)
-    duration_3 = col3.number_input("Duration 3 (s)", value=float(cfg["duration_3"]), step=0.5)
-    duration_4 = col4.number_input("Duration 4 (s)", value=float(cfg["duration_4"]), step=0.5)
+    duration_1 = col1.number_input("Duration 1 (s)", value=float(cfg["duration_1"]), step=0.5, key="td_dur1")
+    duration_2 = col2.number_input("Duration 2 (s)", value=float(cfg["duration_2"]), step=0.5, key="td_dur2")
+    duration_3 = col3.number_input("Duration 3 (s)", value=float(cfg["duration_3"]), step=0.5, key="td_dur3")
+    duration_4 = col4.number_input("Duration 4 (s)", value=float(cfg["duration_4"]), step=0.5, key="td_dur4")
 
     col5, col6, col7 = st.columns(3)
-    cycle_number = col5.number_input("Cycle Number", value=int(cfg["cycle_number"]), min_value=1, step=1)
-    on_off_number = col6.number_input("ON/OFF Number", value=int(cfg["on_off_number"]), min_value=1, step=1)
-    servo_time = col7.number_input("Servo Time (s)", value=float(cfg["servo_time"]), step=0.05)
+    cycle_number = col5.number_input("Cycle Number", value=int(cfg["cycle_number"]), min_value=1, step=1, key="td_cycl")
+    on_off_number = col6.number_input("ON/OFF Number", value=int(cfg["on_off_number"]), min_value=1, step=1, key="td_onoff")
+    servo_time = col7.number_input("Servo Time (s)", value=float(cfg["servo_time"]), step=0.05, key="td_servo_time")
 
     st.divider()
 
+    # --- ACTION BUTTONS ---
     st.subheader("🚀 Actions")
     col_btn1, col_btn2, col_btn3 = st.columns(3)
 
@@ -168,7 +205,7 @@ with tab_time_dep:
 
     with col_btn2:
         st.markdown("**Run Keithley Measurement**")
-        script_to_run = st.selectbox("Select Measurement Script", ("time_dep_app.py", "time_dep_servo_app.py", "time_dep_dark_app.py"), label_visibility="collapsed")
+        script_to_run = st.selectbox("Select Measurement Script", ("time_dep.py", "time_dep_dark.py"), label_visibility="collapsed", key="td_script")
         if st.button("▶ Run Script in Terminal", type="secondary", use_container_width=True, key="td_run"):
             success, msg = launch_in_terminal(script_to_run)
             if success: st.success(msg)
@@ -178,12 +215,11 @@ with tab_time_dep:
         st.markdown("**Manual Hardware Control**")
         st.write("") 
         st.write("")
-        if st.button("⚙️ Open Servo GUI", type="secondary", use_container_width=True):
+        if st.button("⚙️ Open Servo GUI", type="secondary", use_container_width=True, key="td_servo_btn"):
             success, msg = launch_in_terminal("servo_GUI.py")
             if success: st.success(msg)
             else: st.error(msg)
-
-
+            
 # ==========================================
 # TAB 2: ID-VG MEASUREMENT (NEW)
 # ==========================================
