@@ -39,8 +39,8 @@ def launch_in_terminal(script_name):
         return False, f"Failed to launch script: {e}"
 
 # --- Page Config ---
-st.set_page_config(page_title="Lab Auto Hub", layout="wide")
-st.title("🔬 Lab Automation Hub")
+st.set_page_config(page_title="Lab Auto", layout="wide")
+st.title("🔬 Lab Automation")
 
 # Create Tabs for the different workflows
 tab_time_dep, tab_power, tab_plot = st.tabs([
