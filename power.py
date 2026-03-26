@@ -37,13 +37,13 @@ def find_pp_for_target_power(laser,
     for _ in range(max_iter):
         
         mid = (low + high) / 2 
-        print(f'target power = {target_power * 1e+9} nW')
+        print(f'target power = {target_power * 1e+9:.3f} nW')
         laser.send_cmd({"channel": channel, "power": mid, "on": 1}, wait_for_reply=True)
         time.sleep(1)
 
         _, p = pm.measure_power(measure_interval, num_points) 
         measured_power = np.mean(p[-3:])   
-        print(f'measured power = {measured_power * 1e+9} nW')
+        print(f'measured power = {measured_power * 1e+9:.3f} nW')
         if abs(measured_power - target_power) <= tolerance:
             best_pp = mid
             laser.send_cmd({"channel": channel, "on": 1}, wait_for_reply=True)
