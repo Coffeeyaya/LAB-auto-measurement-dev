@@ -168,7 +168,7 @@ with tab_time_dep:
 
     with col_btn2:
         st.markdown("**Run Keithley Measurement**")
-        script_to_run = st.selectbox("Select Measurement Script", ("time_dep_servo_app.py", "time_dep_servo_app2.py", "time_dep_dark_app.py"), label_visibility="collapsed")
+        script_to_run = st.selectbox("Select Measurement Script", ("time_dep_app.py", "time_dep_servo_app.py", "time_dep_servo_app2.py", "time_dep_dark_app.py"), label_visibility="collapsed")
         if st.button("▶ Run Script in Terminal", type="secondary", use_container_width=True, key="td_run"):
             success, msg = launch_in_terminal(script_to_run)
             if success: st.success(msg)
