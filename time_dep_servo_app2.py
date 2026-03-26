@@ -235,7 +235,7 @@ class TimeDepWorker(QThread):
 
                             #  Sleep for the remaining fraction of a second to keep the servo timing mathematically perfect
                             time_left = step_end - time.time()
-                            if time_left < 0.05:
+                            if time_left < 0.01:
                                 time.sleep(max(0, time_left))
                                 break
 
