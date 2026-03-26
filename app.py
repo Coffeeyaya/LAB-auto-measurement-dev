@@ -43,12 +43,12 @@ st.set_page_config(page_title="Lab Auto", layout="wide")
 st.title("🔬 Lab Automation")
 
 # Create Tabs for the different workflows
-tab_time_dep, tab_power, tab_plot = st.tabs([
-    "⚡ Time-Dependent Measurement", 
+tab_time_dep, tab_idvg, tab_power, tab_plot = st.tabs([
+    "⚡ Time-Dependent", 
+    "📈 Id-Vg Sweep",
     "🔦 Power Calibration", 
-    "📈 Data Plotter & Combiner"
+    "📊 Data Plotter & Combiner"
 ])
-
 # ==========================================
 # TAB 1: TIME-DEPENDENT MEASUREMENT
 # ==========================================
@@ -183,8 +183,105 @@ with tab_time_dep:
             if success: st.success(msg)
             else: st.error(msg)
 
+
 # ==========================================
-# TAB 2: POWER CALIBRATION & VERIFICATION
+# TAB 2: ID-VG MEASUREMENT (NEW)
+# ==========================================
+with tab_idvg:
+    st.markdown("Configure and run your Id-Vg transfer characteristic sweeps.")
+
+    st.subheader("📂 Load Existing Configuration")
+    uploaded_idvg = st.file_uploader("Upload a previous JSON config", type=["json"], key="idvg_uploader")
+
+    cfg_idvg = {
+        "description": "", "device_number": "8-8", "run_number": "7", "label": "dark",
+        "vd_const": 1.0, "vg_start": -5.0, "vg_stop": 5.0, 
+        "laser_settings": None, "laser_stable_time": 30,
+        "deplete_voltage": 0.0, "deplete_time": 0,
+        "current_limit_a": 1e-3, "current_limit_b": 1e-3, "nplc_a": 1.0, "nplc_b": 1.0,
+        "num_points": 51, "wait_time": 30, "source_to_measure_delay": 0.01
+    }
+
+    if uploaded_idvg is not None:
+        try:
+            cfg_idvg.update(json.load(uploaded_idvg))
+            st.success(f"✅ Loaded: **{uploaded_idvg.name}**")
+        except Exception as e:
+            st.error(f"Failed to read JSON: {e}")
+
+    st.divider()
+
+    st.subheader("📝 General & Keithley")
+    col1, col2, col3, col4 = st.columns(4)
+    idvg_desc = col1.text_input("Description", value=str(cfg_idvg["description"]), key="idvg_desc")
+    idvg_dev = col2.text_input("Device Number", value=str(cfg_idvg["device_number"]), key="idvg_dev")
+    idvg_run = col3.text_input("Run Number", value=str(cfg_idvg["run_number"]), key="idvg_run")
+    idvg_label = col4.text_input("Label (e.g., dark)", value=str(cfg_idvg["label"]), key="idvg_lbl")
+
+    col5, col6, col7, col8 = st.columns(4)
+    idvg_clim = col5.number_input("Current Limit (A)", value=float(cfg_idvg["current_limit_a"]), format="%e", key="idvg_clim")
+    idvg_nplc = col6.number_input("NPLC", value=float(cfg_idvg["nplc_a"]), step=0.1, key="idvg_nplc")
+    idvg_num_pts = col7.number_input("Number of Points", value=int(cfg_idvg["num_points"]), step=1, key="idvg_num_pts")
+    idvg_s2m = col8.number_input("Source-Measure Delay (s)", value=float(cfg_idvg["source_to_measure_delay"]), step=0.01, format="%f", key="idvg_s2m")
+
+    st.divider()
+
+    st.subheader("⚡ Sweep & Laser Settings")
+    col1, col2, col3, col4 = st.columns(4)
+    idvg_vd = col1.number_input("Vd Const (V)", value=float(cfg_idvg["vd_const"]), step=0.1, key="idvg_vd")
+    idvg_vstart = col2.number_input("Vg Start (V)", value=float(cfg_idvg["vg_start"]), step=0.1, key="idvg_vstart")
+    idvg_vstop = col3.number_input("Vg Stop (V)", value=float(cfg_idvg["vg_stop"]), step=0.1, key="idvg_vstop")
+    idvg_vdep = col4.number_input("Deplete Voltage (V)", value=float(cfg_idvg["deplete_voltage"]), step=0.1, key="idvg_vdep")
+
+    col5, col6, col7 = st.columns(3)
+    idvg_wait = col5.number_input("Pre-Sweep Wait (s)", value=int(cfg_idvg["wait_time"]), step=1, key="idvg_wait")
+    idvg_tdep = col6.number_input("Deplete Time (s)", value=int(cfg_idvg["deplete_time"]), step=1, key="idvg_tdep")
+    
+    laser_val = "null" if cfg_idvg["laser_settings"] is None else json.dumps(cfg_idvg["laser_settings"])
+    idvg_laser = col7.text_input("Laser Settings (JSON or 'null')", value=laser_val, key="idvg_laser")
+
+    st.divider()
+
+    st.subheader("🚀 Actions")
+    col_btn1, col_btn2, col_btn3 = st.columns(3)
+
+    with col_btn1:
+        st.markdown("**Save Configuration**")
+        if st.button("Update Id-Vg Config", type="primary", use_container_width=True, key="idvg_save_btn"):
+            try:
+                parsed_laser = None if idvg_laser.strip().lower() in ["null", "none", ""] else json.loads(idvg_laser)
+                config_dict_idvg = {
+                    "description": idvg_desc, "device_number": idvg_dev, "run_number": idvg_run, "label": idvg_label,
+                    "vd_const": idvg_vd, "vg_start": idvg_vstart, "vg_stop": idvg_vstop,
+                    "laser_settings": parsed_laser, "laser_stable_time": int(cfg_idvg["laser_stable_time"]),
+                    "deplete_voltage": idvg_vdep, "deplete_time": idvg_tdep,
+                    "current_limit_a": idvg_clim, "current_limit_b": idvg_clim,
+                    "nplc_a": idvg_nplc, "nplc_b": idvg_nplc,
+                    "num_points": idvg_num_pts, "wait_time": idvg_wait, "source_to_measure_delay": idvg_s2m
+                }
+                save_path = Path("config") / "idvg_config_app.json"
+                with open(save_path, "w") as f: json.dump(config_dict_idvg, f, indent=4)
+                st.success(f"✅ Saved to: {save_path.name}")
+            except json.JSONDecodeError: st.error("Invalid JSON format in Laser Settings.")
+            except Exception as e: st.error(f"Failed to save: {e}")
+
+    with col_btn2:
+        st.markdown("**Run Keithley Measurement**")
+        if st.button("▶ Run idvg.py in Terminal", type="secondary", use_container_width=True, key="idvg_run_btn"):
+            success, msg = launch_in_terminal("idvg.py")
+            if success: st.success(msg)
+            else: st.error(msg)
+            
+    with col_btn3:
+        st.markdown("**Manual Hardware Control**")
+        if st.button("⚙️ Open Servo GUI", type="secondary", use_container_width=True, key="idvg_servo"):
+            success, msg = launch_in_terminal("servo_GUI.py")
+            if success: st.success(msg)
+            else: st.error(msg)
+
+
+# ==========================================
+# TAB 3: POWER CALIBRATION & VERIFICATION
 # ==========================================
 with tab_power:
     st.markdown("Set your target powers, run the calibration script, and verify the resulting tables.")
@@ -269,7 +366,7 @@ with tab_power:
         else:
             st.warning("File not found.")
 # ==========================================
-# TAB 3: DATA PLOTTER & COMBINER (Interactive Plotly Upgrade)
+# TAB 4: DATA PLOTTER & COMBINER (Interactive Plotly Upgrade)
 # ==========================================
 with tab_plot:
     st.markdown("Upload multiple `.csv` data files to overlay them on an interactive graph and merge them into one file.")
