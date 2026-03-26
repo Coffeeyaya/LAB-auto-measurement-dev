@@ -1,14 +1,14 @@
 {   
     "description": "",
-    "device_number": "8-8",
-    "run_number": "9",
-    "label": "light",
+    "device_number": "",
+    "run_number": "",
+    "label": "dark",
 
-    "vd_const": 1.0,
+    "vd_const": 2.0,
     "vg_start": -5.0,
     "vg_stop": 5.0,
     
-    "laser_settings": {"channel": 6, "wavelength": 660, "power": 100},
+    "laser_settings": null,
     "laser_stable_time": 30,
     
     "deplete_voltage": 0,
