@@ -616,7 +616,7 @@ with tab_encoder:
                 save_path.parent.mkdir(parents=True, exist_ok=True) 
                 with open(save_path, "w") as f:
                     json.dump(config_dict_enc, f, indent=4)
-                st.success("✅ Saved Config!")
+                st.success("✅ Saved time_dependent_config_encode_app.json!")
 
             except Exception as e:
                 st.error(f"Failed to save file: {e}")
