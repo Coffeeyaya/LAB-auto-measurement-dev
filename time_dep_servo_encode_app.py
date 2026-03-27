@@ -47,9 +47,14 @@ def encode_binary_block(power_table, channel_idx, wavelength, target_power, vg_o
             step1 = {
                 "Vg": vg_on, 
                 "duration": bit_duration, 
-                "laser_cmd3": {"channel": channel_idx, "on": 1} 
+                # "laser_cmd3": {"channel": channel_idx, "on": 1} 
             }
             step2 = {
+                "Vg": vg_on, 
+                "duration": bit_duration,
+                "laser_cmd3": {"channel": channel_idx, "on": 1}
+            }
+            step3 = {
                 "Vg": vg_on, 
                 "duration": bit_duration,
                 "laser_cmd3": {"channel": channel_idx, "on": 1}
