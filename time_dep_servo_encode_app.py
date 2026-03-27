@@ -61,6 +61,7 @@ def encode_binary_block(power_table, channel_idx, wavelength, target_power, vg_o
             }
             sequence_steps.append(step1)
             sequence_steps.append(step2)
+            sequence_steps.append(step3)
         elif bit == '0':
             # Bit 0: Apply Vg, but keep the Light OFF
             step = {
