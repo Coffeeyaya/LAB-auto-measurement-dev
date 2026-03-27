@@ -43,11 +43,12 @@ st.set_page_config(page_title="Lab Auto", layout="wide")
 st.title("🔬 Lab Automation")
 
 # Create Tabs for the different workflows
-tab_time_dep, tab_idvg, tab_power, tab_plot = st.tabs([
+tab_time_dep, tab_idvg, tab_power, tab_plot, tab_encoder = st.tabs([
     "⚡ Time-Dependent", 
     "📈 Id-Vg Sweep",
     "🔦 Power Calibration", 
-    "📊 Data Plotter & Combiner"
+    "📊 Data Plotter",
+    "📡 Optical Encoder"  # <--- ADD THIS
 ])
 # ==========================================
 # TAB 1: TIME-DEPENDENT MEASUREMENT
@@ -475,3 +476,161 @@ with tab_plot:
                 mime="text/csv",
                 type="primary"
             )
+
+
+# ==========================================
+# TAB 5: OPTICAL ENCODER & MEMORY
+# ==========================================
+with tab_encoder:
+    st.markdown("Transmit custom ASCII messages or binary sequences using your laser and Keithley to test optical communication.")
+
+    st.subheader("📂 Load Existing Configuration")
+    uploaded_enc = st.file_uploader("Upload a previous JSON config", type=["json"], key="enc_uploader")
+
+    cfg_enc = {
+        "description": "Optical ASCII Test", "device_number": "1-1", "run_number": "1", "label": "encoder",
+        "wait_time": 5, "current_limit_a": 1e-3, "current_limit_b": 1e-3, "current_range_a": 1e-5, "current_range_b": 1e-5,
+        "nplc_a": 1.0, "nplc_b": 1.0, "vd_const": 1.0, "vg_on": 1.0, "vg_off": -1.0,
+        "wavelength_arr": [660], "channel_arr": [6], "power_arr": [100],
+        "binary_string": "01001000", "bit_duration": 1.0
+    }
+
+    if uploaded_enc is not None:
+        if st.session_state.get("last_uploaded_enc") != uploaded_enc.name:
+            try:
+                cfg_enc.update(json.load(uploaded_enc))
+                st.session_state["enc_desc"] = str(cfg_enc.get("description", ""))
+                st.session_state["enc_dev"] = str(cfg_enc.get("device_number", ""))
+                st.session_state["enc_run"] = str(cfg_enc.get("run_number", ""))
+                st.session_state["enc_lbl"] = str(cfg_enc.get("label", ""))
+                st.session_state["enc_wait"] = int(cfg_enc.get("wait_time", 5))
+                st.session_state["enc_clim_a"] = float(cfg_enc.get("current_limit_a", 1e-3))
+                st.session_state["enc_clim_b"] = float(cfg_enc.get("current_limit_b", 1e-3))
+                st.session_state["enc_crng_a"] = float(cfg_enc.get("current_range_a", 1e-5))
+                st.session_state["enc_crng_b"] = float(cfg_enc.get("current_range_b", 1e-5))
+                st.session_state["enc_nplc_a"] = float(cfg_enc.get("nplc_a", 1.0))
+                st.session_state["enc_nplc_b"] = float(cfg_enc.get("nplc_b", 1.0))
+                st.session_state["enc_vd"] = float(cfg_enc.get("vd_const", 1.0))
+                st.session_state["enc_vgon"] = float(cfg_enc.get("vg_on", 1.0))
+                st.session_state["enc_vgoff"] = float(cfg_enc.get("vg_off", -1.0))
+                st.session_state["enc_wav"] = ", ".join(map(str, cfg_enc.get("wavelength_arr", [660])))
+                st.session_state["enc_ch"] = ", ".join(map(str, cfg_enc.get("channel_arr", [6])))
+                st.session_state["enc_pw"] = ", ".join(map(str, cfg_enc.get("power_arr", [100])))
+                st.session_state["enc_bitdur"] = float(cfg_enc.get("bit_duration", 1.0))
+                
+                # Load the raw binary string from the file
+                st.session_state["enc_raw_bin"] = str(cfg_enc.get("binary_string", "01001000"))
+                
+                st.session_state["last_uploaded_enc"] = uploaded_enc.name
+                st.success(f"✅ Loaded: **{uploaded_enc.name}** - You can now make manual edits!")
+            except Exception as e:
+                st.error(f"Failed to read JSON: {e}")
+    else:
+        st.session_state["last_uploaded_enc"] = None
+
+    st.divider()
+
+    # --- THE NEW ASCII ENCODER SECTION ---
+    st.subheader("📡 Encoding Sequence")
+    
+    enc_mode = st.radio("Encoding Mode", ["ASCII Text", "Raw Binary"], horizontal=True, key="enc_mode")
+    
+    col_e1, col_e2 = st.columns([3, 1])
+    
+    final_bin = ""
+    if enc_mode == "ASCII Text":
+        raw_msg = col_e1.text_input("Message to Transmit", value="Hi", key="enc_ascii_msg")
+        # Python magic to convert text to 8-bit binary strings
+        final_bin = "".join([format(ord(c), '08b') for c in raw_msg])
+        st.caption(f"📠 **Live Translation ({len(final_bin)} bits):** `{final_bin}`")
+    else:
+        raw_bin = col_e1.text_input("Binary String (1s and 0s)", value=str(cfg_enc.get("binary_string", "01001000")), key="enc_raw_bin")
+        final_bin = "".join([c for c in raw_bin if c in ['0', '1']])
+        if raw_bin != final_bin:
+            st.caption(f"⚠️ *Filtered invalid characters. Transmitting:* `{final_bin}`")
+            
+    enc_bitdur = col_e2.number_input("Bit Duration (s)", value=float(cfg_enc["bit_duration"]), step=0.1, key="enc_bitdur")
+    
+    # Calculate Total Expected Time
+    total_time = len(final_bin) * (enc_bitdur * 1.5) + 10 # 1.5 multiplier accounts for the Return-to-Zero rest period
+    st.info(f"⏱️ **Estimated Transmission Time:** ~{total_time:.1f} seconds")
+
+    st.divider()
+
+    st.subheader("📝 General & Keithley")
+    col1, col2, col3, col4 = st.columns(4)
+    enc_desc = col1.text_input("Description", value=str(cfg_enc["description"]), key="enc_desc")
+    enc_dev = col2.text_input("Device Number", value=str(cfg_enc["device_number"]), key="enc_dev")
+    enc_run = col3.text_input("Run Number", value=str(cfg_enc["run_number"]), key="enc_run")
+    enc_wait = col4.number_input("Wait Time (s)", value=int(cfg_enc["wait_time"]), min_value=0, step=1, key="enc_wait")
+
+    col5, col6, col7 = st.columns(3)
+    with col5:
+        enc_clim_a = st.number_input("Current Limit A (A)", value=float(cfg_enc["current_limit_a"]), format="%e", key="enc_clim_a")
+        enc_clim_b = st.number_input("Current Limit B (A)", value=float(cfg_enc["current_limit_b"]), format="%e", key="enc_clim_b")
+    with col6:
+        enc_crng_a = st.number_input("Current Range A (A)", value=float(cfg_enc["current_range_a"]), format="%e", key="enc_crng_a")
+        enc_crng_b = st.number_input("Current Range B (A)", value=float(cfg_enc["current_range_b"]), format="%e", key="enc_crng_b")
+    with col7:
+        enc_nplc_a = st.number_input("NPLC A", value=float(cfg_enc["nplc_a"]), step=0.1, key="enc_nplc_a")
+        enc_nplc_b = st.number_input("NPLC B", value=float(cfg_enc["nplc_b"]), step=0.1, key="enc_nplc_b")
+
+    st.divider()
+
+    st.subheader("⚡ Optics & Voltages")
+    col1, col2, col3 = st.columns(3)
+    enc_vd = col1.number_input("Vd Const (V)", value=float(cfg_enc["vd_const"]), step=0.1, key="enc_vd")
+    enc_vgon = col2.number_input("Vg ON (1 State)", value=float(cfg_enc["vg_on"]), step=0.1, key="enc_vgon")
+    enc_vgoff = col3.number_input("Vg OFF (0 State)", value=float(cfg_enc["vg_off"]), step=0.1, key="enc_vgoff")
+
+    st.caption("Note: The Encoder script only uses the FIRST value in these arrays.")
+    col4, col5, col6 = st.columns(3)
+    enc_wav = col4.text_input("Wavelength (nm)", value=", ".join(map(str, cfg_enc["wavelength_arr"])), key="enc_wav")
+    enc_ch = col5.text_input("Channel", value=", ".join(map(str, cfg_enc["channel_arr"])), key="enc_ch")
+    enc_pw = col6.text_input("Power (nW)", value=", ".join(map(str, cfg_enc["power_arr"])), key="enc_pw")
+
+    st.divider()
+
+    st.subheader("🚀 Actions")
+    col_btn1, col_btn2, col_btn3 = st.columns(3)
+
+    with col_btn1:
+        st.markdown("**Save Configuration**")
+        if st.button("Update Encoder Config", type="primary", use_container_width=True, key="enc_save"):
+            try:
+                wav_arr = [int(x.strip()) for x in enc_wav.split(",")]
+                ch_arr = [int(x.strip()) for x in enc_ch.split(",")]
+                pw_arr = [int(x.strip()) for x in enc_pw.split(",")]
+
+                config_dict_enc = {
+                    "description": enc_desc, "device_number": enc_dev, "run_number": enc_run, "label": st.session_state.get("enc_lbl", "encoder"),
+                    "current_limit_a": enc_clim_a, "current_limit_b": enc_clim_b,
+                    "current_range_a": enc_crng_a, "current_range_b": enc_crng_b,
+                    "nplc_a": enc_nplc_a, "nplc_b": enc_nplc_b,
+                    "vd_const": enc_vd, "vg_on": enc_vgon, "vg_off": enc_vgoff,
+                    "wavelength_arr": wav_arr, "channel_arr": ch_arr, "power_arr": pw_arr,
+                    "binary_string": final_bin, "bit_duration": enc_bitdur, "wait_time": enc_wait
+                }
+                
+                save_path = Path("config") / "time_dependent_config_encode_app.json"
+                save_path.parent.mkdir(parents=True, exist_ok=True) 
+                with open(save_path, "w") as f:
+                    json.dump(config_dict_enc, f, indent=4)
+                st.success("✅ Saved Config!")
+
+            except Exception as e:
+                st.error(f"Failed to save file: {e}")
+
+    with col_btn2:
+        st.markdown("**Run Keithley Measurement**")
+        if st.button("▶ Run Encoder in Terminal", type="secondary", use_container_width=True, key="enc_run_btn"):
+            success, msg = launch_in_terminal("time_dep_servo_encode_app.py")
+            if success: st.success(msg)
+            else: st.error(msg)
+            
+    with col_btn3:
+        st.markdown("**Manual Hardware Control**")
+        if st.button("⚙️ Open Servo GUI", type="secondary", use_container_width=True, key="enc_servo"):
+            success, msg = launch_in_terminal("servo_GUI.py")
+            if success: st.success(msg)
+            else: st.error(msg)
