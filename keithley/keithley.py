@@ -154,6 +154,33 @@ class Keithley2636B:
                 self.keithley.write(f"smub.source.levelv = {v}")
             except:
                 pass
+            
+    def measure_pulsed_vg(self, target_vg, base_vg=0.0, pulse_width=0.005):
+        """
+        Applies target_vg, waits pulse_width (seconds), measures Id and Ig, 
+        and immediately returns Vg to base_vg to prevent charge trapping.
+        """
+        with self.lock:
+            try:
+                # We send a 1-line TSP script to execute directly on the Keithley hardware.
+                # This guarantees the pulse is exactly 'pulse_width' long (e.g., 5ms), 
+                # completely avoiding Python/USB communication lag during the pulse.
+                cmd = (
+                    f"smub.source.levelv={target_vg} "
+                    f"delay({pulse_width}) "
+                    "id=smua.measure.i() "
+                    "ig=smub.measure.i() "
+                    f"smub.source.levelv={base_vg} "
+                    "print(id, ig)"
+                )
+                self.keithley.write(cmd)
+                resp = self.keithley.read().replace("\t", ",").split(",")
+                
+                if len(resp) >= 2:
+                    return float(resp[0]), float(resp[1])
+            except Exception as e:
+                print(f"Pulsed measure error: {e}")
+                return 0.0, 0.0
 
     def measure(self):
         """
