@@ -220,35 +220,28 @@ class TimeDepWorker(QThread):
                         step_end = time.time() + duration
                         self.status_update.emit(f"[{label}] Step {step_idx+1}/{len(sequence)}: Measuring...")
                         
+                        # --- PULL VARIABLES OUTSIDE THE LOOP ---
+                        base_vg = float(params.get("base_vg", 0.0))
+                        pulse_width = float(params.get("pulse_width_ms", 5.0)) / 1000.0
+                        
+                        pulse_fired = False 
                         last_emit_time = time.time()
+                        
+                        # --- THE ONLY WHILE LOOP WE NEED ---
                         while time.time() < step_end:
                             if not self.running: break
 
-                            #  Sleep for the remaining fraction of a second
+                            # Sleep for the remaining fraction of a second at the very end
                             time_left = step_end - time.time()
                             if time_left < 0.01:
                                 time.sleep(max(0, time_left))
                                 break
 
-                            # Read the only two pulse parameters we need
-                            base_vg = float(params.get("base_vg", 0.0))
-                            pulse_width = float(params.get("pulse_width_ms", 5.0)) / 1000.0
-                            
-                            pulse_fired = False 
-                            last_emit_time = time.time()
-                            
-                            while time.time() < step_end:
-                                if not self.running: break
-
-                                time_left = step_end - time.time()
-                                if time_left < 0.01:
-                                    time.sleep(max(0, time_left))
-                                    break
-
                             # --- THE SINGLE-PULSE RELAXATION ENGINE ---
                             if not pulse_fired:
                                 # 1. Fire the single excitation pulse at the very beginning
                                 reading = self.k.measure_pulsed_vg(target_vg, base_vg, pulse_width)
+                                print(f"DEBUG: Pulse fired. Target: {target_vg}V, Width: {pulse_width}s. Reading = {reading}")
                                 pulse_fired = True
                                 recorded_vg = target_vg # Record the spike in the CSV
                             else:

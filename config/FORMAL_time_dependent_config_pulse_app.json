@@ -7,8 +7,8 @@
     "current_limit_b": 0.001,
     "current_range_a": 1e-05,
     "current_range_b": 1e-05,
-    "nplc_a": 1.0,
-    "nplc_b": 1.0,
+    "nplc_a": 0.1,
+    "nplc_b": 0.1,
     "vd_const": 2.0,
     "vg_on": 1.0,
     "vg_off": -1.0,
@@ -17,7 +17,7 @@
     "duration_3": 5.0,
     "duration_4": 5.0,
     "wavelength_arr": [
-        660
+        748
     ],
     "channel_arr": [
         6
@@ -26,8 +26,8 @@
         100.0
     ],
     "cycle_number": 5,
-    "on_off_number": 3,
-    "servo_time": 10.0,
+    "on_off_number": 1,
+    "servo_time": 1.0,
     "base_vg": 0.0,
-    "pulse_width_ms": 5.0
+    "pulse_width_ms": 50.0
 }
