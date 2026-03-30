@@ -1,6 +1,6 @@
 {
-    "description": "Optical Encoding Test",
-    "device_number": "1-1",
+    "description": "Optical ASCII Test",
+    "device_number": "10-10",
     "run_number": "1",
     "label": "encoder",
     "current_limit_a": 0.001,
@@ -19,9 +19,10 @@
         6
     ],
     "power_arr": [
-        100
+        100.0
     ],
-    "binary_string": "10101100",
+    "raw_message": "YAYA",
+    "binary_string": "01011001010000010101100101000001",
     "bit_duration": 1.0,
     "wait_time": 5
 }

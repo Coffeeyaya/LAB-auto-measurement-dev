@@ -230,30 +230,46 @@ class TimeDepWorker(QThread):
                                 time.sleep(max(0, time_left))
                                 break
 
-                            # --- NEW PULSED MEASUREMENT LOGIC ---
-                            base_vg = 0.0     # The resting voltage (0V to prevent trapping)
-                            pulse_width = 0.005 # How long the trap-free measurement takes (5 ms)
-                            
-                            reading = self.k.measure_pulsed_vg(target_vg, base_vg, pulse_width)
-                            
-                            # Give the device a rest period before the next pulse! 
-                            # This ensures any shallow traps that did fill have time to empty.
-                            time.sleep(0.1) 
-                            # ------------------------------------
+                            # Read the only two pulse parameters we need
+                        base_vg = float(params.get("base_vg", 0.0))
+                        pulse_width = float(params.get("pulse_width_ms", 5.0)) / 1000.0
+                        
+                        pulse_fired = False 
+                        last_emit_time = time.time()
+                        
+                        while time.time() < step_end:
+                            if not self.running: break
 
-                            # proceed if it's a successful measurement
+                            time_left = step_end - time.time()
+                            if time_left < 0.01:
+                                time.sleep(max(0, time_left))
+                                break
+
+                            # --- THE SINGLE-PULSE RELAXATION ENGINE ---
+                            if not pulse_fired:
+                                # 1. Fire the single excitation pulse at the very beginning
+                                reading = self.k.measure_pulsed_vg(target_vg, base_vg, pulse_width)
+                                pulse_fired = True
+                                recorded_vg = target_vg # Record the spike in the CSV
+                            else:
+                                # 2. Continuous Relaxation Tracking
+                                # Instantly sample the current at the resting voltage
+                                reading = self.k.measure_pulsed_vg(base_vg, base_vg, 0.01)
+                                recorded_vg = base_vg   # Record the resting voltage in the CSV
+                            # ------------------------------------------
+
+                            # Proceed if it's a successful measurement
                             if reading is not None and len(reading) == 2:
                                 I_D, I_G = reading
                                 
                                 if I_D is not None:
                                     t = time.time() - start_time
-                                     # always update data to csv file
-                                    writer.writerow([t, vd_const, target_vg, I_D, I_G, self.current_light_state, self.servo_state])
+                                    
+                                    writer.writerow([t, vd_const, recorded_vg, I_D, I_G, self.current_light_state, self.servo_state])
 
-                                    # not update the figure too frequently (there are lots of points)
                                     current_t = time.time()
                                     if current_t - last_emit_time > 0.2:
-                                        self.new_data.emit(config_idx, t, vd_const, target_vg, I_D, I_G)
+                                        self.new_data.emit(config_idx, t, vd_const, recorded_vg, I_D, I_G)
                                         last_emit_time = current_t
 
                 self.k.enable_output('a', False)
@@ -403,7 +419,7 @@ if __name__ == "__main__":
 
     config_dir = Path("config")
     config_queue = [
-        config_dir / "time_dependent_config_app.json",
+        config_dir / "FORMAL_time_dependent_config_pulse_app.json",
         # config_dir / "time_dependent_config_2.json",
         # config_dir / "time_dependent_config_3.json"
     ]

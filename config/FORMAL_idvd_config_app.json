@@ -1,21 +1,17 @@
-{   
+{
     "description": "",
-    "device_number": "8-8",
-    "run_number": "7",
+    "device_number": "",
+    "run_number": "",
     "label": "dark",
-
     "vg_const": 1.0,
-    "vd_start": -2.0, 
-    "vd_stop": 2.0, 
-
+    "vd_start": 0.0,
+    "vd_stop": 5.0,
     "laser_settings": null,
     "laser_stable_time": 30,
-
-    "deplete_voltage": 0,
+    "deplete_voltage": 0.0,
     "deplete_time": 0,
-
-    "current_limit_a": 1e-3,
-    "current_limit_b": 1e-3,
+    "current_limit_a": 0.001,
+    "current_limit_b": 0.001,
     "nplc_a": 1.0,
     "nplc_b": 1.0,
     "num_points": 51,

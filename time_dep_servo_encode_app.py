@@ -408,7 +408,7 @@ if __name__ == "__main__":
 
     config_dir = Path("config")
     config_queue = [
-        config_dir / "time_dependent_config_encode_app.json",
+        config_dir / "FORMAL_time_dependent_config_encode_app.json",
         # config_dir / "time_dependent_config_2.json",
         # config_dir / "time_dependent_config_3.json"
     ]

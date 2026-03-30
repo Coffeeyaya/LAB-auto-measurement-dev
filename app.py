@@ -48,7 +48,7 @@ tab_time_dep, tab_idvg, tab_power, tab_plot, tab_encoder = st.tabs([
     "📈 Id-Vg Sweep",
     "🔦 Power Calibration", 
     "📊 Data Plotter",
-    "📡 Optical Encoder"  # <--- ADD THIS
+    "📡 Optical Encoder"
 ])
 # ==========================================
 # TAB 1: TIME-DEPENDENT MEASUREMENT
