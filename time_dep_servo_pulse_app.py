@@ -231,19 +231,19 @@ class TimeDepWorker(QThread):
                                 break
 
                             # Read the only two pulse parameters we need
-                        base_vg = float(params.get("base_vg", 0.0))
-                        pulse_width = float(params.get("pulse_width_ms", 5.0)) / 1000.0
-                        
-                        pulse_fired = False 
-                        last_emit_time = time.time()
-                        
-                        while time.time() < step_end:
-                            if not self.running: break
+                            base_vg = float(params.get("base_vg", 0.0))
+                            pulse_width = float(params.get("pulse_width_ms", 5.0)) / 1000.0
+                            
+                            pulse_fired = False 
+                            last_emit_time = time.time()
+                            
+                            while time.time() < step_end:
+                                if not self.running: break
 
-                            time_left = step_end - time.time()
-                            if time_left < 0.01:
-                                time.sleep(max(0, time_left))
-                                break
+                                time_left = step_end - time.time()
+                                if time_left < 0.01:
+                                    time.sleep(max(0, time_left))
+                                    break
 
                             # --- THE SINGLE-PULSE RELAXATION ENGINE ---
                             if not pulse_fired:

@@ -31,10 +31,6 @@ def encode_binary_block(power_table, channel_idx, wavelength, target_power, vg_o
     pp = get_pp_exact(power_table, wavelength, target_power)
     sequence_steps = []
     
-    # 1. Start with a baseline rest period to stabilize the device
-    # (Using 3x the bit duration to clearly mark the start of a transmission)
-    # sequence_steps.append({"Vg": vg_off, "duration": bit_duration * 3}) 
-    
     # 2. Configure the Laser Power ONCE before the transmission starts
     sequence_steps.append({"Vg": vg_off, "duration": 5, "laser_cmd1": {"channel": channel_idx, "power": pp}})
     sequence_steps.append({"Vg": vg_off, "duration": 5, "laser_cmd2": {"channel": channel_idx, "on": 1}})
@@ -49,11 +45,13 @@ def encode_binary_block(power_table, channel_idx, wavelength, target_power, vg_o
                 "duration": bit_duration, 
                 # "laser_cmd3": {"channel": channel_idx, "on": 1} 
             }
+
             step2 = {
                 "Vg": vg_on, 
                 "duration": bit_duration,
                 "laser_cmd3": {"channel": channel_idx, "on": 1}
             }
+
             step3 = {
                 "Vg": vg_on, 
                 "duration": bit_duration,
@@ -62,28 +60,25 @@ def encode_binary_block(power_table, channel_idx, wavelength, target_power, vg_o
             sequence_steps.append(step1)
             sequence_steps.append(step2)
             sequence_steps.append(step3)
+
         elif bit == '0':
             # Bit 0: Apply Vg, but keep the Light OFF
             step = {
                 "Vg": vg_on, 
-                "duration": bit_duration,
-                # "laser_cmd3": {"channel": channel_idx, "on": 0} 
+                "duration": bit_duration * 3,
             }
             sequence_steps.append(step)
         else:
-            continue # Ignore spaces or invalid characters
-            
-        # sequence_steps.append(step)
+            continue
         
         # --- THE RETURN-TO-ZERO (REST) STATE ---
-        # Turn everything off for half a bit-duration so consecutive 
-        # 11s or 00s don't visually merge together.
+        # Turn everything off for half a bit-duration
         rest_step = {
             "Vg": vg_off,
             "duration": bit_duration,
-            # "laser_cmd2": {"channel": channel_idx, "on": 0}
         }
         sequence_steps.append(rest_step)
+
     sequence_steps.append({"Vg": vg_off, "duration": 5, "laser_cmd2": {"channel": channel_idx, "on": 1}})
     return sequence_steps
 
