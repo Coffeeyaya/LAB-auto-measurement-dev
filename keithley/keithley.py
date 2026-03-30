@@ -123,13 +123,21 @@ class Keithley2636B:
         smu = f"smu{smu_char.lower()}"
         self.keithley.write(f"{smu}.measure.rangei={range_value}")
 
+    # def set_limit(self, smu_char, limit_value):
+    #     """
+    #     smu_char: channel a or b
+    #     limit_value: limit for measured current (it's a safe upper bound so that you won't damage the device)
+    #     """
+    #     smu = f"smu{smu_char.lower()}"
+    #     self.keithley.write(f"{smu}.measure.limiti={limit_value}")
+
     def set_limit(self, smu_char, limit_value):
         """
         smu_char: channel a or b
-        limit_value: limit for measured current (it's a safe upper bound so that you won't damage the device)
+        limit_value: limit for measured current (compliance)
         """
         smu = f"smu{smu_char.lower()}"
-        self.keithley.write(f"{smu}.measure.limiti={limit_value}")
+        self.keithley.write(f"{smu}.source.limiti={limit_value}") # <-- Fixed!
 
     def set_nplc(self, smu_char, nplc_value):
         """
