@@ -176,7 +176,7 @@ def render_vg_pulse_tab():
             ("time_dep_dark_pulse_app.py", "time_dep_servo_pulse_app.py"), 
             label_visibility="collapsed"
         )
-        if st.button("▶ Run Script in Terminal", type="secondary", use_container_width=True, key="td_run"):
+        if st.button("▶ Run Script in Terminal", type="secondary", use_container_width=True, key="td_pulse_run"):
             success, msg = launch_in_terminal(script_to_run)
             if success: st.success(msg)
             else: st.error(msg)
