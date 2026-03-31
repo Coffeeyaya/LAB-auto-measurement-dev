@@ -166,8 +166,13 @@ def render_idvg_tab():
 
     with col_btn2:
         st.markdown("**Run Keithley Measurement**")
+        script_to_run = st.selectbox(
+            "Select Measurement Script", 
+            ("idvg.py", "idvg_pulse.py"), 
+            label_visibility="collapsed"
+        )
         if st.button("▶ Run idvg.py in Terminal", type="secondary", use_container_width=True, key="idvg_run_btn"):
-            success, msg = launch_in_terminal("idvg.py")
+            success, msg = launch_in_terminal(script_to_run)
             if success: st.success(msg)
             else: st.error(msg)
             
