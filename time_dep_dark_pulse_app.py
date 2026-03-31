@@ -17,7 +17,7 @@ from keithley.keithley import Keithley2636B
 # -------------------------------
 class TimeDepWorker(QThread):
     new_config = pyqtSignal(int, str) # config_idx, label
-    new_data = pyqtSignal(int, float, float, float, float) # config_idx, t, Vd, Vg, Id (Removed Ig for clean plotting if needed, but keeping data format)
+    new_data = pyqtSignal(int, float, float, float, float, float) # config_idx, t, Vd, Vg, Id, Ig
     status_update = pyqtSignal(str) # update status string to GUI
     sequence_finished = pyqtSignal()
 
