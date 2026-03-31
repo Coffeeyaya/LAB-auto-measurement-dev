@@ -290,20 +290,17 @@ if __name__ == "__main__":
     RESOURCE_ID = "USB0::0x05E6::0x2636::4407529::INSTR"
     LIGHT_IP = "10.0.0.2" 
 
+    print("Connecting to Laser PC...")
+    laser = LaserController(LIGHT_IP)
+    print("Laser connected.")
+    
     config_dir = Path("config")
     config_queue = [
         config_dir / 'FORMAL_idvg_config_app.json',
         # config_dir / 'idvg_config_2.json',
         # config_dir / 'idvg_config_3.json'
     ]
-    
-    with open(config_queue[0], "r") as f:
-        params = json.load(f)
-    if params['laser_settings'] is not None:
-        print("Connecting to Laser PC...")
-        laser = LaserController(LIGHT_IP)
-        print("Laser connected.")
-    
+
     app = QApplication(sys.argv)
     
     worker = AutoIdVgWorker(RESOURCE_ID, laser, config_queue)
