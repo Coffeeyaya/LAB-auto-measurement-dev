@@ -171,8 +171,13 @@ def render_vg_pulse_tab():
 
     with col_btn2:
         st.markdown("**Run Keithley Measurement**")
-        if st.button("▶ Run Pulse Script in Terminal", type="secondary", use_container_width=True, key="pls_run_btn"):
-            success, msg = launch_in_terminal("time_dep_servo_pulse_app.py")
+        script_to_run = st.selectbox(
+            "Select Measurement Script", 
+            ("time_dep_dark_pulse_app.py", "time_dep_servo_pulse_app.py"), 
+            label_visibility="collapsed"
+        )
+        if st.button("▶ Run Script in Terminal", type="secondary", use_container_width=True, key="td_run"):
+            success, msg = launch_in_terminal(script_to_run)
             if success: st.success(msg)
             else: st.error(msg)
             
