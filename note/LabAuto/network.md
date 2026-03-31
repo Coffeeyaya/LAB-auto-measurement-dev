@@ -1,3 +1,4 @@
+## `network.py`
 In your system, `network.py` acts as the communication bridge between the **Electrical Computer** (running the Keithley) and the **Light Computer** (controlling the Laser). Since these two tasks often run on different physical machines, this script uses **TCP/IP Sockets** to send commands over your local network (RJ45 to usb-A connection).
 
 ---
