@@ -1,15 +1,9 @@
 '''
-test keithley version 2
-with class implementation
-run with plot.py
-combined to run.bat
+lowest level control code that interact with keithley
 '''
 import pyvisa
 import time
-import csv
-import os
 import threading
-# from LabAuto.network import Connection
 
 class Keithley2636B:
     def __init__(self, resource_id, limiti_a=1e-3, limiti_b=1e-3,
@@ -23,9 +17,9 @@ class Keithley2636B:
         self.nplc_b = nplc_b
         self.rm = None # pyvisa.ResourceManager()
         self.keithley = None # rm.open_resource(self.resource_id)
-        self.start_time = None
-        self.Vd = 0.0
-        self.Vg = 0.0
+        # self.start_time = None
+        # self.Vd = 0.0
+        # self.Vg = 0.0
 
         self.lock = threading.Lock()
  
@@ -35,8 +29,12 @@ class Keithley2636B:
             self.rm = pyvisa.ResourceManager()
             self.keithley = self.rm.open_resource(self.resource_id)
             self.keithley.timeout = 20000
+            # Sets a 20-second "wait time." This is crucial for high-precision measurements (high NPLC) 
+            # where the Keithley takes a long time to integrate the signal before replying.
             self.keithley.write_termination = '\n'
+            # Tells the Keithley that every command from Python ends with a "newline" character so it knows when to start processing.
             self.keithley.read_termination = '\n'
+            # Tells Python to stop listening for a response once it hits a "newline" from the instrument.
             print("Connected.")
         except Exception as e:
             raise RuntimeError(f"Connection failed: {e}")
@@ -123,14 +121,6 @@ class Keithley2636B:
         smu = f"smu{smu_char.lower()}"
         self.keithley.write(f"{smu}.measure.rangei={range_value}")
 
-    # def set_limit(self, smu_char, limit_value):
-    #     """
-    #     smu_char: channel a or b
-    #     limit_value: limit for measured current (it's a safe upper bound so that you won't damage the device)
-    #     """
-    #     smu = f"smu{smu_char.lower()}"
-    #     self.keithley.write(f"{smu}.measure.limiti={limit_value}")
-
     def set_limit(self, smu_char, limit_value):
         """
         smu_char: channel a or b
@@ -148,7 +138,7 @@ class Keithley2636B:
         
     def set_Vd(self, v):
         with self.lock:
-            self.Vd = v
+            # self.Vd = v
             
             try:
                 self.keithley.write(f"smua.source.levelv = {v}")
@@ -157,7 +147,7 @@ class Keithley2636B:
 
     def set_Vg(self, v):
         with self.lock:
-            self.Vg = v
+            # self.Vg = v
             try:
                 self.keithley.write(f"smub.source.levelv = {v}")
             except:
@@ -203,39 +193,6 @@ class Keithley2636B:
                     return float(resp[0]), float(resp[1])
             except:
                 return 0.0, 0.0
-    
-    def start_vg_pulse(self, pulse_sequence):
-        """
-        pulse_sequence: list of tuples [(Vg1, duration1), (Vg2, duration2), ...]
-        It will loop through sequence until stop_vg_pulse() is called.
-        """
-        if hasattr(self, '_pulse_thread') and self._pulse_thread.is_alive():
-            print("Pulse thread already running")
-            return
-
-        self._pulse_running = True
-
-        def pulse_worker():
-            while self._pulse_running:
-                for Vg, duration in pulse_sequence:
-                    if not self._pulse_running:
-                        break
-                    self.set_Vg(Vg)
-                    t_end = time.time() + duration
-                    while time.time() < t_end:
-                        if not self._pulse_running:
-                            break
-                        time.sleep(0.01)
-
-        self._pulse_thread = threading.Thread(target=pulse_worker, daemon=True)
-        self._pulse_thread.start()
-        print("Vg pulse started")
-
-    def stop_vg_pulse(self):
-        self._pulse_running = False
-        if hasattr(self, '_pulse_thread'):
-            self._pulse_thread.join()
-            print("Vg pulse stopped")
             
     def shutdown(self):
         """
@@ -245,9 +202,9 @@ class Keithley2636B:
         try:
             self.keithley.write("smua.source.levelv = 0")
             self.keithley.write("smub.source.levelv = 0")
-            self.enable_output("a", False)
+            self.enable_output("a", False) # open circuit
             self.enable_output("b", False)
-            self.keithley.close()
+            self.keithley.close() # releases the USB resource so other programs (or a new script run) can access it without "Resource Busy" errors
         except:
             pass
         print("Finished.")
@@ -262,70 +219,23 @@ class Keithley2636B:
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.shutdown()
 
-# def run_experiment(light_ip, port=5001, cycles=3):
-#     print(f"Connecting to Light Computer at {light_ip}...")
-#     conn = Connection.connect(light_ip, port)
-    
-#     k = Keithley2636B(RESOURCE_ID)
-#     k.connect()
-#     k.clean_instrument()
-#     k.config()
-    
-#     k.enable_output('a', True)
-#     k.enable_output('b', True)
-    
-#     vg_sequence = [(-1, 2.0), (1, 2.0)]
-    
-#     try:
-#         # 1. Start the asynchronous background Vg pulse
-#         k.start_vg_pulse(vg_sequence)
-        
-#         # 2. Main synchronization loop for the Light PC
-#         for i in range(cycles):
-#             print(f"\n--- Light Cycle {i+1} ---")
-            
-#             # 3. Light ON
-#             print("Main Thread: Sending LIGHT ON command...")
-#             conn.send_json({"channel": 6, "wavelength": "660", "power": "17", "on": 1})
-#             conn.receive_json()  # Wait for Light PC to finish clicking
-            
-#             # The light is now ON. The Vg thread is still pulsing in the background.
-#             # Define how long you want the light to stay ON.
-#             time.sleep(10) 
-            
-#             # 4. Light OFF
-#             print("Main Thread: Sending LIGHT OFF command...")
-#             conn.send_json({"channel": 6, "on": 0})
-#             conn.receive_json()  # Wait for Light PC to finish clicking
-            
-#             # The light is now OFF. 
-#             # Define how long you want the light to stay OFF before the next cycle.
-#             time.sleep(10)
-            
-#     finally:
-#         # 5. Clean up BOTH the socket and the background thread
-#         conn.close()
-#         k.stop_vg_pulse()
-#         print("Experiment complete. Socket closed and Vg pulse stopped safely.")
-
 if __name__ == "__main__":
     RESOURCE_ID = "USB0::0x05E6::0x2636::4407529::INSTR"
     LIGHT_IP = "192.168.50.17"
-    # run_experiment(LIGHT_IP, 5001, 3)
-    # k = Keithley2636B(RESOURCE_ID)
-    # k.connect()
-    # k.clean_instrument()
-    # k.config()
+    k = Keithley2636B(RESOURCE_ID)
+    k.connect()
+    k.clean_instrument()
+    k.config()
 
-    # k.enable_output('a', True)
-    # k.enable_output('b', True)
-    # k.set_Vd(1.0)
-    # k.set_Vg(0.0)
+    k.enable_output('a', True)
+    k.enable_output('b', True)
+    k.set_Vd(1.0)
+    k.set_Vg(0.0)
 
-    # time.sleep(5)
+    time.sleep(5)
 
-    # k.set_Vd(0)
-    # k.set_Vg(0)
-    # k.enable_output("a", False)
-    # k.enable_output("b", False)
-    # k.shutdown()
+    k.set_Vd(0)
+    k.set_Vg(0)
+    k.enable_output("a", False)
+    k.enable_output("b", False)
+    k.shutdown()

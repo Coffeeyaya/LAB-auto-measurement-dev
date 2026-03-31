@@ -51,23 +51,24 @@ class Connection:
         """
         while True:
             if "\n" in self.buffer:
-                line, self.buffer = self.buffer.split("\n", 1)
+                line, self.buffer = self.buffer.split("\n", 1) # max number of splits = 1, so it only slice the leftmost part
                 line = line.strip()
                 if line:
                     print(f"[RECV] {line}")
                     return line
+            # If no newline yet -> read more data
             chunk = self.sock.recv(1024).decode()
             if not chunk:
                 raise ConnectionError("Connection closed by peer")
             self.buffer += chunk
 
-    def wait_for(self, target: str):
-        while True:
-            msg = self.receive()  # could be str OR dict?
-            if msg == target:  # handle old plain string
-                return msg
-            # if isinstance(msg, dict) and msg.get("cmd") == target:  # handle JSON
-            #     return msg
+    # def wait_for(self, target: str):
+    #     while True:
+    #         msg = self.receive()  # could be str OR dict?
+    #         if msg == target:  # handle old plain string
+    #             return msg
+    #         # if isinstance(msg, dict) and msg.get("cmd") == target:  # handle JSON
+    #         #     return msg
             
     def send_json(self, obj):
         self.send(json.dumps(obj))
@@ -78,73 +79,66 @@ class Connection:
     def close(self):
         self.sock.close()
 
+# class ReconnectConnection:
+#     """
+#     A TCP connection wrapper that automatically reconnects
+#     whenever send/receive fails.
+#     """
 
+#     def __init__(self, host, port, retry_delay=2):
+#         self.host = host
+#         self.port = port
+#         self.retry_delay = retry_delay
+#         self.sock = None
+#         self._connect()
 
+#     @classmethod
+#     def connect(cls, host, port, retry_delay=2):
+#         """Allow syntax: conn = ReconnectConnection.connect(host, port)"""
+#         return cls(host, port, retry_delay)
 
-import socket
-import json
-import time
+#     def _connect(self):
+#         """Attempt to connect until success."""
+#         while True:
+#             try:
+#                 self.sock = socket.create_connection((self.host, self.port), timeout=5)
+#                 return
+#             except OSError:
+#                 print(f"[ReconnectConnection] connection failed, retrying in {self.retry_delay}s...")
+#                 time.sleep(self.retry_delay)
 
-class ReconnectConnection:
-    """
-    A TCP connection wrapper that automatically reconnects
-    whenever send/receive fails.
-    """
+#     def send_json(self, data: dict):
+#         """Send dictionary as JSON. Reconnect if it fails."""
+#         while True:
+#             try:
+#                 raw = (json.dumps(data) + "\n").encode()
+#                 self.sock.sendall(raw)
+#                 return
+#             except OSError:
+#                 print("[ReconnectConnection] send failed — reconnecting…")
+#                 self._connect()
 
-    def __init__(self, host, port, retry_delay=2):
-        self.host = host
-        self.port = port
-        self.retry_delay = retry_delay
-        self.sock = None
-        self._connect()
+#     def receive_json(self):
+#         """Receive JSON line. Reconnect if necessary."""
+#         buffer = ""
+#         while True:
+#             try:
+#                 chunk = self.sock.recv(4096)
+#                 if not chunk:
+#                     raise OSError("connection closed")
 
-    @classmethod
-    def connect(cls, host, port, retry_delay=2):
-        """Allow syntax: conn = ReconnectConnection.connect(host, port)"""
-        return cls(host, port, retry_delay)
+#                 buffer += chunk.decode()
 
-    def _connect(self):
-        """Attempt to connect until success."""
-        while True:
-            try:
-                self.sock = socket.create_connection((self.host, self.port), timeout=5)
-                return
-            except OSError:
-                print(f"[ReconnectConnection] connection failed, retrying in {self.retry_delay}s...")
-                time.sleep(self.retry_delay)
+#                 if "\n" in buffer:
+#                     line, buffer = buffer.split("\n", 1)
+#                     return json.loads(line)
 
-    def send_json(self, data: dict):
-        """Send dictionary as JSON. Reconnect if it fails."""
-        while True:
-            try:
-                raw = (json.dumps(data) + "\n").encode()
-                self.sock.sendall(raw)
-                return
-            except OSError:
-                print("[ReconnectConnection] send failed — reconnecting…")
-                self._connect()
+#             except OSError:
+#                 print("[ReconnectConnection] receive failed — reconnecting…")
+#                 self._connect()
 
-    def receive_json(self):
-        """Receive JSON line. Reconnect if necessary."""
-        buffer = ""
-        while True:
-            try:
-                chunk = self.sock.recv(4096)
-                if not chunk:
-                    raise OSError("connection closed")
-
-                buffer += chunk.decode()
-
-                if "\n" in buffer:
-                    line, buffer = buffer.split("\n", 1)
-                    return json.loads(line)
-
-            except OSError:
-                print("[ReconnectConnection] receive failed — reconnecting…")
-                self._connect()
-
-    def close(self):
-        try:
-            self.sock.close()
-        except:
-            pass
+#     def close(self):
+#         try:
+#             self.sock.close()
+#         except:
+#             pass
