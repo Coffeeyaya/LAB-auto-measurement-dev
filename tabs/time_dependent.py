@@ -93,15 +93,10 @@ def render_time_dependent_tab():
     st.subheader("⚡ Voltage Settings")
     
     # --- CONDITIONAL VOLTAGE UI ---
-    if mode == "Dark Current (Steady Vg)":
-        col1, col2 = st.columns(2)
-        col1.number_input("Vd Const (V)", step=0.1, key="vd_const")
-        col2.number_input("Vg Const (V)", step=0.1, key="vg_const")
-    else:
-        col1, col2, col3 = st.columns(3)
-        col1.number_input("Vd Const (V)", step=0.1, key="vd_const")
-        col2.number_input("Vg ON (V)", step=0.1, key="vg_on")
-        col3.number_input("Vg OFF (V)", step=0.1, key="vg_off")
+    col1, col2, col3 = st.columns(3)
+    col1.number_input("Vd Const (V)", step=0.1, key="vd_const")
+    col2.number_input("Vg ON (V)", step=0.1, key="vg_on")
+    col3.number_input("Vg OFF (V)", step=0.1, key="vg_off")
 
     st.divider()
 
