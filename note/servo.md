@@ -54,5 +54,3 @@ The script treats the servo motor as a binary "Light Toggle".
 2.  **`servo.py`**: Sends the string `"70\n"` over the USB cable.
 3.  **Arduino**: (Running its own internal code) reads `"70"`, converts it to a PWM signal, and moves the motor.
 4.  **Hardware**: The mechanical arm moves, allowing light to hit your 2D material device.
-
-Would you like me to show you how to swap your **Network Laser** commands for this **Physical Shutter** in your `time_dependent.py` script?

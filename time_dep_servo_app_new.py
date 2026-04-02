@@ -43,6 +43,34 @@ def basic_block(power_table, channel_idx, wavelength, target_power, vg_on, vg_of
         
     return seqeunce_steps
 
+def build_optical_block(power_table, ch_idx, wl, power_nw, params):
+    """Generates the measurement sequence for one specific wavelength/power."""
+    pp = get_pp_exact(power_table, wl, power_nw)
+    vg_on = params["vg_on"]
+    vg_off = params["vg_off"]
+    
+    # Base sequence: Dark relax, then set up the laser (but keep it off)
+    sequence = [
+        {"Vg": vg_off, "duration": params["duration_1"]},
+        {"Vg": vg_on,  "duration": params["duration_2"], "laser_cmd1": {"channel": ch_idx, "power": pp}}
+    ]
+    
+    # Physical Shutter (Servo) Logic
+    if params.get("servo_time"):
+        sequence.append({"Vg": vg_on, "duration": params["duration_3"], "laser_cmd2": {"channel": ch_idx, "on": 1}}) 
+        for _ in range(int(params.get("on_off_number", 1))):    
+            sequence.append({"Vg": vg_on, "duration": params["servo_time"], "laser_cmd3": 1}) # Block
+            sequence.append({"Vg": vg_on, "duration": params["servo_time"], "laser_cmd3": 1}) # Unblock
+        sequence.append({"Vg": vg_on, "duration": params["duration_4"], "laser_cmd2": {"channel": ch_idx, "on": 1}})
+    
+    # Pure Laser GUI Toggling Logic
+    else:
+        for _ in range(int(params.get("on_off_number", 1))):    
+            sequence.append({"Vg": vg_on, "duration": params["duration_3"], "laser_cmd2": {"channel": ch_idx, "on": 1}}) # Turn ON
+            sequence.append({"Vg": vg_on, "duration": params["duration_4"], "laser_cmd2": {"channel": ch_idx, "on": 1}}) # Turn OFF
+            
+    return sequence
+
 
 
 
