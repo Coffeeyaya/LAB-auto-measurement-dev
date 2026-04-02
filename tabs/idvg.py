@@ -99,7 +99,7 @@ def render_idvg_tab():
         st.number_input("NPLC B", step=0.1, key="idvg_nplc_b")
     with col7:
         if mode == "Pulsed Sweep":
-            st.number_input("Fixed Range A (Max I_ON)", format="%e", step=1e-6, key="idvg_fixed_range_a", help="Required to prevent autorange delays during pulses.")
+            st.number_input("Fixed Range A (Max I_ON)", format="%.1e", step=1e-6, key="idvg_fixed_range_a", help="Required to prevent autorange delays during pulses.")
 
     st.divider()
 
