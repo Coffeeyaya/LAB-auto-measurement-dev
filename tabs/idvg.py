@@ -189,13 +189,13 @@ def render_idvg_tab():
                 # Mode-Specific Data & Filenames
                 if mode == "Steady-State Sweep":
                     config_dict_idvg["source_to_measure_delay"] = st.session_state["idvg_source_to_measure_delay"]
-                    full_path = save_path / "FORMAL_idvg_config_app.json"
+                    full_path = save_path / "FORMAL_idvg_config.json"
                 elif mode == "Pulsed Sweep":
                     config_dict_idvg["base_vg"] = st.session_state["idvg_base_vg"]
                     config_dict_idvg["pulse_width"] = st.session_state["idvg_pulse_width"]
                     config_dict_idvg["rest_time"] = st.session_state["idvg_rest_time"]
                     config_dict_idvg["fixed_range_a"] = st.session_state["idvg_fixed_range_a"]
-                    full_path = save_path / "FORMAL_idvg_pulse_config_app.json"
+                    full_path = save_path / "FORMAL_idvg_pulse_config.json"
 
                 with open(full_path, "w") as f: 
                     json.dump(config_dict_idvg, f, indent=4)

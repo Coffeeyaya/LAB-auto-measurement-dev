@@ -305,7 +305,7 @@ if __name__ == "__main__":
     config_dir = Path("config")
     # SWAP: Queue looks for idvd files
     config_queue = [
-        config_dir / 'FORMAL_idvd_config_1.json',
+        config_dir / 'FORMAL_idvd_config.json',
         # config_dir / 'idvd_config_2.json',
         # config_dir / 'idvd_config_3.json'
     ]
