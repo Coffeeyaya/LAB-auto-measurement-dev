@@ -53,7 +53,8 @@ def build_optical_block(power_table, ch_idx, wl, power_nw, params):
     if params.get("servo_time"):
         sequence = [
         {"Vg": vg_off, "duration": params["duration_1"], "laser_cmd1": {"channel": ch_idx, "power": pp}},
-        {"Vg": vg_on, "duration": params["duration_2"], "laser_cmd2": {"channel": ch_idx, "on": 1}},
+        {"Vg": vg_on, "duration": params["duration_2"]},
+        {"Vg": vg_on, "duration": params["duration_3"], "laser_cmd2": {"channel": ch_idx, "on": 1}},
         ]
         
         for _ in range(int(params.get("on_off_number", 1))):    
