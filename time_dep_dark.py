@@ -322,7 +322,7 @@ if __name__ == "__main__":
 
     config_dir = Path("config")
     config_queue = [
-        config_dir / "FORMAL_dark_pulse_config.json"
+        config_dir / "FORMAL_time_dependent_config_app.json"
     ]
 
     app = QApplication(sys.argv)

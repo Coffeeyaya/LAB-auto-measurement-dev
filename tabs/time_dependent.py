@@ -4,31 +4,29 @@ from pathlib import Path
 from tabs.helper import launch_in_terminal
 
 def render_time_dependent_tab():
-    st.markdown("Load an existing config, tweak your parameters, and launch the measurement.")
+    st.markdown("Select your measurement mode, tweak your parameters, and launch the experiment.")
 
-    # 1. Initialize default values directly into Streamlit's memory (session_state)
-    # These match your JSON structure exactly.
+    # 1. Initialize default values
+    # Added 'base_vg', 'pulse_width_ms', and 'measurement_mode' for the new capabilities
     default_cfg = {
-        "description": "Standard Time-Dep", "device_number": "2-2", "run_number": "0", "wait_time": 5,
+        "description": "Standard Time-Dep", "device_number": "1-1", "run_number": "1", "wait_time": 0,
         "current_limit_a": 0.001, "current_limit_b": 0.001, "current_range_a": 1e-05, "current_range_b": 1e-05,
-        "nplc_a": 1.0, "nplc_b": 1.0, "vd_const": 2.0, "vg_on": 1.0, "vg_off": -1.0,
-        "duration_1": 5.0, "duration_2": 5.0, "duration_3": 5.0, "duration_4": 5.0,
-        "cycle_number": 5, "on_off_number": 3, "servo_time": 20.0
+        "nplc_a": 1.0, "nplc_b": 1.0, "vd_const": 1.0, "vg_on": 1.0, "vg_off": 0.0,
+        "duration_1": 5.0, "duration_2": 1.0, "duration_3": 2.0, "duration_4": 2.0,
+        "cycle_number": 5, "on_off_number": 3, "servo_time": 20.0,
+        "base_vg": 0.0, "pulse_width_ms": 5.0,
+        "measurement_mode": "Laser + Servo" 
     }
 
-    # Load standard defaults on the very first run
     for k, v in default_cfg.items():
         if k not in st.session_state:
             st.session_state[k] = v
 
-    # Arrays need to be stored as comma-separated strings for the UI text boxes
     if "wavelength_str" not in st.session_state: st.session_state["wavelength_str"] = "660"
     if "channel_str" not in st.session_state: st.session_state["channel_str"] = "6"
     if "power_str" not in st.session_state: st.session_state["power_str"] = "100"
 
     st.subheader("📂 Load Existing Configuration (Optional)")
-    
-    # 2. Setup the dynamic uploader key for the "Self-Clearing" trick
     if "uploader_key" not in st.session_state: 
         st.session_state["uploader_key"] = 0
 
@@ -38,33 +36,37 @@ def render_time_dependent_tab():
         key=f"td_uploader_{st.session_state['uploader_key']}"
     )
 
-    # 3. Process the file if uploaded
     if uploaded_file is not None:
         try:
             uploaded_cfg = json.load(uploaded_file)
-            
-            # Forcefully inject the JSON values directly into the Widget Memory Keys!
             for k, v in uploaded_cfg.items():
                 if k in ["wavelength_arr", "channel_arr", "power_arr"]:
-                    # Convert arrays (e.g., [660]) back to strings (e.g., "660")
                     st.session_state[k.replace("_arr", "_str")] = ", ".join(map(str, v))
                 else:
                     st.session_state[k] = v
-            
-            # Clear the uploader box by changing its name, then restart the app instantly
             st.session_state["uploader_key"] += 1
             st.rerun()
-            
         except Exception as e:
             st.error(f"Failed to read JSON file: {e}")
 
     st.divider()
 
     # ==========================================
-    # UI WIDGETS (Bound directly to session_state via 'key')
-    # Notice we DO NOT use 'value=' anymore!
+    # MODE SELECTION (The main logic toggle)
     # ==========================================
+    st.subheader("🎛️ Measurement Mode")
+    mode = st.radio(
+        "Select the hardware configuration for this run:",
+        ["Dark Current (No Light)", "Laser Only", "Laser + Servo"],
+        horizontal=True,
+        key="measurement_mode"
+    )
 
+    st.divider()
+
+    # ==========================================
+    # UI WIDGETS
+    # ==========================================
     st.subheader("📝 General Information")
     col1, col2, col3, col4 = st.columns(4)
     col1.text_input("Description", key="description")
@@ -89,32 +91,58 @@ def render_time_dependent_tab():
     st.divider()
 
     st.subheader("⚡ Voltage Settings")
-    col1, col2, col3 = st.columns(3)
+    col1, col2, col3, col4 = st.columns(4)
     col1.number_input("Vd Const (V)", step=0.1, key="vd_const")
     col2.number_input("Vg ON (V)", step=0.1, key="vg_on")
     col3.number_input("Vg OFF (V)", step=0.1, key="vg_off")
+    
+    # Only show Base Vg if it's the Dark Pulse mode
+    if mode == "Dark Current (No Light)":
+        col4.number_input("Base Vg (Resting) (V)", step=0.1, key="base_vg")
 
     st.divider()
 
-    st.subheader("🔦 Optics & Arrays (Comma-separated)")
-    col1, col2, col3 = st.columns(3)
-    col1.text_input("Wavelength Array (nm)", key="wavelength_str")
-    col2.text_input("Channel Array", key="channel_str")
-    col3.text_input("Power Array (nW)", key="power_str")
-
-    st.divider()
+    # conditionally show Optics
+    if mode in ["Laser Only", "Laser + Servo"]:
+        st.subheader("🔦 Optics & Arrays (Comma-separated)")
+        col1, col2, col3 = st.columns(3)
+        col1.text_input("Wavelength Array (nm)", key="wavelength_str")
+        col2.text_input("Channel Array", key="channel_str")
+        col3.text_input("Power Array (nW)", key="power_str")
+        st.divider()
 
     st.subheader("⏱️ Timing & Sequence Durations")
-    col1, col2, col3, col4 = st.columns(4)
-    col1.number_input("Duration 1 (s)", step=0.5, key="duration_1")
-    col2.number_input("Duration 2 (s)", step=0.5, key="duration_2")
-    col3.number_input("Duration 3 (s)", step=0.5, key="duration_3")
-    col4.number_input("Duration 4 (s)", step=0.5, key="duration_4")
+    
+    # Conditional Timing Layout based on Mode
+    if mode == "Dark Current (No Light)":
+        col1, col2, col3, col4 = st.columns(4)
+        col1.number_input("OFF Duration (s)", step=0.5, key="duration_1", help="Time spent resting at Vg OFF")
+        col2.number_input("On Duration (s)", step=0.5, key="duration_2", help="Time spent during Vg ON")
+        # col3.number_input("Pulse Width (ms)", step=1.0, key="pulse_width_ms", help="Duration of the hardware-level Vg spike")
+        col4.number_input("Cycle Number", min_value=1, step=1, key="cycle_number")
 
-    col5, col6, col7 = st.columns(3)
-    col5.number_input("Cycle Number", min_value=1, step=1, key="cycle_number")
-    col6.number_input("ON/OFF Number", min_value=1, step=1, key="on_off_number")
-    col7.number_input("Servo Time (s)", step=0.5, key="servo_time")
+    elif mode == "Laser Only":
+        col1, col2, col3, col4 = st.columns(4)
+        col1.number_input("Dur 1 (Dark Relax)", step=0.5, key="duration_1")
+        col2.number_input("Dur 2 (Light Relax)", step=0.5, key="duration_2")
+        col3.number_input("Dur 3 (Laser ON)", step=0.5, key="duration_3")
+        col4.number_input("Dur 4 (Laser OFF)", step=0.5, key="duration_4")
+        
+        col5, col6 = st.columns(2)
+        col5.number_input("Cycle Number", min_value=1, step=1, key="cycle_number")
+        col6.number_input("ON/OFF Number", min_value=1, step=1, key="on_off_number")
+
+    elif mode == "Laser + Servo":
+        col1, col2, col3, col4 = st.columns(4)
+        col1.number_input("Dur 1 (Dark Relax)", step=0.5, key="duration_1")
+        col2.number_input("Dur 2 (Light Setup)", step=0.5, key="duration_2")
+        col3.number_input("Dur 3 (Pre-Servo Wait)", step=0.5, key="duration_3")
+        col4.number_input("Dur 4 (Post-Servo Wait)", step=0.5, key="duration_4")
+        
+        col5, col6, col7 = st.columns(3)
+        col5.number_input("Cycle Number", min_value=1, step=1, key="cycle_number")
+        col6.number_input("Servo Swings (On/Off #)", min_value=1, step=1, key="on_off_number")
+        col7.number_input("Servo Block Time (s)", step=0.5, key="servo_time")
 
     st.divider()
 
@@ -128,16 +156,13 @@ def render_time_dependent_tab():
         st.markdown("**Save Configuration**")
         if st.button("Update JSON Config", type="primary", use_container_width=True, key="td_save"):
             try:
-                # Convert the comma-separated strings back into Python arrays
-                wavelength_arr = [int(x.strip()) for x in st.session_state["wavelength_str"].split(",")]
-                channel_arr = [int(x.strip()) for x in st.session_state["channel_str"].split(",")]
-                power_arr = [float(x.strip()) for x in st.session_state["power_str"].split(",")]
-
-                # Construct the final dictionary
+                # Base config shared by all modes
                 config_dict = {
+                    "measurement_mode": st.session_state["measurement_mode"],
                     "description": st.session_state["description"],
                     "device_number": st.session_state["device_number"],
                     "run_number": st.session_state["run_number"],
+                    "wait_time": st.session_state["wait_time"],
                     "current_limit_a": st.session_state["current_limit_a"],
                     "current_limit_b": st.session_state["current_limit_b"],
                     "current_range_a": st.session_state["current_range_a"],
@@ -147,32 +172,41 @@ def render_time_dependent_tab():
                     "vd_const": st.session_state["vd_const"],
                     "vg_on": st.session_state["vg_on"],
                     "vg_off": st.session_state["vg_off"],
+                    "cycle_number": st.session_state["cycle_number"],
                     "duration_1": st.session_state["duration_1"],
                     "duration_2": st.session_state["duration_2"],
-                    "duration_3": st.session_state["duration_3"],
-                    "duration_4": st.session_state["duration_4"],
-                    "wavelength_arr": wavelength_arr,
-                    "channel_arr": channel_arr,
-                    "power_arr": power_arr,
-                    "cycle_number": st.session_state["cycle_number"],
-                    "on_off_number": st.session_state["on_off_number"],
-                    "servo_time": st.session_state["servo_time"],
-                    "wait_time": st.session_state["wait_time"]
                 }
-                
-                # Save it to the config folder
+
+                # Mode-specific additions
+                if mode == "Dark Current (No Light)":
+                    config_dict["base_vg"] = st.session_state["base_vg"]
+                    config_dict["pulse_width_ms"] = st.session_state["pulse_width_ms"]
+                    # We map dur_1 and dur_2 to off/on in the worker anyway
+                    config_dict["duration_off"] = st.session_state["duration_1"]
+                    config_dict["duration_on"] = st.session_state["duration_2"]
+
+                if mode in ["Laser Only", "Laser + Servo"]:
+                    config_dict["wavelength_arr"] = [int(x.strip()) for x in st.session_state["wavelength_str"].split(",")]
+                    config_dict["channel_arr"] = [int(x.strip()) for x in st.session_state["channel_str"].split(",")]
+                    config_dict["power_arr"] = [float(x.strip()) for x in st.session_state["power_str"].split(",")]
+                    config_dict["duration_3"] = st.session_state["duration_3"]
+                    config_dict["duration_4"] = st.session_state["duration_4"]
+                    config_dict["on_off_number"] = st.session_state["on_off_number"]
+
+                if mode == "Laser + Servo":
+                    config_dict["servo_time"] = st.session_state["servo_time"]
+
+                # Save it
                 save_path = Path("config")
                 save_path.mkdir(parents=True, exist_ok=True) 
                 full_path = save_path / "FORMAL_time_dependent_config_app.json"
+                
                 with open(full_path, "w") as f:
                     json.dump(config_dict, f, indent=4)
                 
-                st.success(f"✅ Saved to: {full_path.name}")
-                
-                # --- JSON PREVIEWER ---
-                # This creates a collapsible box that defaults to being open
+                st.success(f"✅ Saved as {mode} to: {full_path.name}")
                 with st.expander("👀 Preview Saved Configuration", expanded=True):
-                    st.json(config_dict) # This automatically formats the dictionary!
+                    st.json(config_dict)
 
             except ValueError:
                 st.error("Format Error: Ensure arrays are numbers separated by commas (e.g., '660, 532')")
@@ -181,12 +215,23 @@ def render_time_dependent_tab():
 
     with col_btn2:
         st.markdown("**Run Keithley Measurement**")
+        
+        # Smartly pre-select the correct script based on the UI mode
+        if mode == "Dark Current (No Light)": 
+            default_script_index = 1  # Maps to "time_dep_dark.py"
+        else: 
+            default_script_index = 0  # Maps to "time_dep_servo.py" for both Laser modes
+
         script_to_run = st.selectbox(
             "Select Measurement Script", 
-            ("time_dep_app.py", "time_dep_servo_app.py", "time_dep_dark_app.py", "time_dep_servo_pulse_app.py"), 
+            ("time_dep_servo.py", "time_dep_dark.py"), 
+            index=default_script_index,
             label_visibility="collapsed"
         )
-        if st.button("▶ Run Script in Terminal", type="secondary", use_container_width=True, key="td_run"):
+        # Create a dynamically unique key based on the current mode
+        dynamic_run_key = f"td_run_{mode.replace(' ', '_')}"
+
+        if st.button("▶ Run Script in Terminal", type="secondary", use_container_width=True, key=dynamic_run_key):
             success, msg = launch_in_terminal(script_to_run)
             if success: st.success(msg)
             else: st.error(msg)

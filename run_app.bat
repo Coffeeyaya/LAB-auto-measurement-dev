@@ -1,3 +1,3 @@
 @echo off
-streamlit run app2.py
+streamlit run app.py
 pause
