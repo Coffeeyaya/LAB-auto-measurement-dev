@@ -60,14 +60,14 @@ class DarkPulseWorker(QThread):
 
     def _setup_files(self, params):
         """Creates the data directory and handles Overwrite Protection."""
-        output_dir = Path("data_dark")
+        output_dir = Path("data")
         output_dir.mkdir(parents=True, exist_ok=True)
         
         device = params.get('device_number', '0')
         run_num = int(params.get('run_number', 1))
         
-        filename = output_dir / f"dark_pulse_{device}_{run_num}.csv"
-        config_backup = output_dir / f"dark_pulse_{device}_{run_num}_config.json"
+        filename = output_dir / f"time_dark_{device}_{run_num}.csv"
+        config_backup = output_dir / f"time_dark_{device}_{run_num}_config.json"
         
         if filename.exists() or config_backup.exists():
             raise FileExistsError(f"{filename.name} already exists. Aborting to prevent overwrite!")
