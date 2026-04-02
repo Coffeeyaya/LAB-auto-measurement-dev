@@ -7,15 +7,15 @@ def render_time_dependent_tab():
     st.markdown("Select your measurement mode, tweak your parameters, and launch the experiment.")
 
     # 1. Initialize default values
-    # Added 'base_vg', 'pulse_width_ms', and 'measurement_mode' for the new capabilities
     default_cfg = {
         "description": "Standard Time-Dep", "device_number": "1-1", "run_number": "1", "wait_time": 0,
         "current_limit_a": 0.001, "current_limit_b": 0.001, "current_range_a": 1e-05, "current_range_b": 1e-05,
-        "nplc_a": 1.0, "nplc_b": 1.0, "vd_const": 1.0, "vg_on": 1.0, "vg_off": 0.0,
+        "nplc_a": 1.0, "nplc_b": 1.0, 
+        "vd_const": 1.0, "vg_const": 0.0,
+        "vg_on": 1.0, "vg_off": 0.0,
         "duration_1": 5.0, "duration_2": 1.0, "duration_3": 2.0, "duration_4": 2.0,
-        "cycle_number": 5, "on_off_number": 3, "servo_time": 20.0,
-        "base_vg": 0.0, "pulse_width_ms": 5.0,
-        "measurement_mode": "Laser + Servo" 
+        "cycle_number": 3, "on_off_number": 1, "servo_time": 1.0,
+        "measurement_mode": "Dark Current (Steady Vg)" 
     }
 
     for k, v in default_cfg.items():
@@ -57,7 +57,7 @@ def render_time_dependent_tab():
     st.subheader("🎛️ Measurement Mode")
     mode = st.radio(
         "Select the hardware configuration for this run:",
-        ["Dark Current (No Light)", "Laser Only", "Laser + Servo"],
+        ["Dark Current (Steady Vg)", "Laser Only", "Laser + Servo"],
         horizontal=True,
         key="measurement_mode"
     )
@@ -91,14 +91,17 @@ def render_time_dependent_tab():
     st.divider()
 
     st.subheader("⚡ Voltage Settings")
-    col1, col2, col3, col4 = st.columns(4)
-    col1.number_input("Vd Const (V)", step=0.1, key="vd_const")
-    col2.number_input("Vg ON (V)", step=0.1, key="vg_on")
-    col3.number_input("Vg OFF (V)", step=0.1, key="vg_off")
     
-    # Only show Base Vg if it's the Dark Pulse mode
-    if mode == "Dark Current (No Light)":
-        col4.number_input("Base Vg (Resting) (V)", step=0.1, key="base_vg")
+    # --- CONDITIONAL VOLTAGE UI ---
+    if mode == "Dark Current (Steady Vg)":
+        col1, col2 = st.columns(2)
+        col1.number_input("Vd Const (V)", step=0.1, key="vd_const")
+        col2.number_input("Vg Const (V)", step=0.1, key="vg_const")
+    else:
+        col1, col2, col3 = st.columns(3)
+        col1.number_input("Vd Const (V)", step=0.1, key="vd_const")
+        col2.number_input("Vg ON (V)", step=0.1, key="vg_on")
+        col3.number_input("Vg OFF (V)", step=0.1, key="vg_off")
 
     st.divider()
 
@@ -113,18 +116,16 @@ def render_time_dependent_tab():
 
     st.subheader("⏱️ Timing & Sequence Durations")
     
-    # Conditional Timing Layout based on Mode
-    if mode == "Dark Current (No Light)":
-        col1, col2, col3, col4 = st.columns(4)
-        col1.number_input("OFF Duration (s)", step=0.5, key="duration_1", help="Time spent resting at Vg OFF")
-        col2.number_input("On Duration (s)", step=0.5, key="duration_2", help="Time spent during Vg ON")
-        # col3.number_input("Pulse Width (ms)", step=1.0, key="pulse_width_ms", help="Duration of the hardware-level Vg spike")
-        col4.number_input("Cycle Number", min_value=1, step=1, key="cycle_number")
+    # --- CONDITIONAL TIMING UI ---
+    if mode == "Dark Current (Steady Vg)":
+        col1, col2 = st.columns(2)
+        col1.number_input("Dur 1 (Dark Relax)", step=0.5, key="duration_1")
+        col2.number_input("Dur 2 (Vg on)", step=0.5, key="duration_2")
 
     elif mode == "Laser Only":
         col1, col2, col3, col4 = st.columns(4)
         col1.number_input("Dur 1 (Dark Relax)", step=0.5, key="duration_1")
-        col2.number_input("Dur 2 (Light Relax)", step=0.5, key="duration_2")
+        col2.number_input("Dur 2 (Vg on)", step=0.5, key="duration_2")
         col3.number_input("Dur 3 (Laser ON)", step=0.5, key="duration_3")
         col4.number_input("Dur 4 (Laser OFF)", step=0.5, key="duration_4")
         
@@ -135,7 +136,7 @@ def render_time_dependent_tab():
     elif mode == "Laser + Servo":
         col1, col2, col3, col4 = st.columns(4)
         col1.number_input("Dur 1 (Dark Relax)", step=0.5, key="duration_1")
-        col2.number_input("Dur 2 (Light Setup)", step=0.5, key="duration_2")
+        col2.number_input("Dur 2 (Vg on)", step=0.5, key="duration_2")
         col3.number_input("Dur 3 (Pre-Servo Wait)", step=0.5, key="duration_3")
         col4.number_input("Dur 4 (Post-Servo Wait)", step=0.5, key="duration_4")
         
@@ -169,28 +170,23 @@ def render_time_dependent_tab():
                     "current_range_b": st.session_state["current_range_b"],
                     "nplc_a": st.session_state["nplc_a"],
                     "nplc_b": st.session_state["nplc_b"],
-                    "vd_const": st.session_state["vd_const"],
-                    "vg_on": st.session_state["vg_on"],
-                    "vg_off": st.session_state["vg_off"],
-                    "cycle_number": st.session_state["cycle_number"],
-                    "duration_1": st.session_state["duration_1"],
-                    "duration_2": st.session_state["duration_2"],
+                    "vd_const": st.session_state["vd_const"]
                 }
 
-                # Mode-specific additions
-                if mode == "Dark Current (No Light)":
-                    config_dict["base_vg"] = st.session_state["base_vg"]
-                    config_dict["pulse_width_ms"] = st.session_state["pulse_width_ms"]
-                    # We map dur_1 and dur_2 to off/on in the worker anyway
-                    config_dict["duration_off"] = st.session_state["duration_1"]
-                    config_dict["duration_on"] = st.session_state["duration_2"]
-
-                if mode in ["Laser Only", "Laser + Servo"]:
+                # Mode-specific JSON building
+                if mode == "Dark Current (Steady Vg)":
+                    config_dict["vg_const"] = st.session_state["vg_const"]
+                else:
+                    config_dict["vg_on"] = st.session_state["vg_on"]
+                    config_dict["vg_off"] = st.session_state["vg_off"]
+                    config_dict["cycle_number"] = st.session_state["cycle_number"]
+                    config_dict["duration_1"] = st.session_state["duration_1"]
+                    config_dict["duration_2"] = st.session_state["duration_2"]
+                    config_dict["duration_3"] = st.session_state["duration_3"]
+                    config_dict["duration_4"] = st.session_state["duration_4"]
                     config_dict["wavelength_arr"] = [int(x.strip()) for x in st.session_state["wavelength_str"].split(",")]
                     config_dict["channel_arr"] = [int(x.strip()) for x in st.session_state["channel_str"].split(",")]
                     config_dict["power_arr"] = [float(x.strip()) for x in st.session_state["power_str"].split(",")]
-                    config_dict["duration_3"] = st.session_state["duration_3"]
-                    config_dict["duration_4"] = st.session_state["duration_4"]
                     config_dict["on_off_number"] = st.session_state["on_off_number"]
 
                 if mode == "Laser + Servo":
@@ -199,7 +195,12 @@ def render_time_dependent_tab():
                 # Save it
                 save_path = Path("config")
                 save_path.mkdir(parents=True, exist_ok=True) 
-                full_path = save_path / "FORMAL_time_dependent_config_app.json"
+                
+                # Dynamically rename the JSON file so the script knows what to look for
+                if mode == "Dark Current (Steady Vg)":
+                    full_path = save_path / "FORMAL_time_dependent_config.json"
+                else:
+                    full_path = save_path / "FORMAL_time_dependent_config.json"
                 
                 with open(full_path, "w") as f:
                     json.dump(config_dict, f, indent=4)
@@ -217,10 +218,10 @@ def render_time_dependent_tab():
         st.markdown("**Run Keithley Measurement**")
         
         # Smartly pre-select the correct script based on the UI mode
-        if mode == "Dark Current (No Light)": 
-            default_script_index = 1  # Maps to "time_dep_dark.py"
+        if mode == "Dark Current (Steady Vg)": 
+            default_script_index = 1  
         else: 
-            default_script_index = 0  # Maps to "time_dep_servo.py" for both Laser modes
+            default_script_index = 0  
 
         script_to_run = st.selectbox(
             "Select Measurement Script", 
@@ -228,9 +229,8 @@ def render_time_dependent_tab():
             index=default_script_index,
             label_visibility="collapsed"
         )
-        # Create a dynamically unique key based on the current mode
+        
         dynamic_run_key = f"td_run_{mode.replace(' ', '_')}"
-
         if st.button("▶ Run Script in Terminal", type="secondary", use_container_width=True, key=dynamic_run_key):
             success, msg = launch_in_terminal(script_to_run)
             if success: st.success(msg)
