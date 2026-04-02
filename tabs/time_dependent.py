@@ -170,7 +170,13 @@ def render_time_dependent_tab():
 
                 # Mode-specific JSON building
                 if mode == "Dark Current (Steady Vg)":
-                    config_dict["vg_const"] = st.session_state["vg_const"]
+                    config_dict["vg_on"] = st.session_state["vg_on"]
+                    config_dict["vg_off"] = st.session_state["vg_off"]
+                    config_dict["cycle_number"] = st.session_state["cycle_number"]
+                    config_dict["duration_1"] = st.session_state["duration_1"]
+                    config_dict["duration_2"] = st.session_state["duration_2"]
+                    config_dict["duration_3"] = st.session_state["duration_3"]
+                    config_dict["duration_4"] = st.session_state["duration_4"]
                 else:
                     config_dict["vg_on"] = st.session_state["vg_on"]
                     config_dict["vg_off"] = st.session_state["vg_off"]
