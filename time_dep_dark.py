@@ -191,7 +191,7 @@ class DarkPulseWorker(QThread):
                 try:
                     filename = self._setup_files(params)
                 except FileExistsError as e:
-                    print('file already exists')
+                    print(f'file {filename} already exists')
                     self.status_update.emit(f"ERROR: {e}")
                     break 
 
