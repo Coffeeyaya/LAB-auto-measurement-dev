@@ -8,21 +8,23 @@ def render_time_dependent_tab():
 
     # 1. Initialize default values
     default_cfg = {
-        "description": "Standard Time-Dep", "device_number": "2-2", "run_number": "0", "wait_time": 5,
+        "description": "Standard Time-Dep", "device_number": "1-1", "run_number": "1", "wait_time": 0,
         "current_limit_a": 0.001, "current_limit_b": 0.001, "current_range_a": 1e-05, "current_range_b": 1e-05,
         "nplc_a": 1.0, "nplc_b": 1.0, 
-        "vd_const": 1.0, "vg_const": 0.0, "total_time_s": 60.0, 
-        "vg_on": 1.0, "vg_off": -1.0,
-        "duration_1": 5.0, "duration_2": 5.0, "duration_3": 5.0, "duration_4": 5.0,
-        "cycle_number": 5, "on_off_number": 3, "servo_time": 20.0,
-        "measurement_mode": "Dark Current (Steady Vg)",
-        "wavelength_str": "660", "channel_str": "6", "power_str": "100"
+        "vd_const": 1.0, "vg_const": 0.0,
+        "vg_on": 1.0, "vg_off": 0.0,
+        "duration_1": 5.0, "duration_2": 1.0, "duration_3": 2.0, "duration_4": 2.0,
+        "cycle_number": 3, "on_off_number": 1, "servo_time": 1.0,
+        "measurement_mode": "Dark Current (Steady Vg)" 
     }
 
-    # Only set defaults on the very first load
     for k, v in default_cfg.items():
         if k not in st.session_state:
             st.session_state[k] = v
+
+    if "wavelength_str" not in st.session_state: st.session_state["wavelength_str"] = "660"
+    if "channel_str" not in st.session_state: st.session_state["channel_str"] = "6"
+    if "power_str" not in st.session_state: st.session_state["power_str"] = "100"
 
     st.subheader("📂 Load Existing Configuration (Optional)")
     if "uploader_key" not in st.session_state: 
@@ -50,7 +52,7 @@ def render_time_dependent_tab():
     st.divider()
 
     # ==========================================
-    # MODE SELECTION
+    # MODE SELECTION (The main logic toggle)
     # ==========================================
     st.subheader("🎛️ Measurement Mode")
     mode = st.radio(
@@ -77,11 +79,11 @@ def render_time_dependent_tab():
     st.subheader("🔌 Keithley SMU Settings")
     col1, col2, col3 = st.columns(3)
     with col1:
-        st.number_input("Current Limit A (A)", format="%.1e", step=1e-4, key="current_limit_a")
-        st.number_input("Current Limit B (A)", format="%.1e", step=1e-4, key="current_limit_b")
+        st.number_input("Current Limit A (A)", format="%e", step=1e-4, key="current_limit_a")
+        st.number_input("Current Limit B (A)", format="%e", step=1e-4, key="current_limit_b")
     with col2:
-        st.number_input("Current Range A (A)", format="%.1e", step=1e-6, key="current_range_a")
-        st.number_input("Current Range B (A)", format="%.1e", step=1e-6, key="current_range_b")
+        st.number_input("Current Range A (A)", format="%e", step=1e-6, key="current_range_a")
+        st.number_input("Current Range B (A)", format="%e", step=1e-6, key="current_range_b")
     with col3:
         st.number_input("NPLC A", step=0.1, key="nplc_a")
         st.number_input("NPLC B", step=0.1, key="nplc_b")
@@ -90,57 +92,53 @@ def render_time_dependent_tab():
 
     st.subheader("⚡ Voltage Settings")
     
-    # --- CONDITIONAL VOLTAGE UI (Patched) ---
-    if mode == "Dark Current (Steady Vg)":
-        col1, col2 = st.columns(2)
-        col1.number_input("Vd Const (V)", value=st.session_state.get("vd_const", 1.0), step=0.1, key="vd_const")
-        col2.number_input("Vg Const (V)", value=st.session_state.get("vg_const", 0.0), step=0.1, key="vg_const")
-    else:
-        col1, col2, col3 = st.columns(3)
-        col1.number_input("Vd Const (V)", value=st.session_state.get("vd_const", 1.0), step=0.1, key="vd_const")
-        col2.number_input("Vg ON (V)", value=st.session_state.get("vg_on", 1.0), step=0.1, key="vg_on")
-        col3.number_input("Vg OFF (V)", value=st.session_state.get("vg_off", -1.0), step=0.1, key="vg_off")
+    # --- CONDITIONAL VOLTAGE UI ---
+    col1, col2, col3 = st.columns(3)
+    col1.number_input("Vd Const (V)", step=0.1, key="vd_const")
+    col2.number_input("Vg ON (V)", step=0.1, key="vg_on")
+    col3.number_input("Vg OFF (V)", step=0.1, key="vg_off")
 
     st.divider()
 
-    # --- CONDITIONAL OPTICS UI (Patched) ---
+    # conditionally show Optics
     if mode in ["Laser Only", "Laser + Servo"]:
         st.subheader("🔦 Optics & Arrays (Comma-separated)")
         col1, col2, col3 = st.columns(3)
-        col1.text_input("Wavelength Array (nm)", value=st.session_state.get("wavelength_str", "660"), key="wavelength_str")
-        col2.text_input("Channel Array", value=st.session_state.get("channel_str", "6"), key="channel_str")
-        col3.text_input("Power Array (nW)", value=st.session_state.get("power_str", "100"), key="power_str")
+        col1.text_input("Wavelength Array (nm)", key="wavelength_str")
+        col2.text_input("Channel Array", key="channel_str")
+        col3.text_input("Power Array (nW)", key="power_str")
         st.divider()
 
     st.subheader("⏱️ Timing & Sequence Durations")
     
-    # --- CONDITIONAL TIMING UI (Patched) ---
+    # --- CONDITIONAL TIMING UI ---
     if mode == "Dark Current (Steady Vg)":
         col1, col2 = st.columns(2)
-        col1.number_input("Total Measurement Time (s)", value=st.session_state.get("total_time_s", 60.0), min_value=1.0, step=5.0, key="total_time_s", help="Total duration to continuously measure the steady-state current.")
+        col1.number_input("Dur 1 (Dark Relax)", step=0.5, key="duration_1")
+        col2.number_input("Dur 2 (Vg on)", step=0.5, key="duration_2")
 
     elif mode == "Laser Only":
         col1, col2, col3, col4 = st.columns(4)
-        col1.number_input("Dur 1 (Dark Relax)", value=st.session_state.get("duration_1", 5.0), step=0.5, key="duration_1")
-        col2.number_input("Dur 2 (Light Relax)", value=st.session_state.get("duration_2", 5.0), step=0.5, key="duration_2")
-        col3.number_input("Dur 3 (Laser ON)", value=st.session_state.get("duration_3", 5.0), step=0.5, key="duration_3")
-        col4.number_input("Dur 4 (Laser OFF)", value=st.session_state.get("duration_4", 5.0), step=0.5, key="duration_4")
+        col1.number_input("Dur 1 (Dark Relax)", step=0.5, key="duration_1")
+        col2.number_input("Dur 2 (Vg on)", step=0.5, key="duration_2")
+        col3.number_input("Dur 3 (Laser ON)", step=0.5, key="duration_3")
+        col4.number_input("Dur 4 (Laser OFF)", step=0.5, key="duration_4")
         
         col5, col6 = st.columns(2)
-        col5.number_input("Cycle Number", value=st.session_state.get("cycle_number", 5), min_value=1, step=1, key="cycle_number")
-        col6.number_input("ON/OFF Number", value=st.session_state.get("on_off_number", 3), min_value=1, step=1, key="on_off_number")
+        col5.number_input("Cycle Number", min_value=1, step=1, key="cycle_number")
+        col6.number_input("ON/OFF Number", min_value=1, step=1, key="on_off_number")
 
     elif mode == "Laser + Servo":
         col1, col2, col3, col4 = st.columns(4)
-        col1.number_input("Dur 1 (Dark Relax)", value=st.session_state.get("duration_1", 5.0), step=0.5, key="duration_1")
-        col2.number_input("Dur 2 (Light Setup)", value=st.session_state.get("duration_2", 5.0), step=0.5, key="duration_2")
-        col3.number_input("Dur 3 (Pre-Servo Wait)", value=st.session_state.get("duration_3", 5.0), step=0.5, key="duration_3")
-        col4.number_input("Dur 4 (Post-Servo Wait)", value=st.session_state.get("duration_4", 5.0), step=0.5, key="duration_4")
+        col1.number_input("Dur 1 (Dark Relax)", step=0.5, key="duration_1")
+        col2.number_input("Dur 2 (Vg on)", step=0.5, key="duration_2")
+        col3.number_input("Dur 3 (Pre-Servo Wait)", step=0.5, key="duration_3")
+        col4.number_input("Dur 4 (Post-Servo Wait)", step=0.5, key="duration_4")
         
         col5, col6, col7 = st.columns(3)
-        col5.number_input("Cycle Number", value=st.session_state.get("cycle_number", 5), min_value=1, step=1, key="cycle_number")
-        col6.number_input("Servo Swings (On/Off #)", value=st.session_state.get("on_off_number", 3), min_value=1, step=1, key="on_off_number")
-        col7.number_input("Servo Block Time (s)", value=st.session_state.get("servo_time", 20.0), step=0.5, key="servo_time")
+        col5.number_input("Cycle Number", min_value=1, step=1, key="cycle_number")
+        col6.number_input("Servo Swings (On/Off #)", min_value=1, step=1, key="on_off_number")
+        col7.number_input("Servo Block Time (s)", step=0.5, key="servo_time")
 
     st.divider()
 
@@ -170,37 +168,47 @@ def render_time_dependent_tab():
                     "vd_const": st.session_state["vd_const"]
                 }
 
+                # Mode-specific JSON building
                 if mode == "Dark Current (Steady Vg)":
-                    config_dict["vg_const"] = st.session_state.get("vg_const", 0.0)
-                    config_dict["total_time_s"] = st.session_state.get("total_time_s", 60.0)
+                    config_dict["vg_on"] = st.session_state["vg_on"]
+                    config_dict["vg_off"] = st.session_state["vg_off"]
+                    config_dict["cycle_number"] = st.session_state["cycle_number"]
+                    config_dict["duration_1"] = st.session_state["duration_1"]
+                    config_dict["duration_2"] = st.session_state["duration_2"]
+                    config_dict["duration_3"] = st.session_state["duration_3"]
+                    config_dict["duration_4"] = st.session_state["duration_4"]
                 else:
-                    config_dict["vg_on"] = st.session_state.get("vg_on", 1.0)
-                    config_dict["vg_off"] = st.session_state.get("vg_off", -1.0)
-                    config_dict["cycle_number"] = st.session_state.get("cycle_number", 5)
-                    config_dict["duration_1"] = st.session_state.get("duration_1", 5.0)
-                    config_dict["duration_2"] = st.session_state.get("duration_2", 5.0)
-                    config_dict["duration_3"] = st.session_state.get("duration_3", 5.0)
-                    config_dict["duration_4"] = st.session_state.get("duration_4", 5.0)
-                    config_dict["wavelength_arr"] = [int(x.strip()) for x in st.session_state.get("wavelength_str", "660").split(",")]
-                    config_dict["channel_arr"] = [int(x.strip()) for x in st.session_state.get("channel_str", "6").split(",")]
-                    config_dict["power_arr"] = [float(x.strip()) for x in st.session_state.get("power_str", "100").split(",")]
-                    config_dict["on_off_number"] = st.session_state.get("on_off_number", 3)
+                    config_dict["vg_on"] = st.session_state["vg_on"]
+                    config_dict["vg_off"] = st.session_state["vg_off"]
+                    config_dict["cycle_number"] = st.session_state["cycle_number"]
+                    config_dict["duration_1"] = st.session_state["duration_1"]
+                    config_dict["duration_2"] = st.session_state["duration_2"]
+                    config_dict["duration_3"] = st.session_state["duration_3"]
+                    config_dict["duration_4"] = st.session_state["duration_4"]
+                    config_dict["wavelength_arr"] = [int(x.strip()) for x in st.session_state["wavelength_str"].split(",")]
+                    config_dict["channel_arr"] = [int(x.strip()) for x in st.session_state["channel_str"].split(",")]
+                    config_dict["power_arr"] = [float(x.strip()) for x in st.session_state["power_str"].split(",")]
+                    config_dict["on_off_number"] = st.session_state["on_off_number"]
 
                 if mode == "Laser + Servo":
-                    config_dict["servo_time"] = st.session_state.get("servo_time", 20.0)
+                    config_dict["servo_time"] = st.session_state["servo_time"]
 
+                # Save it
                 save_path = Path("config")
                 save_path.mkdir(parents=True, exist_ok=True) 
                 
+                # Dynamically rename the JSON file so the script knows what to look for
                 if mode == "Dark Current (Steady Vg)":
-                    full_path = save_path / "FORMAL_dark_steady_config.json"
+                    full_path = save_path / "FORMAL_time_dependent_config.json"
                 else:
-                    full_path = save_path / "FORMAL_time_dependent_config_app.json"
+                    full_path = save_path / "FORMAL_time_dependent_config.json"
                 
                 with open(full_path, "w") as f:
                     json.dump(config_dict, f, indent=4)
                 
                 st.success(f"✅ Saved as {mode} to: {full_path.name}")
+                with st.expander("👀 Preview Saved Configuration", expanded=True):
+                    st.json(config_dict)
 
             except ValueError:
                 st.error("Format Error: Ensure arrays are numbers separated by commas (e.g., '660, 532')")
@@ -210,6 +218,7 @@ def render_time_dependent_tab():
     with col_btn2:
         st.markdown("**Run Keithley Measurement**")
         
+        # Smartly pre-select the correct script based on the UI mode
         if mode == "Dark Current (Steady Vg)": 
             default_script_index = 1  
         else: 
