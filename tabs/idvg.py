@@ -99,7 +99,19 @@ def render_idvg_tab():
         st.number_input("NPLC B", step=0.1, key="idvg_nplc_b")
     with col7:
         if mode == "Pulsed Sweep":
-            st.number_input("Fixed Range A (Max I_ON)", format="%.1e", step=1e-6, key="idvg_fixed_range_a", help="Required to prevent autorange delays during pulses.")
+            # 1. Catch the wiped state if they just switched modes
+            if "idvd_fixed_range_a" not in st.session_state:
+                st.session_state["idvd_fixed_range_a"] = 1e-5
+                
+            # 2. Explicitly bind the 'value' and fix the format string
+            st.number_input(
+                "Fixed Range A (Max I_ON)", 
+                value=st.session_state["idvd_fixed_range_a"], # Forces the correct value
+                format="%.1e",                                # Fixes the visual rounding bug
+                step=1e-6, 
+                key="idvd_fixed_range_a", 
+                help="Required to prevent autorange delays during pulses."
+            )
 
     st.divider()
 
