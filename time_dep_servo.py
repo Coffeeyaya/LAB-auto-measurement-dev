@@ -27,8 +27,9 @@ def basic_block(power_table, channel_idx, wavelength, target_power, vg_on, vg_of
     pp = get_pp_exact(power_table, wavelength, target_power)
     
     seqeunce_steps = [
-        {"Vg": vg_off, "duration": duration_1},
-        {"Vg": vg_on, "duration": duration_2, "laser_cmd1": {"channel": channel_idx, "power": pp}}]
+        {"Vg": vg_off, "duration": duration_1, "laser_cmd1": {"channel": channel_idx, "power": pp}},
+        {"Vg": vg_on, "duration": duration_2}
+        ]
     
     if servo_time:
         seqeunce_steps.append({"Vg": vg_on, "duration": duration_3, "laser_cmd2": {"channel": channel_idx, "on": 1}}) 
@@ -42,6 +43,39 @@ def basic_block(power_table, channel_idx, wavelength, target_power, vg_on, vg_of
             seqeunce_steps.append({"Vg": vg_on, "duration": duration_4, "laser_cmd2": {"channel": channel_idx, "on": 1}})
         
     return seqeunce_steps
+
+def build_optical_block(power_table, ch_idx, wl, power_nw, params):
+    """Generates the measurement sequence for one specific wavelength/power."""
+    pp = get_pp_exact(power_table, wl, power_nw)
+    vg_on = params["vg_on"]
+    vg_off = params["vg_off"]
+    
+    if params.get("servo_time"):
+        sequence = [
+        {"Vg": vg_off, "duration": params["duration_1"], "laser_cmd1": {"channel": ch_idx, "power": pp}},
+        {"Vg": vg_off, "duration": params["duration_3"], "laser_cmd2": {"channel": ch_idx, "on": 1}},
+        {"Vg": vg_on,  "duration": params["duration_2"]}
+        ]
+        
+        for _ in range(int(params.get("on_off_number", 1))):    
+            sequence.append({"Vg": vg_on, "duration": params["servo_time"], "laser_cmd3": 1}) 
+            sequence.append({"Vg": vg_on, "duration": params["servo_time"], "laser_cmd3": 1}) 
+
+        sequence.append({"Vg": vg_on, "duration": params["duration_4"], "laser_cmd2": {"channel": ch_idx, "on": 1}})
+    
+    # no servo, Pure Laser GUI Toggling Logic
+    else:
+        sequence = [
+        {"Vg": vg_off, "duration": params["duration_1"], "laser_cmd1": {"channel": ch_idx, "power": pp}},
+        {"Vg": vg_off, "duration": params["duration_3"]},
+        {"Vg": vg_on,  "duration": params["duration_2"]}
+        ]
+
+        for _ in range(int(params.get("on_off_number", 1))):    
+            sequence.append({"Vg": vg_on, "duration": params["duration_3"], "laser_cmd2": {"channel": ch_idx, "on": 1}}) # Turn ON
+            sequence.append({"Vg": vg_on, "duration": params["duration_4"], "laser_cmd2": {"channel": ch_idx, "on": 1}}) # Turn OFF
+            
+    return sequence
 
 
 
@@ -65,13 +99,78 @@ class TimeDepWorker(QThread):
         self.config_files = config_files_list
         
         self.k = None
+        self.power_table = None
+        self.running = True
+
         self.current_light_state = 0 # 0: dark, 1: light
         self.servo_state = 0 # 0: blocked, 1: unblocked
         self.laser_channel = None
-        self.running = True
         self.current_applied_vg = None
 
-    def switch_source(self, target_vg, laser_cmd1=None, laser_cmd2=None, laser_cmd3=None):
+    def _init_hardware(self):
+        """Connects to the Keithley and loads the calibration table."""
+        self.status_update.emit("Initializing Keithley...")
+        self.k = Keithley2636B(self.resource_id)
+        self.k.connect()
+        self.k.clean_instrument()
+        self.k.config()
+
+        pt_path = Path("calibration") / "pp_df.csv"
+        if pt_path.exists():
+            self.power_table = pd.read_csv(pt_path, index_col=0)
+        else:
+            self.status_update.emit("Warning: Power table CSV not found!")
+    
+    def _setup_files(self, params):
+        """Creates the data directory and handles Overwrite Protection."""
+        output_dir = Path("data")
+        output_dir.mkdir(parents=True, exist_ok=True)
+        
+        device = params.get('device_number', '0')
+        run_num = int(params.get('run_number', 1))
+        
+        filename = output_dir / f"time_{device}_{run_num}.csv"
+        config_backup = output_dir / f"time_{device}_{run_num}_config.json"
+        
+        if filename.exists() or config_backup.exists():
+            raise FileExistsError(f"{filename.name} already exists. Aborting to prevent overwrite!")
+            
+        with open(config_backup, "w") as f_back:
+            json.dump(params, f_back, indent=4)
+            
+        return filename
+    
+    def _apply_keithley_settings(self, params):
+        """Applies NPLC, Limits, Ranges, and the baseline Drain Voltage."""
+        self.k.set_auto_zero_once()
+        self.k.set_nplc('a', params["nplc_a"])
+        self.k.set_nplc('b', params["nplc_b"])
+        self.k.set_limit('a', params["current_limit_a"])
+        self.k.set_limit('b', params["current_limit_b"])
+        self.k.set_range('a', params["current_range_a"])
+        self.k.set_range('b', params["current_range_b"])
+        
+        self.k.set_Vd(float(params["vd_const"]))
+        
+    
+    def _build_master_sequence(self, params):
+        """Loops through cycles, wavelengths, and powers to build the full run."""
+        sequence = []
+        channels = np.array(params.get("channel_arr", [0])).astype(int).astype(str)
+        wavelengths = np.array(params.get("wavelength_arr", [660])).astype(int)
+        powers = np.array(params.get("power_arr", [100])).astype(int).astype(str)
+
+        for _ in range(int(params["cycle_number"])):
+            for i in range(len(wavelengths)):
+                unit = build_optical_block(
+                    self.power_table, channels[i], wavelengths[i], powers[i], params
+                )
+                sequence.extend(unit)
+                
+        sequence.append({"Vg": params['vg_off'], "duration": params['duration_1']})
+        return sequence
+
+    def _switch_source(self, target_vg, laser_cmd1=None, laser_cmd2=None, laser_cmd3=None):
         """
         switch to a specific electric and light source. \n
         - set Vg to target_vg. \n
@@ -93,158 +192,110 @@ class TimeDepWorker(QThread):
             self.laser_channel = laser_cmd2["channel"]
             self.laser.send_cmd(laser_cmd2, wait_for_reply=False) 
             self.current_light_state = 1 - self.current_light_state
-        if laser_cmd3:
+        if laser_cmd3 and self.servo:
             self.status_update.emit("Toggling Physical Shutter...")
-            if self.servo:
-                self.servo.toggle_light() # Calls your toggle logic!
+            self.servo.toggle_light() # Calls your toggle logic!
             self.servo_state = 1 - self.servo_state ###
+    
+    def _execute_measurement(self, filename, params, sequence, config_idx, label):
+        """The tight sampling loop that talks to the Keithley and logs data."""
+        vd_const = float(params["vd_const"])
+        start_time = time.time()
+        last_emit_time = start_time
+
+        with open(filename, 'w', newline='') as f_csv:
+            writer = csv.writer(f_csv)
+            writer.writerow(["Time", "V_D", "V_G", "I_D", "I_G", "Light_State", "Servo_State"])
+
+            for step_idx, step in enumerate(sequence):
+                if not self.running: break
+
+                # Trigger Hardware Changes
+                self._switch_source(
+                    step["Vg"], step.get("laser_cmd1"), step.get("laser_cmd2"), step.get("laser_cmd3")
+                )
+
+                step_end = time.time() + step["duration"]
+                self.status_update.emit(f"[{label}] Step {step_idx+1}/{len(sequence)}: Measuring...")
+                
+                # The high-speed continuous sampling loop
+                while time.time() < step_end:
+                    if not self.running: break
+
+                    # Sleep remaining milliseconds to keep servo/laser timing mathematically exact
+                    time_left = step_end - time.time()
+                    if time_left < 0.01:
+                        time.sleep(max(0, time_left))
+                        break
+
+                    reading = self.k.measure()
+                    
+                    if reading and len(reading) == 2:
+                        I_D, I_G = reading 
+                        if I_D is not None:
+                            t = time.time() - start_time
+                            # Log every point to CSV
+                            writer.writerow([t, vd_const, step["Vg"], I_D, I_G, self.current_light_state, self.servo_state])
+
+                            # Update GUI at 5Hz (every 0.2s) to prevent crashes
+                            current_t = time.time()
+                            if current_t - last_emit_time > 0.2:
+                                self.new_data.emit(config_idx, t, vd_const, step["Vg"], I_D, I_G)
+                                last_emit_time = current_t
+
+    def _shutdown_hardware(self):
+        """Safely powers down all three physical instruments."""
+        self.status_update.emit("Shutting down hardware safely...")
+        if self.servo and self.servo.is_on:
+            self.servo.toggle_light() 
+        if self.laser:
+            if self.current_light_state and self.laser_channel is not None:
+                self.laser.send_cmd({"channel": self.laser_channel, "on": 1}, wait_for_reply=False)
+            self.laser.close() 
+        if self.k:
+            self.k.shutdown()
+
 
     def run(self):
+        """The Master Loop. Notice how cleanly it reads now!"""
         try:
-            ### set up Keithley
-            self.status_update.emit("Initializing Keithley...")
-            self.k = Keithley2636B(self.resource_id)
-            self.k.connect()
-            self.k.clean_instrument()
-            self.k.config()
+            self._init_hardware()
 
-            ### open power table (mapping from power(nW) to pp(%))
-            power_table_path = Path("calibration") / "pp_df.csv"
-            if power_table_path.exists():
-                power_table = pd.read_csv(power_table_path, index_col=0)
-            else:
-                self.status_update.emit("Warning: Power table CSV not found!")
-                power_table = None
-
-            ### process measurement based on config files
             for config_idx, config_file in enumerate(self.config_files):
                 if not self.running: break
 
-                # before each measurement, auto zero once
-                self.k.set_auto_zero_once()
-                
-                # open config file for input parameters
-                self.status_update.emit(f"Loading config: {config_file}...")
+                # 1. Load Parameters
+                self.status_update.emit(f"Loading config: {config_file.name}...")
                 with open(config_file, "r") as f:
                     params = json.load(f)
                 
-                # wait time before measure
-                wait_time = params.get("wait_time", 0)
-                for i in range(wait_time, 0, -1):
+                # 2. Wait Timer (if requested)
+                for i in range(params.get("wait_time", 0), 0, -1):
                     if not self.running: break
-                    self.status_update.emit(f"Wait ... {i}s")
+                    self.status_update.emit(f"Initial wait... {i}s")
                     time.sleep(1)
 
-                # data folder for storing data and backup config files
-                output_dir = Path("data")
-                output_dir.mkdir(parents=True, exist_ok=True)
-                
-                device_num = params.get('device_number', '0')
-                run_num = int(params.get('run_number', 1))
-                
-                filename = output_dir / f"time_{device_num}_{run_num}.csv"
-                config_backup = output_dir / f"time_{device_num}_{run_num}_config.json"
-                
-                # Overwrite Protection: if the filename already exists, then stop the measurement
-                if filename.exists() or config_backup.exists():
-                    error_msg = f"FILE EXISTS ERROR: {filename.name} already exists. Stopping experiment to prevent overwrite!"
-                    print(error_msg)
-                    self.status_update.emit(error_msg)
-                    self.running = False
-                    break  # Instantly breaks the config loop and triggers safe shutdown
-                
-                with open(config_backup, "w") as f_back:
-                    json.dump(params, f_back, indent=4)
+                # 3. Setup Files (Catches Overwrite Errors instantly)
+                try:
+                    filename = self._setup_files(params)
+                except FileExistsError as e:
+                    self.status_update.emit(f"ERROR: {e}")
+                    break 
 
-                # set config parameters from config files
-                self.k.set_nplc('a', params["nplc_a"])
-                self.k.set_nplc('b', params["nplc_b"])
-                self.k.set_limit('a', params["current_limit_a"])
-                self.k.set_limit('b', params["current_limit_b"])
-                self.k.set_range('a', params["current_range_a"])
-                self.k.set_range('b', params["current_range_b"])
+                # 4. Prepare Hardware & Sequence
+                self._apply_keithley_settings(params)
+                label = params.get("label", f"Run {params.get('run_number', 1)}")
+                self.new_config.emit(config_idx, label)
+                
+                sequence = self._build_master_sequence(params)
+
                 self.k.enable_output('a', True)
                 self.k.enable_output('b', True)
-                
-                # set constant Vd
-                vd_const = float(params["vd_const"])
-                self.k.set_Vd(vd_const)
-                
-                label = params.get("label", f"Run {run_num}")
-                self.new_config.emit(config_idx, label) #?
 
-                ### build the measurement sequence
-                sequence = []
-                # for each period, there's a particular channel, wavelength and power
-                channel_arr = np.array(params.get("channel_arr", [0, 3, 6])).astype(int).astype(str)
-                wavelength_arr = np.array(params.get("wavelength_arr", [450, 532, 660])).astype(int)
-                power_arr = np.array(params.get("power_arr", [100, 100, 100])).astype(int).astype(str)
+                # 5. Execute the Physics Measurement
+                self._execute_measurement(filename, params, sequence, config_idx, label)
 
-                cycles = int(params["cycle_number"])
-                on_off_number = int(params.get("on_off_number", 1))
-                print(cycles)
-                for c in range(cycles):
-                    for i in range(len(wavelength_arr)):
-                        ch_idx = channel_arr[i]
-                        wl = wavelength_arr[i]
-                        power = power_arr[i]
-                        unit = basic_block(
-                            power_table, ch_idx, wl, power,
-                            params["vg_on"], params["vg_off"], 
-                            params["duration_1"], params["duration_2"], 
-                            params["duration_3"], params["duration_4"],
-                            on_off_number=on_off_number,
-                            servo_time=params["servo_time"] ###
-                        )
-                        sequence.extend(unit)
-                        print(unit)
-                    
-                unit = [{"Vg": params['vg_off'], "duration": params['duration_1']},]
-                sequence.extend(unit)
-                print(unit)
-
-                start_time = time.time()
-                with open(filename, 'w', newline='') as f_csv:
-                    writer = csv.writer(f_csv)
-                    writer.writerow(["Time", "V_D", "V_G", "I_D", "I_G", "Light_State", "Servo_State"])
-
-                    for step_idx, step in enumerate(sequence):
-                        if not self.running: break
-
-                        target_vg = step["Vg"]
-                        duration = step["duration"]
-                        
-                        self.switch_source(target_vg, step.get("laser_cmd1"), step.get("laser_cmd2"), step.get("laser_cmd3"))
-
-                        step_end = time.time() + duration
-                        self.status_update.emit(f"[{label}] Step {step_idx+1}/{len(sequence)}: Measuring...")
-                        
-                        last_emit_time = time.time()
-                        while time.time() < step_end:
-                            if not self.running: break
-
-                            #  Sleep for the remaining fraction of a second to keep the servo timing mathematically perfect
-                            time_left = step_end - time.time()
-                            if time_left < 0.01:
-                                time.sleep(max(0, time_left))
-                                break
-
-                            reading = self.k.measure()
-                            # proceed if it's a successful measurement
-                            if reading is not None and len(reading) == 2:
-                                I_D, I_G = reading 
-                                
-                                if I_D is not None:
-                                    t = time.time() - start_time
-                                     # always update data to csv file
-                                    writer.writerow([t, vd_const, target_vg, I_D, I_G, self.current_light_state, self.servo_state])
-
-                                    # not update the figure too frequently (there are lots of points)
-                                    current_t = time.time()
-                                    if current_t - last_emit_time > 0.2:
-                                        self.new_data.emit(config_idx, t, vd_const, target_vg, I_D, I_G)
-                                        last_emit_time = current_t
-
+                # Turn off Keithley outputs between runs
                 self.k.enable_output('a', False)
                 self.k.enable_output('b', False)
 
@@ -253,21 +304,7 @@ class TimeDepWorker(QThread):
             self.status_update.emit(f"Error: {e}")
             
         finally:
-            self.status_update.emit("All Sequences complete. Shutting down hardware...")
-
-            if self.servo and self.servo.is_on:
-                self.status_update.emit("Closing physical shutter...")
-                self.servo.toggle_light() # Force it back to the OFF angle
-
-            if self.laser:
-                # stop the measurement -> turn off the light
-                if self.current_light_state and self.laser_channel is not None:
-                    self.laser.send_cmd({"channel": self.laser_channel, "on": 1}, wait_for_reply=False)
-                # Cleanly close the laser network socket
-                self.laser.close() 
-            if self.k:
-                self.k.shutdown()
-                
+            self._shutdown_hardware()
             self.sequence_finished.emit()
 
     def stop(self):
