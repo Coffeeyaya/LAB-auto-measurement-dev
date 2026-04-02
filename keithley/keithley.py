@@ -206,6 +206,31 @@ class Keithley2636B:
             except Exception as e:
                 print(f"Pulsed measure error: {e}")
                 return 0.0, 0.0
+            
+    def measure_pulsed_vd_vg(self, target_vd, target_vg, base_vd=0.0, base_vg=0.0, pulse_width=0.005):
+        with self.lock:
+            try:
+                # We send a 1-line TSP script to execute directly on the Keithley hardware.
+                # This guarantees the pulse is exactly 'pulse_width' long (e.g., 5ms), 
+                # completely avoiding Python/USB communication lag during the pulse.
+                cmd = (
+                    f"smua.source.levelv={target_vd} "
+                    f"smub.source.levelv={target_vg} "
+                    f"delay({pulse_width}) "
+                    "id=smua.measure.i() "
+                    "ig=smub.measure.i() "
+                    f"smua.source.levelv={base_vd} "
+                    f"smub.source.levelv={base_vg} "
+                    "print(id, ig)"
+                )
+                self.keithley.write(cmd)
+                resp = self.keithley.read().replace("\t", ",").split(",")
+                
+                if len(resp) >= 2:
+                    return float(resp[0]), float(resp[1])
+            except Exception as e:
+                print(f"Pulsed measure error: {e}")
+                return 0.0, 0.0
 
     def measure(self):
         """

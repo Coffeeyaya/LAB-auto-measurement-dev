@@ -141,6 +141,7 @@ class AutoIdVdWorker(QThread):
                 k.set_range('b', 1e-6)  
 
                 base_vd = params.get("base_vd", 0.0)
+                base_vg = params.get("base_vg", 0.0)
                 pulse_width = params.get("pulse_width", 0.005) 
                 rest_time = params.get("rest_time", 0.1)       
                 
@@ -154,7 +155,7 @@ class AutoIdVdWorker(QThread):
                     if not self.running: break
                         
                     # Target VD is pulsed, Base VD is resting state
-                    reading = k.measure_pulsed_vd(target_vd=vd, base_vd=base_vd, pulse_width=pulse_width)
+                    reading = k.measure_pulsed_vd_vg(target_vd=vd, target_vg=Vg_const, base_vd=base_vd, base_vg=base_vg, pulse_width=pulse_width)
                     
                     if reading is not None and len(reading) == 2:
                         I_D, I_G = reading 

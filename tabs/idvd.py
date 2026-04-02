@@ -10,16 +10,17 @@ def render_idvd_tab():
     default_cfg = {
         "idvd_measurement_mode": "Pulsed Sweep", 
         "idvd_description": "", "idvd_device_number": "", "idvd_run_number": "", "idvd_label": "",
-        "idvd_vg_const": 0.0, "idvd_vd_start": 0.0, "idvd_vd_stop": 5.0, # SWAPPED: Vg is const, Vd is swept
+        "idvd_vg_const": 1.0, "idvd_vd_start": -2.0, "idvd_vd_stop": 2.0, # SWAPPED: Vg is const, Vd is swept
         "idvd_laser_stable_time": 30,
         "idvd_deplete_voltage": 0.0, "idvd_deplete_time": 0,
         "idvd_current_limit_a": 1e-3, "idvd_current_limit_b": 1e-3, 
         "idvd_nplc_a": 1.0, "idvd_nplc_b": 1.0,
-        "idvd_num_points": 51, "idvd_wait_time": 30, 
+        "idvd_num_points": 51, "idvd_wait_time": 5, 
         
         # Mode-Specific Defaults
         "idvd_source_to_measure_delay": 0.01,
         "idvd_base_vd": 0.0, # Resting state for the Drain
+        "idvd_base_vg": 0.0, # Resting state for the Gate
         "idvd_pulse_width": 0.005, 
         "idvd_rest_time": 0.1,
         "idvd_fixed_range_a": 1e-5
@@ -131,6 +132,7 @@ def render_idvd_tab():
         col6.number_input("Source-Measure Delay (s)", step=0.01, format="%f", key="idvd_source_to_measure_delay")
     elif mode == "Pulsed Sweep":
         col6.number_input("Base Vd (Resting) (V)", step=0.1, key="idvd_base_vd")
+        col6.number_input("Base Vg (Resting) (V)", step=0.1, key="idvd_base_vg")
         col7.number_input("Pulse Width (s)", step=0.001, format="%f", key="idvd_pulse_width")
         col8.number_input("Rest Time (s)", step=0.01, format="%f", key="idvd_rest_time")
 
@@ -200,6 +202,7 @@ def render_idvd_tab():
                     full_path = save_path / "FORMAL_idvd_config.json"
                 elif mode == "Pulsed Sweep":
                     config_dict_idvd["base_vd"] = st.session_state["idvd_base_vd"]
+                    config_dict_idvd["base_vg"] = st.session_state["idvd_base_vg"]
                     config_dict_idvd["pulse_width"] = st.session_state["idvd_pulse_width"]
                     config_dict_idvd["rest_time"] = st.session_state["idvd_rest_time"]
                     config_dict_idvd["fixed_range_a"] = st.session_state["idvd_fixed_range_a"]
