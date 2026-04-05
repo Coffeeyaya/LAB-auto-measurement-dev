@@ -1,5 +1,6 @@
 import streamlit as st
-from tabs.time_dependent import render_time_dependent_tab
+# from tabs.time_dependent import render_time_dependent_tab
+from tabs.time_dependent_pulse import render_time_dependent_tab
 from tabs.idvg import render_idvg_tab
 from tabs.idvd import render_idvd_tab
 from tabs.power import render_power_tab

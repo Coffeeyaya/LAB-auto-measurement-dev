@@ -22,28 +22,6 @@ def get_pp_exact(power_table, wavelength, power_nw):
         print(f"Warning: Cannot convert {power_nw}nW to PP for {wavelength}nm.")
         return None
 
-
-# def basic_block(power_table, channel_idx, wavelength, target_power, vg_on, vg_off, duration_1, duration_2, duration_3, duration_4, on_off_number, servo_time=None):
-#     pp = get_pp_exact(power_table, wavelength, target_power)
-    
-#     seqeunce_steps = [
-#         {"Vg": vg_off, "duration": duration_1, "laser_cmd1": {"channel": channel_idx, "power": pp}},
-#         {"Vg": vg_on, "duration": duration_2}
-#         ]
-    
-#     if servo_time:
-#         seqeunce_steps.append({"Vg": vg_on, "duration": duration_3, "laser_cmd2": {"channel": channel_idx, "on": 1}}) 
-#         for i in range(on_off_number):    
-#             seqeunce_steps.append({"Vg": vg_on, "duration": servo_time, "laser_cmd3": 1}) 
-#             seqeunce_steps.append({"Vg": vg_on, "duration": servo_time, "laser_cmd3": 1}) 
-#         seqeunce_steps.append({"Vg": vg_on, "duration": duration_4, "laser_cmd2": {"channel": channel_idx, "on": 1}})
-#     else:
-#         for i in range(on_off_number):    
-#             seqeunce_steps.append({"Vg": vg_on, "duration": duration_3, "laser_cmd2": {"channel": channel_idx, "on": 1}}) 
-#             seqeunce_steps.append({"Vg": vg_on, "duration": duration_4, "laser_cmd2": {"channel": channel_idx, "on": 1}})
-        
-#     return seqeunce_steps
-
 def build_optical_block(power_table, ch_idx, wl, power_nw, params):
     """Generates the measurement sequence for one specific wavelength/power."""
     pp = get_pp_exact(power_table, wl, power_nw)
