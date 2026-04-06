@@ -16,7 +16,7 @@ def render_time_dependent_tab():
         "duration_1": 5.0, "duration_2": 1.0, "duration_3": 2.0, "duration_4": 2.0,
         "cycle_number": 3, "on_off_number": 1, "servo_time": 1.0,
         
-        # New Pulsed Time-Dependent settings
+        # Pulsed Time-Dependent settings (Global for all modes now)
         "base_vg": 0.0, "pulse_width": 0.005, "rest_time": 0.1, "fixed_range_a": 1e-5,
         
         "measurement_mode": "Dark Current (Pulsed Vg)" 
@@ -61,7 +61,7 @@ def render_time_dependent_tab():
     st.subheader("🎛️ Measurement Mode")
     mode = st.radio(
         "Select the hardware configuration for this run:",
-        ["Dark Current (Pulsed Vg)", "Laser Only", "Laser + Servo"],
+        ["Dark Current (Pulsed Vg)", "Laser Only (Pulsed Vg)", "Laser + Servo (Pulsed Vg)"],
         horizontal=True,
         key="measurement_mode"
     )
@@ -86,14 +86,12 @@ def render_time_dependent_tab():
         st.number_input("Current Limit A (A)", format="%.1e", step=1e-4, key="current_limit_a")
         st.number_input("Current Limit B (A)", format="%.1e", step=1e-4, key="current_limit_b")
     with col2:
-        st.number_input("Current Range A (A)", format="%.1e", step=1e-6, key="current_range_a")
         st.number_input("Current Range B (A)", format="%.1e", step=1e-6, key="current_range_b")
-    with col3:
         st.number_input("NPLC A", step=0.1, key="nplc_a")
+    with col3:
         st.number_input("NPLC B", step=0.1, key="nplc_b")
     with col4:
-        if mode == "Dark Current (Pulsed Vg)":
-            st.number_input("Fixed Range A (Max I_ON)", value=st.session_state.get("fixed_range_a", 1e-5), format="%.1e", step=1e-6, key="fixed_range_a")
+        st.number_input("Fixed Range A (Max I_ON)", value=st.session_state.get("fixed_range_a", 1e-5), format="%.1e", step=1e-6, key="fixed_range_a", help="Required to prevent autorange delays during fast pulses.")
 
     st.divider()
 
@@ -102,13 +100,12 @@ def render_time_dependent_tab():
     col1.number_input("Vd Const (V)", step=0.1, key="vd_const")
     col2.number_input("Vg ON (Pulse Target) (V)", step=0.1, key="vg_on")
     col3.number_input("Vg OFF (Pulse Target) (V)", step=0.1, key="vg_off")
-    if mode == "Dark Current (Pulsed Vg)":
-        col4.number_input("Base Vg (Resting) (V)", value=st.session_state.get("base_vg", 0.0), step=0.1, key="base_vg")
+    col4.number_input("Base Vg (Resting) (V)", value=st.session_state.get("base_vg", 0.0), step=0.1, key="base_vg")
 
     st.divider()
 
     # conditionally show Optics
-    if mode in ["Laser Only", "Laser + Servo"]:
+    if mode in ["Laser Only (Pulsed Vg)", "Laser + Servo (Pulsed Vg)"]:
         st.subheader("🔦 Optics & Arrays (Comma-separated)")
         col1, col2, col3 = st.columns(3)
         col1.text_input("Wavelength Array (nm)", value=st.session_state.get("wavelength_str", "660"), key="wavelength_str")
@@ -118,19 +115,20 @@ def render_time_dependent_tab():
 
     st.subheader("⏱️ Timing & Sequence Durations")
     
+    # Pulse Engine Timing (Global for all modes)
+    col1, col2 = st.columns(2)
+    col1.number_input("Pulse Width (s)", value=st.session_state.get("pulse_width", 0.005), step=0.001, format="%f", key="pulse_width")
+    col2.number_input("Rest Time between pulses (s)", value=st.session_state.get("rest_time", 0.1), step=0.01, format="%f", key="rest_time")
+    st.write("---")
+
     # --- CONDITIONAL TIMING UI (Safeguarded with .get) ---
     if mode == "Dark Current (Pulsed Vg)":
         col1, col2, col3 = st.columns(3)
         col1.number_input("Dur 1 (Pulse @ Vg OFF) (s)", value=st.session_state.get("duration_1", 5.0), step=0.5, key="duration_1")
         col2.number_input("Dur 2 (Pulse @ Vg ON) (s)", value=st.session_state.get("duration_2", 1.0), step=0.5, key="duration_2")
         col3.number_input("Cycle Number", value=st.session_state.get("cycle_number", 3), min_value=1, step=1, key="cycle_number")
-        
-        st.write("---")
-        col4, col5 = st.columns(2)
-        col4.number_input("Pulse Width (s)", value=st.session_state.get("pulse_width", 0.005), step=0.001, format="%f", key="pulse_width")
-        col5.number_input("Rest Time between pulses (s)", value=st.session_state.get("rest_time", 0.1), step=0.01, format="%f", key="rest_time")
 
-    elif mode == "Laser Only":
+    elif mode == "Laser Only (Pulsed Vg)":
         col1, col2, col3, col4 = st.columns(4)
         col1.number_input("Dur 1 (Dark Relax)", value=st.session_state.get("duration_1", 5.0), step=0.5, key="duration_1")
         col2.number_input("Dur 2 (Vg on)", value=st.session_state.get("duration_2", 1.0), step=0.5, key="duration_2")
@@ -141,7 +139,7 @@ def render_time_dependent_tab():
         col5.number_input("Cycle Number", value=st.session_state.get("cycle_number", 3), min_value=1, step=1, key="cycle_number")
         col6.number_input("ON/OFF Number", value=st.session_state.get("on_off_number", 1), min_value=1, step=1, key="on_off_number")
 
-    elif mode == "Laser + Servo":
+    elif mode == "Laser + Servo (Pulsed Vg)":
         col1, col2, col3, col4 = st.columns(4)
         col1.number_input("Dur 1 (Dark Relax)", value=st.session_state.get("duration_1", 5.0), step=0.5, key="duration_1")
         col2.number_input("Dur 2 (Vg on)", value=st.session_state.get("duration_2", 1.0), step=0.5, key="duration_2")
@@ -165,6 +163,7 @@ def render_time_dependent_tab():
         st.markdown("**Save Configuration**")
         if st.button("Update JSON Config", type="primary", use_container_width=True, key="td_save"):
             try:
+                # Base config shared by all modes
                 config_dict = {
                     "measurement_mode": st.session_state["measurement_mode"],
                     "description": st.session_state["description"],
@@ -173,29 +172,22 @@ def render_time_dependent_tab():
                     "wait_time": st.session_state["wait_time"],
                     "current_limit_a": st.session_state["current_limit_a"],
                     "current_limit_b": st.session_state["current_limit_b"],
-                    "current_range_a": st.session_state["current_range_a"],
                     "current_range_b": st.session_state["current_range_b"],
                     "nplc_a": st.session_state["nplc_a"],
                     "nplc_b": st.session_state["nplc_b"],
-                    "vd_const": st.session_state["vd_const"]
+                    "vd_const": st.session_state["vd_const"],
+                    "vg_on": st.session_state.get("vg_on", 1.0),
+                    "vg_off": st.session_state.get("vg_off", 0.0),
+                    "base_vg": st.session_state.get("base_vg", 0.0),
+                    "pulse_width": st.session_state.get("pulse_width", 0.005),
+                    "rest_time": st.session_state.get("rest_time", 0.1),
+                    "fixed_range_a": st.session_state.get("fixed_range_a", 1e-5),
+                    "cycle_number": st.session_state.get("cycle_number", 3),
+                    "duration_1": st.session_state.get("duration_1", 5.0),
+                    "duration_2": st.session_state.get("duration_2", 1.0)
                 }
 
-                if mode == "Dark Current (Pulsed Vg)":
-                    config_dict["vg_on"] = st.session_state.get("vg_on", 1.0)
-                    config_dict["vg_off"] = st.session_state.get("vg_off", 0.0)
-                    config_dict["base_vg"] = st.session_state.get("base_vg", 0.0)
-                    config_dict["pulse_width"] = st.session_state.get("pulse_width", 0.005)
-                    config_dict["rest_time"] = st.session_state.get("rest_time", 0.1)
-                    config_dict["fixed_range_a"] = st.session_state.get("fixed_range_a", 1e-5)
-                    config_dict["cycle_number"] = st.session_state.get("cycle_number", 3)
-                    config_dict["duration_1"] = st.session_state.get("duration_1", 5.0)
-                    config_dict["duration_2"] = st.session_state.get("duration_2", 1.0)
-                else:
-                    config_dict["vg_on"] = st.session_state.get("vg_on", 1.0)
-                    config_dict["vg_off"] = st.session_state.get("vg_off", 0.0)
-                    config_dict["cycle_number"] = st.session_state.get("cycle_number", 3)
-                    config_dict["duration_1"] = st.session_state.get("duration_1", 5.0)
-                    config_dict["duration_2"] = st.session_state.get("duration_2", 1.0)
+                if mode in ["Laser Only (Pulsed Vg)", "Laser + Servo (Pulsed Vg)"]:
                     config_dict["duration_3"] = st.session_state.get("duration_3", 2.0)
                     config_dict["duration_4"] = st.session_state.get("duration_4", 2.0)
                     config_dict["wavelength_arr"] = [int(x.strip()) for x in st.session_state.get("wavelength_str", "660").split(",")]
@@ -203,20 +195,19 @@ def render_time_dependent_tab():
                     config_dict["power_arr"] = [float(x.strip()) for x in st.session_state.get("power_str", "100").split(",")]
                     config_dict["on_off_number"] = st.session_state.get("on_off_number", 1)
 
-                if mode == "Laser + Servo":
+                if mode == "Laser + Servo (Pulsed Vg)":
                     config_dict["servo_time"] = st.session_state.get("servo_time", 1.0)
 
                 save_path = Path("config")
                 save_path.mkdir(parents=True, exist_ok=True) 
                 
+                # Single config name
                 full_path = save_path / "FORMAL_time_dependent_config.json"
                 
                 with open(full_path, "w") as f:
                     json.dump(config_dict, f, indent=4)
                 
                 st.success(f"✅ Saved as {mode} to: {full_path.name}")
-                with st.expander("👀 Preview Saved Configuration", expanded=True):
-                    st.json(config_dict)
 
             except ValueError:
                 st.error("Format Error: Ensure arrays are numbers separated by commas (e.g., '660, 532')")
@@ -233,7 +224,7 @@ def render_time_dependent_tab():
 
         script_to_run = st.selectbox(
             "Select Measurement Script", 
-            ("time_dep_servo.py", "time_dep_dark.py"), 
+            ("time_dep_dark_pulse.py", "time_dep_servo_pulse.py"), 
             index=default_script_index,
             label_visibility="collapsed"
         )

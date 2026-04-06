@@ -1,12 +1,12 @@
 import streamlit as st
-# from tabs.time_dependent import render_time_dependent_tab
-from tabs.time_dependent_pulse import render_time_dependent_tab
-from tabs.idvg import render_idvg_tab
-from tabs.idvd import render_idvd_tab
-from tabs.power import render_power_tab
-from tabs.plotter import render_plotter_tab
+# from tabs.time_dependent_tab import render_time_dependent_tab
+from tabs.time_dependent_pulse_tab import render_time_dependent_tab
+from tabs.idvg_tab import render_idvg_tab
+from tabs.idvd_tab import render_idvd_tab
+from tabs.power_tab import render_power_tab
+from tabs.plotter_tab import render_plotter_tab
 from tabs.encoder import render_encoder_tab
-from tabs.pulse import render_vg_pulse_tab
+from tabs.pulse_tab import render_vg_pulse_tab
 
 st.set_page_config(page_title="Lab Auto", layout="wide")
 st.title("🔬 Lab Automation")
