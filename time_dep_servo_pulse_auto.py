@@ -385,10 +385,10 @@ if __name__ == "__main__":
 
     config_dir = Path("config")
     config_queue = [
-        config_dir / "FORMAL_time_dependent_config.json", 
-        # config_dir / "FORMAL_time_dependent_config.json",
-        # config_dir / "FORMAL_time_dependent_config.json",
-        # config_dir / "FORMAL_time_dependent_config.json",
+        config_dir / "FORMAL_time_dependent_config1.json", 
+        config_dir / "FORMAL_time_dependent_config2.json",
+        config_dir / "FORMAL_time_dependent_config3.json",
+        config_dir / "FORMAL_time_dependent_config4.json",
     ]
 
     app = QApplication(sys.argv)
