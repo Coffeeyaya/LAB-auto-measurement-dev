@@ -30,19 +30,15 @@ def build_optical_block(power_table, ch_idx, wl, power_nw, params):
     
     if params.get("servo_time"):
         sequence = [
-            {"Vg": vg_off, "duration": params["duration_1"], "laser_cmd1": {"channel": ch_idx, "power": pp}},
+            {"Vg": vg_off, "duration": params["duration_1"]},
             {"Vg": vg_on,  "duration": params["duration_2"]}
         ]
 
-        sequence.append({"Vg": vg_on, "duration": params["duration_3"], "laser_cmd2": {"channel": ch_idx, "on": 1}}) 
-        
         for _ in range(int(params.get("on_off_number", 1))):    
             sequence.append({"Vg": vg_on, "duration": params["servo_time"], "laser_cmd3": 1}) 
             sequence.append({"Vg": vg_on, "duration": params["servo_time"], "laser_cmd3": 1}) 
-
-        sequence.append({"Vg": vg_on, "duration": params["duration_4"], "laser_cmd2": {"channel": ch_idx, "on": 1}}) 
     
-    # Pure Laser GUI Toggling Logic
+    # Pure Laser GUI Toggling Logic (not handle this now)
     else:
         sequence = [
             {"Vg": vg_off, "duration": params["duration_1"], "laser_cmd1": {"channel": ch_idx, "power": pp}},
@@ -133,6 +129,17 @@ class TimeDepWorker(QThread):
         wavelengths = np.array(params.get("wavelength_arr", [660])).astype(int)
         powers = np.array(params.get("power_arr", [100])).astype(int).astype(str)
 
+        vg_off = params['vg_off']
+        vg_on = params['vg_on']
+        ch_idx = channels[0]
+        pp = get_pp_exact()
+
+        
+        sequence = [
+            {"Vg": vg_off, "duration": 7, "laser_cmd1": {"channel": ch_idx, "power": pp}},
+            {"Vg": vg_off, "duration": 3, "laser_cmd2": {"channel": ch_idx, "on": 1}},
+        ]
+
         for _ in range(int(params["cycle_number"])):
             for i in range(len(wavelengths)):
                 unit = build_optical_block(
@@ -140,7 +147,7 @@ class TimeDepWorker(QThread):
                 )
                 sequence.extend(unit)
                 
-        sequence.append({"Vg": params['vg_off'], "duration": params['duration_1']})
+        sequence.append({"Vg": vg_off, "duration": 5, "laser_cmd2": {"channel": ch_idx}, "on": 1})
         return sequence
 
     def _switch_source(self, laser_cmd1=None, laser_cmd2=None, laser_cmd3=None):
