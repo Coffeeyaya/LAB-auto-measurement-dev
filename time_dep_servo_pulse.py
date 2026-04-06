@@ -132,9 +132,8 @@ class TimeDepWorker(QThread):
         vg_off = params['vg_off']
         vg_on = params['vg_on']
         ch_idx = channels[0]
-        pp = get_pp_exact()
+        pp = get_pp_exact(self.power_table, wavelengths[0], powers[0])
 
-        
         sequence = [
             {"Vg": vg_off, "duration": 7, "laser_cmd1": {"channel": ch_idx, "power": pp}},
             {"Vg": vg_off, "duration": 3, "laser_cmd2": {"channel": ch_idx, "on": 1}},
