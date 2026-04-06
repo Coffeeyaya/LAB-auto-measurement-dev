@@ -28,15 +28,15 @@ def build_optical_block(power_table, ch_idx, wl, power_nw, params):
     vg_on = params["vg_on"]
     vg_off = params["vg_off"]
     
-    if params.get("servo_time"):
+    if params.get("servo_time_on"):
         sequence = [
             {"Vg": vg_off, "duration": params["duration_1"]},
             {"Vg": vg_on,  "duration": params["duration_2"]}
         ]
 
         for _ in range(int(params.get("on_off_number", 1))):    
-            sequence.append({"Vg": vg_on, "duration": params["servo_time"], "laser_cmd3": 1}) 
-            sequence.append({"Vg": vg_on, "duration": params["servo_time"], "laser_cmd3": 1}) 
+            sequence.append({"Vg": vg_on, "duration": params["servo_time_on"], "laser_cmd3": 1}) 
+            sequence.append({"Vg": vg_on, "duration": params["servo_time_off"], "laser_cmd3": 1}) 
     
     # Pure Laser GUI Toggling Logic (not handle this now)
     else:

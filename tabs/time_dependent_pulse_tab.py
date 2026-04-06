@@ -14,7 +14,7 @@ def render_time_dependent_tab():
         "vd_const": 1.0, "vg_const": 0.0,
         "vg_on": 1.0, "vg_off": 0.0,
         "duration_1": 5.0, "duration_2": 1.0, "duration_3": 2.0, "duration_4": 2.0,
-        "cycle_number": 3, "on_off_number": 1, "servo_time": 1.0,
+        "cycle_number": 3, "on_off_number": 1, "servo_time_on": 1.0, "servo_time_off": 1.0,
         
         # Pulse-specific parameters
         "base_vg": 0.0, "pulse_width": 0.005, "rest_time": 0.1, "fixed_range_a": 1e-5,
@@ -162,13 +162,14 @@ def render_time_dependent_tab():
         col1, col2, col3, col4 = st.columns(4)
         col1.number_input(lbl_dur1, value=st.session_state.get("duration_1", 5.0), step=0.5, key="duration_1")
         col2.number_input(lbl_dur2, value=st.session_state.get("duration_2", 1.0), step=0.5, key="duration_2")
-        col3.number_input("Dur 3 (Pre-Servo Wait)", value=st.session_state.get("duration_3", 2.0), step=0.5, key="duration_3")
-        col4.number_input("Dur 4 (Post-Servo Wait)", value=st.session_state.get("duration_4", 2.0), step=0.5, key="duration_4")
+        # col3.number_input("Dur 3 (Pre-Servo Wait)", value=st.session_state.get("duration_3", 2.0), step=0.5, key="duration_3")
+        # col4.number_input("Dur 4 (Post-Servo Wait)", value=st.session_state.get("duration_4", 2.0), step=0.5, key="duration_4")
         
         col5, col6, col7 = st.columns(3)
         col5.number_input("Cycle Number", value=st.session_state.get("cycle_number", 3), min_value=1, step=1, key="cycle_number")
         col6.number_input("Servo Swings (On/Off #)", value=st.session_state.get("on_off_number", 1), min_value=1, step=1, key="on_off_number")
-        col7.number_input("Servo Block Time (s)", value=st.session_state.get("servo_time", 1.0), step=0.5, key="servo_time")
+        col7.number_input("Servo open Time (s)", value=st.session_state.get("servo_time_on", 1.0), step=0.5, key="servo_time_on")
+        col7.number_input("Servo close Time (s)", value=st.session_state.get("servo_time_off", 1.0), step=0.5, key="servo_time_off")
 
     st.divider()
 
@@ -213,7 +214,7 @@ def render_time_dependent_tab():
                     config_dict["fixed_range_a"] = st.session_state.get("fixed_range_a", 1e-5)
 
                 # Hardware Appends
-                if hardware in ["Laser Only", "Laser + Servo"]:
+                if hardware == "Laser Only":
                     config_dict["duration_3"] = st.session_state.get("duration_3", 2.0)
                     config_dict["duration_4"] = st.session_state.get("duration_4", 2.0)
                     config_dict["wavelength_arr"] = [int(x.strip()) for x in st.session_state.get("wavelength_str", "660").split(",")]
@@ -222,7 +223,12 @@ def render_time_dependent_tab():
                     config_dict["on_off_number"] = st.session_state.get("on_off_number", 1)
 
                 if hardware == "Laser + Servo":
-                    config_dict["servo_time"] = st.session_state.get("servo_time", 1.0)
+                    config_dict["wavelength_arr"] = [int(x.strip()) for x in st.session_state.get("wavelength_str", "660").split(",")]
+                    config_dict["channel_arr"] = [int(x.strip()) for x in st.session_state.get("channel_str", "6").split(",")]
+                    config_dict["power_arr"] = [float(x.strip()) for x in st.session_state.get("power_str", "100").split(",")]
+                    config_dict["on_off_number"] = st.session_state.get("on_off_number", 1)
+                    config_dict["servo_time_on"] = st.session_state.get("servo_time_on", 1.0)
+                    config_dict["servo_time_off"] = st.session_state.get("servo_time_off", 1.0)
 
                 # Save JSON 
                 save_path = Path("config")
