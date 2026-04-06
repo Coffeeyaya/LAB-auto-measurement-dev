@@ -146,7 +146,7 @@ class TimeDepWorker(QThread):
                 )
                 sequence.extend(unit)
                 
-        sequence.append({"Vg": vg_off, "duration": 5, "laser_cmd2": {"channel": ch_idx}, "on": 1})
+        sequence.append({"Vg": vg_off, "duration": 5, "laser_cmd2": {"channel": ch_idx, "on": 1}})
         return sequence
 
     def _switch_source(self, laser_cmd1=None, laser_cmd2=None, laser_cmd3=None):
