@@ -184,6 +184,7 @@ def render_time_dependent_tab():
     # ==========================================
     st.subheader("📋 Queue Preview & Management")
     queue_dir = Path("config/timedep_queue") # or idvg_queue
+    queue_dir.mkdir(exist_ok=True, parents=True)
     queued_files = sorted(list(queue_dir.glob("*.json")))
 
     if queued_files:
