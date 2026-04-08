@@ -1,10 +1,11 @@
 import streamlit as st
 import json
+import time
 from pathlib import Path
 from tabs.helper import launch_in_terminal
 
 def render_time_dependent_tab():
-    st.markdown("Select your measurement mode, tweak your parameters, and launch the experiment.")
+    st.markdown("Select your hardware configuration and electrical measurement mode to launch the experiment.")
 
     # 1. Initialize default values
     default_cfg = {
@@ -14,10 +15,18 @@ def render_time_dependent_tab():
         "vd_const": 1.0, "vg_const": 0.0,
         "vg_on": 1.0, "vg_off": 0.0,
         "duration_1": 5.0, "duration_2": 1.0, "duration_3": 2.0, "duration_4": 2.0,
-        "cycle_number": 3, "on_off_number": 1, "servo_time": 1.0,
-        "measurement_mode": "Dark Current (Steady Vg)" 
+        "cycle_number": 3, "on_off_number": 1, "servo_time_on": 1.0, "servo_time_off": 1.0,
+        
+        # Pulse-specific parameters
+        "base_vg": 0.0, "pulse_width": 0.005, "rest_time": 0.1, "fixed_range_a": 1e-5,
+        
+        # The Two-Tiered UI states
+        "hardware_mode": "Dark Current", 
+        "electrical_mode": "Continuous DC Vg"
     }
 
+    # This loop ensures the keys are ALWAYS in session_state, 
+    # which is why Streamlit threw the error when we also passed value=...
     for k, v in default_cfg.items():
         if k not in st.session_state:
             st.session_state[k] = v
@@ -52,15 +61,25 @@ def render_time_dependent_tab():
     st.divider()
 
     # ==========================================
-    # MODE SELECTION
+    # MODE SELECTIONS (The 2-Tier System)
     # ==========================================
-    st.subheader("🎛️ Measurement Mode")
-    mode = st.radio(
-        "Select the hardware configuration for this run:",
-        ["Dark Current (Steady Vg)", "Laser Only", "Laser + Servo"],
-        horizontal=True,
-        key="measurement_mode"
-    )
+    col_mode1, col_mode2 = st.columns(2)
+    
+    with col_mode1:
+        st.subheader("🛠️ Hardware Setup")
+        hardware = st.radio(
+            "Select physical configuration:",
+            ["Dark Current", "Laser Only", "Laser + Servo"],
+            key="hardware_mode"
+        )
+        
+    with col_mode2:
+        st.subheader("⚡ Electrical Mode")
+        electric = st.radio(
+            "Select Gate Voltage behavior:",
+            ["Continuous DC Vg", "Pulsed Vg Train"],
+            key="electrical_mode"
+        )
 
     st.divider()
 
@@ -71,117 +90,169 @@ def render_time_dependent_tab():
     col1, col2, col3, col4 = st.columns(4)
     col1.text_input("Description", key="description")
     col2.text_input("Device Number", key="device_number")
-    col3.text_input("Run Number", key="run_number")
+    col3.text_input("Run Number", key="run_number", help="Change this when comparing DC vs Pulse to prevent overwriting files!")
     col4.number_input("Wait Time (s)", min_value=0, step=1, key="wait_time")
 
     st.divider()
 
     st.subheader("🔌 Keithley SMU Settings")
-    col1, col2, col3 = st.columns(3)
+    col1, col2, col3, col4 = st.columns(4)
     with col1:
         st.number_input("Current Limit A (A)", format="%.1e", step=1e-4, key="current_limit_a")
         st.number_input("Current Limit B (A)", format="%.1e", step=1e-4, key="current_limit_b")
     with col2:
-        st.number_input("Current Range A (A)", format="%.1e", step=1e-6, key="current_range_a")
         st.number_input("Current Range B (A)", format="%.1e", step=1e-6, key="current_range_b")
+        if electric == "Continuous DC Vg":
+            st.number_input("Current Range A (A)", format="%.1e", step=1e-6, key="current_range_a")
     with col3:
         st.number_input("NPLC A", step=0.1, key="nplc_a")
         st.number_input("NPLC B", step=0.1, key="nplc_b")
+    with col4:
+        if electric == "Pulsed Vg Train":
+            # Removed 'value='
+            st.number_input("Fixed Range A (Max I_ON)", format="%.1e", step=1e-6, key="fixed_range_a", help="Required to prevent autorange delays during fast pulses.")
 
     st.divider()
 
     st.subheader("⚡ Voltage Settings")
-    col1, col2, col3 = st.columns(3)
+    col1, col2, col3, col4 = st.columns(4)
     col1.number_input("Vd Const (V)", step=0.1, key="vd_const")
-    col2.number_input("Vg ON (V)", step=0.1, key="vg_on")
-    col3.number_input("Vg OFF (V)", step=0.1, key="vg_off")
+    col2.number_input("Vg ON (Target) (V)", step=0.1, key="vg_on")
+    col3.number_input("Vg OFF (Target) (V)", step=0.1, key="vg_off")
+    if electric == "Pulsed Vg Train":
+        # Removed 'value='
+        col4.number_input("Base Vg (Resting) (V)", step=0.1, key="base_vg")
 
     st.divider()
 
-    # conditionally show Optics
-    if mode in ["Laser Only", "Laser + Servo"]:
+    # Conditionally show Optics
+    if hardware in ["Laser Only", "Laser + Servo"]:
         st.subheader("🔦 Optics & Arrays (Comma-separated)")
         col1, col2, col3 = st.columns(3)
-        col1.text_input("Wavelength Array (nm)", value=st.session_state.get("wavelength_str", "660"), key="wavelength_str")
-        col2.text_input("Channel Array", value=st.session_state.get("channel_str", "6"), key="channel_str")
-        col3.text_input("Power Array (nW)", value=st.session_state.get("power_str", "100"), key="power_str")
+        # Removed 'value='
+        col1.text_input("Wavelength Array (nm)", key="wavelength_str")
+        col2.text_input("Channel Array", key="channel_str")
+        col3.text_input("Power Array (nW)", key="power_str")
         st.divider()
 
     st.subheader("⏱️ Timing & Sequence Durations")
     
-    # --- CONDITIONAL TIMING UI (Safeguarded with .get) ---
-    if mode == "Dark Current (Steady Vg)":
-        col1, col2, col3 = st.columns(3)
-        col1.number_input("Dur 1 (Dark Relax)", value=st.session_state.get("duration_1", 5.0), step=0.5, key="duration_1")
-        col2.number_input("Dur 2 (Vg on)", value=st.session_state.get("duration_2", 1.0), step=0.5, key="duration_2")
-        col3.number_input("Cycle Number", value=st.session_state.get("cycle_number", 3), min_value=1, step=1, key="cycle_number")
+    if electric == "Pulsed Vg Train":
+        col1, col2 = st.columns(2)
+        # Removed 'value='
+        col1.number_input("Pulse Width (s)", step=0.001, format="%f", key="pulse_width")
+        col2.number_input("Rest Time between pulses (s)", step=0.01, format="%f", key="rest_time")
+        st.write("---")
 
-    elif mode == "Laser Only":
+    # Smart Labelling based on Electrical Mode
+    lbl_dur1 = "Dur 1 (Pulse Train @ Vg OFF)" if electric == "Pulsed Vg Train" else "Dur 1 (Hold @ Vg OFF)"
+    lbl_dur2 = "Dur 2 (Pulse Train @ Vg ON)" if electric == "Pulsed Vg Train" else "Dur 2 (Hold @ Vg ON)"
+
+    # Removed 'value=' from all conditional widgets below
+    if hardware == "Dark Current":
+        col1, col2, col3 = st.columns(3)
+        col1.number_input(lbl_dur1, step=0.5, key="duration_1")
+        col2.number_input(lbl_dur2, step=0.5, key="duration_2")
+        col3.number_input("Cycle Number", min_value=1, step=1, key="cycle_number")
+
+    elif hardware == "Laser Only":
         col1, col2, col3, col4 = st.columns(4)
-        col1.number_input("Dur 1 (Dark Relax)", value=st.session_state.get("duration_1", 5.0), step=0.5, key="duration_1")
-        col2.number_input("Dur 2 (Vg on)", value=st.session_state.get("duration_2", 1.0), step=0.5, key="duration_2")
-        col3.number_input("Dur 3 (Laser ON)", value=st.session_state.get("duration_3", 2.0), step=0.5, key="duration_3")
-        col4.number_input("Dur 4 (Laser OFF)", value=st.session_state.get("duration_4", 2.0), step=0.5, key="duration_4")
+        col1.number_input(lbl_dur1, step=0.5, key="duration_1")
+        col2.number_input(lbl_dur2, step=0.5, key="duration_2")
+        col3.number_input("Dur 3 (Laser ON)", step=0.5, key="duration_3")
+        col4.number_input("Dur 4 (Laser OFF)", step=0.5, key="duration_4")
         
         col5, col6 = st.columns(2)
-        col5.number_input("Cycle Number", value=st.session_state.get("cycle_number", 3), min_value=1, step=1, key="cycle_number")
-        col6.number_input("ON/OFF Number", value=st.session_state.get("on_off_number", 1), min_value=1, step=1, key="on_off_number")
+        col5.number_input("Cycle Number", min_value=1, step=1, key="cycle_number")
+        col6.number_input("ON/OFF Number", min_value=1, step=1, key="on_off_number")
 
-    elif mode == "Laser + Servo":
+    elif hardware == "Laser + Servo":
         col1, col2, col3, col4 = st.columns(4)
-        col1.number_input("Dur 1 (Dark Relax)", value=st.session_state.get("duration_1", 5.0), step=0.5, key="duration_1")
-        col2.number_input("Dur 2 (Vg on)", value=st.session_state.get("duration_2", 1.0), step=0.5, key="duration_2")
-        col3.number_input("Dur 3 (Pre-Servo Wait)", value=st.session_state.get("duration_3", 2.0), step=0.5, key="duration_3")
-        col4.number_input("Dur 4 (Post-Servo Wait)", value=st.session_state.get("duration_4", 2.0), step=0.5, key="duration_4")
+        col1.number_input(lbl_dur1, step=0.5, key="duration_1")
+        col2.number_input(lbl_dur2, step=0.5, key="duration_2")
         
         col5, col6, col7 = st.columns(3)
-        col5.number_input("Cycle Number", value=st.session_state.get("cycle_number", 3), min_value=1, step=1, key="cycle_number")
-        col6.number_input("Servo Swings (On/Off #)", value=st.session_state.get("on_off_number", 1), min_value=1, step=1, key="on_off_number")
-        col7.number_input("Servo Block Time (s)", value=st.session_state.get("servo_time", 1.0), step=0.5, key="servo_time")
+        col5.number_input("Cycle Number", min_value=1, step=1, key="cycle_number")
+        col6.number_input("Servo Swings (On/Off #)", min_value=1, step=1, key="on_off_number")
+        col7.number_input("Servo open Time (s)", step=0.5, key="servo_time_on")
+        col7.number_input("Servo close Time (s)", step=0.5, key="servo_time_off")
 
     st.divider()
 
     # ==========================================
-    # ACTIONS & SAVING
+    # ACTIONS & BATCH QUEUE
     # ==========================================
-    st.subheader("🚀 Actions")
+    st.subheader("📋 Queue Preview & Management")
+    queue_dir = Path("config/timedep_queue") # or idvg_queue
+    queued_files = sorted(list(queue_dir.glob("*.json")))
+
+    if queued_files:
+        col_sel, col_clr = st.columns([3, 1])
+        
+        # 1. Select a file from the queue to preview
+        selected_file = col_sel.selectbox(
+            "Select a queued file to preview:", 
+            options=queued_files, 
+            format_func=lambda x: x.name,
+            key="preview_select_time"
+        )
+        
+        # 2. Display the content
+        if selected_file:
+            with st.expander(f"🔍 Previewing: {selected_file.name}", expanded=True):
+                with open(selected_file, "r") as f:
+                    preview_data = json.load(f)
+                
+                # Show as interactive JSON
+                st.json(preview_data)
+
+        if col_clr.button("🗑️ Clear Queue", use_container_width=True, key="clear_queue_preview_time"):
+            for f in queued_files: f.unlink()
+            st.rerun()
+    else:
+        st.warning("📦 Queue is currently empty.")
+
+    # --- ACTION BUTTONS ---
     col_btn1, col_btn2, col_btn3 = st.columns(3)
 
     with col_btn1:
-        st.markdown("**Save Configuration**")
-        if st.button("Update JSON Config", type="primary", use_container_width=True, key="td_save"):
+        st.markdown("**1. Add to Queue**")
+        custom_name = st.text_input("Config Name (Optional)", value="run", label_visibility="collapsed", key="td_custom_name")
+        
+        if st.button("➕ Add Configuration", type="primary", use_container_width=True, key="td_save_btn"):
             try:
-                # Base config shared by all modes
+                # Base config uses session state dynamically
                 config_dict = {
-                    "measurement_mode": st.session_state["measurement_mode"],
+                    "hardware_mode": st.session_state["hardware_mode"],
+                    "electrical_mode": st.session_state["electrical_mode"],
                     "description": st.session_state["description"],
                     "device_number": st.session_state["device_number"],
                     "run_number": st.session_state["run_number"],
                     "wait_time": st.session_state["wait_time"],
                     "current_limit_a": st.session_state["current_limit_a"],
                     "current_limit_b": st.session_state["current_limit_b"],
-                    "current_range_a": st.session_state["current_range_a"],
                     "current_range_b": st.session_state["current_range_b"],
                     "nplc_a": st.session_state["nplc_a"],
                     "nplc_b": st.session_state["nplc_b"],
-                    "vd_const": st.session_state["vd_const"]
+                    "vd_const": st.session_state["vd_const"],
+                    "vg_on": st.session_state.get("vg_on", 1.0),
+                    "vg_off": st.session_state.get("vg_off", 0.0),
+                    "cycle_number": st.session_state.get("cycle_number", 3),
+                    "duration_1": st.session_state.get("duration_1", 5.0),
+                    "duration_2": st.session_state.get("duration_2", 1.0)
                 }
 
-                # Mode-specific JSON building with .get() to prevent KeyErrors
-                if mode == "Dark Current (Steady Vg)":
-                    config_dict["vg_on"] = st.session_state.get("vg_on", 1.0)
-                    config_dict["vg_off"] = st.session_state.get("vg_off", 0.0)
-                    config_dict["cycle_number"] = st.session_state.get("cycle_number", 3)
-                    config_dict["duration_1"] = st.session_state.get("duration_1", 5.0)
-                    config_dict["duration_2"] = st.session_state.get("duration_2", 1.0)
-                    config_dict["duration_3"] = st.session_state.get("duration_3", 2.0)
-                    config_dict["duration_4"] = st.session_state.get("duration_4", 2.0)
-                else:
-                    config_dict["vg_on"] = st.session_state.get("vg_on", 1.0)
-                    config_dict["vg_off"] = st.session_state.get("vg_off", 0.0)
-                    config_dict["cycle_number"] = st.session_state.get("cycle_number", 3)
-                    config_dict["duration_1"] = st.session_state.get("duration_1", 5.0)
-                    config_dict["duration_2"] = st.session_state.get("duration_2", 1.0)
+                # Electrical Appends
+                if electric == "Continuous DC Vg":
+                    config_dict["current_range_a"] = st.session_state.get("current_range_a", 1e-05)
+                elif electric == "Pulsed Vg Train":
+                    config_dict["base_vg"] = st.session_state.get("base_vg", 0.0)
+                    config_dict["pulse_width"] = st.session_state.get("pulse_width", 0.005)
+                    config_dict["rest_time"] = st.session_state.get("rest_time", 0.1)
+                    config_dict["fixed_range_a"] = st.session_state.get("fixed_range_a", 1e-5)
+
+                # Hardware Appends
+                if hardware == "Laser Only":
                     config_dict["duration_3"] = st.session_state.get("duration_3", 2.0)
                     config_dict["duration_4"] = st.session_state.get("duration_4", 2.0)
                     config_dict["wavelength_arr"] = [int(x.strip()) for x in st.session_state.get("wavelength_str", "660").split(",")]
@@ -189,21 +260,28 @@ def render_time_dependent_tab():
                     config_dict["power_arr"] = [float(x.strip()) for x in st.session_state.get("power_str", "100").split(",")]
                     config_dict["on_off_number"] = st.session_state.get("on_off_number", 1)
 
-                if mode == "Laser + Servo":
-                    config_dict["servo_time"] = st.session_state.get("servo_time", 1.0)
+                if hardware == "Laser + Servo":
+                    config_dict["wavelength_arr"] = [int(x.strip()) for x in st.session_state.get("wavelength_str", "660").split(",")]
+                    config_dict["channel_arr"] = [int(x.strip()) for x in st.session_state.get("channel_str", "6").split(",")]
+                    config_dict["power_arr"] = [float(x.strip()) for x in st.session_state.get("power_str", "100").split(",")]
+                    config_dict["on_off_number"] = st.session_state.get("on_off_number", 1)
+                    config_dict["servo_time_on"] = st.session_state.get("servo_time_on", 1.0)
+                    config_dict["servo_time_off"] = st.session_state.get("servo_time_off", 1.0)
 
-                # Save it (using the same file name as requested)
-                save_path = Path("config")
-                save_path.mkdir(parents=True, exist_ok=True) 
+                # Create sequenced filename
+                next_idx = len(queued_files) + 1
+                safe_name = custom_name.replace(" ", "_")
+                mode_prefix = electric.replace(" ", "")
+                hw_prefix = hardware.replace(" ", "").replace("+", "")
+                filename = f"{next_idx:02d}_{hw_prefix}_{mode_prefix}_{safe_name}.json"
                 
-                full_path = save_path / "FORMAL_time_dependent_config.json"
-                
+                full_path = queue_dir / filename
                 with open(full_path, "w") as f:
                     json.dump(config_dict, f, indent=4)
                 
-                st.success(f"✅ Saved as {mode} to: {full_path.name}")
-                with st.expander("👀 Preview Saved Configuration", expanded=True):
-                    st.json(config_dict)
+                st.success(f"✅ Added to Queue: {filename}")
+                time.sleep(0.5) 
+                st.rerun()
 
             except ValueError:
                 st.error("Format Error: Ensure arrays are numbers separated by commas (e.g., '660, 532')")
@@ -211,31 +289,40 @@ def render_time_dependent_tab():
                 st.error(f"Failed to save file: {e}")
 
     with col_btn2:
-        st.markdown("**Run Keithley Measurement**")
+        st.markdown("**2. Run Queue**")
         
-        if mode == "Dark Current (Steady Vg)": 
-            default_script_index = 1  
-        else: 
-            default_script_index = 0  
+        default_script = 0 
+        if electric == "Continuous DC Vg":
+            if hardware == "Dark Current":
+                default_script = 1 
+            else:
+                default_script = 0 
+        elif electric == "Pulsed Vg Train":
+            default_script = 2 
 
         script_to_run = st.selectbox(
             "Select Measurement Script", 
-            ("time_dep_servo.py", "time_dep_dark.py"), 
-            index=default_script_index,
+            (
+                "time_dep.py",    # 0: Continuous DC Vg
+                "time_dep_pulse.py"  # 1: Pulsed
+            ), 
+            index=default_script,
             label_visibility="collapsed"
         )
         
-        dynamic_run_key = f"td_run_{mode.replace(' ', '_')}"
+        dynamic_run_key = f"td_run_{hardware.replace(' ', '_')}_{electric.replace(' ', '_')}"
         if st.button("▶ Run Script in Terminal", type="secondary", use_container_width=True, key=dynamic_run_key):
-            success, msg = launch_in_terminal(script_to_run)
-            if success: st.success(msg)
-            else: st.error(msg)
+            if not queued_files:
+                st.error("The queue is empty! Add a configuration first.")
+            else:
+                success, msg = launch_in_terminal(script_to_run)
+                if success: st.success(msg)
+                else: st.error(msg)
 
     with col_btn3:
-        st.markdown("**Manual Hardware Control**")
+        st.markdown("**3. Hardware Control**")
         st.write("") 
-        st.write("")
-        if st.button("⚙️ Open Servo GUI", type="secondary", use_container_width=True):
+        if st.button("⚙️ Open Servo GUI", type="secondary", use_container_width=True, key="td_servo_btn"):
             success, msg = launch_in_terminal("servo_GUI.py")
             if success: st.success(msg)
             else: st.error(msg)

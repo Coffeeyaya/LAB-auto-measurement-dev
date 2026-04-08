@@ -12,7 +12,6 @@ from pathlib import Path
 
 from keithley.keithley import Keithley2636B
 from LabAuto.laser_remote import LaserController
-
 from servo import ServoController
 
 def get_pp_exact(power_table, wavelength, power_nw):
@@ -22,37 +21,10 @@ def get_pp_exact(power_table, wavelength, power_nw):
         print(f"Warning: Cannot convert {power_nw}nW to PP for {wavelength}nm.")
         return None
 
-def build_optical_block(power_table, ch_idx, wl, power_nw, params):
-    """Generates the measurement sequence for one specific wavelength/power."""
-    pp = get_pp_exact(power_table, wl, power_nw)
-    vg_on = params["vg_on"]
-    vg_off = params["vg_off"]
-    
-    if params.get("servo_time_on"):
-        sequence = [
-            {"Vg": vg_off, "duration": params["duration_1"]},
-            {"Vg": vg_on,  "duration": params["duration_2"]}
-        ]
-
-        for _ in range(int(params.get("on_off_number", 1))):    
-            sequence.append({"Vg": vg_on, "duration": params["servo_time_on"], "laser_cmd3": 1}) 
-            sequence.append({"Vg": vg_on, "duration": params["servo_time_off"], "laser_cmd3": 1}) 
-    
-    # Pure Laser GUI Toggling Logic (not handle this now)
-    else:
-        sequence = [
-            {"Vg": vg_off, "duration": params["duration_1"], "laser_cmd1": {"channel": ch_idx, "power": pp}},
-            {"Vg": vg_on,  "duration": params["duration_2"]}
-        ]
-
-        for _ in range(int(params.get("on_off_number", 1))):    
-            sequence.append({"Vg": vg_on, "duration": params["duration_3"], "laser_cmd2": {"channel": ch_idx, "on": 1}}) 
-            sequence.append({"Vg": vg_on, "duration": params["duration_4"], "laser_cmd2": {"channel": ch_idx, "on": 1}}) 
-            
-    return sequence
-
-
-class TimeDepWorker(QThread):
+# ==========================================
+# THE UNIVERSAL WORKER THREAD
+# ==========================================
+class UniversalPulseWorker(QThread):
     new_config = pyqtSignal(int, str)
     new_data = pyqtSignal(int, float, float, float, float, float)
     status_update = pyqtSignal(str)
@@ -73,6 +45,9 @@ class TimeDepWorker(QThread):
         self.servo_state = 0 
         self.laser_channel = None
 
+    # ------------------------------------------
+    # SETUP HELPERS
+    # ------------------------------------------
     def _init_hardware(self):
         self.status_update.emit("Initializing Keithley...")
         self.k = Keithley2636B(self.resource_id)
@@ -91,10 +66,10 @@ class TimeDepWorker(QThread):
         output_dir.mkdir(parents=True, exist_ok=True)
         
         device = params.get('device_number', '0')
-        run_num = int(params.get('run_number', 1))
+        run_num = params.get('run_number', 1)
         
-        filename = output_dir / f"time_{device}_{run_num}.csv"
-        config_backup = output_dir / f"time_{device}_{run_num}_config.json"
+        filename = output_dir / f"time_universal_{device}_{run_num}.csv"
+        config_backup = output_dir / f"time_universal_{device}_{run_num}_config.json"
         
         if filename.exists() or config_backup.exists():
             raise FileExistsError(f"{filename.name} already exists. Aborting to prevent overwrite!")
@@ -111,49 +86,84 @@ class TimeDepWorker(QThread):
         self.k.set_limit('a', params["current_limit_a"])
         self.k.set_limit('b', params["current_limit_b"])
         
-        # Disable Autorange for pulses to avoid hardware lag
+        # Disable Autorange for fast pulses
         self.k.set_autorange('a', 0)
         self.k.set_autorange('b', 0)
         
-        expected_max_id = params.get("fixed_range_a", 1e-5)
-        self.k.set_range('a', expected_max_id)
-        self.k.set_range('b', 1e-6)
-        
-        self.k.set_Vd(float(params["vd_const"]))
-        self.k.enable_output('a', True)
-        self.k.enable_output('b', True)
-    
+        self.expected_max_id = params.get("fixed_range_a", 1e-5)
+        self.expected_max_ig = params.get("fixed_range_b", 1e-5)
+        self.k.set_range('a', self.expected_max_id)
+        self.k.set_range('b', self.expected_max_ig)
+
+    # ------------------------------------------
+    # THE UNIVERSAL SEQUENCE BUILDER
+    # ------------------------------------------
     def _build_master_sequence(self, params):
+        """Intelligently builds the timeline based on the requested hardware mode."""
         sequence = []
+        hardware_mode = params.get("hardware_mode", "Dark Current")
+        
+        vg_off = params.get('vg_off', 0.0)
+        vg_on = params.get('vg_on', 1.0)
+        cycle_number = int(params.get("cycle_number", 1))
+
+        # --- MODE 1: DARK CURRENT ---
+        if hardware_mode == "Dark Current":
+            for _ in range(cycle_number):
+                sequence.append({"Vg": vg_off, "duration": params.get("duration_1", 5.0)})
+                sequence.append({"Vg": vg_on,  "duration": params.get("duration_2", 1.0)})
+            
+            sequence.append({"Vg": vg_off, "duration": params.get("duration_1", 5.0)}) # Final Relax
+            return sequence
+
+        # --- OPTICAL MODES SETUP ---
         channels = np.array(params.get("channel_arr", [0])).astype(int).astype(str)
         wavelengths = np.array(params.get("wavelength_arr", [660])).astype(int)
         powers = np.array(params.get("power_arr", [100])).astype(int).astype(str)
-
-        vg_off = params['vg_off']
-        vg_on = params['vg_on']
+        
         ch_idx = channels[0]
         pp = get_pp_exact(self.power_table, wavelengths[0], powers[0])
 
+        # Optical Preamble
         sequence = [
-            {"Vg": vg_off, "duration": 5, "laser_cmd1": {"channel": ch_idx, "power": pp}},
-            {"Vg": vg_off, "duration": 3, "laser_cmd2": {"channel": ch_idx, "on": 1}},
+            {"Vg": vg_off, "duration": 5.0, "laser_cmd1": {"channel": ch_idx, "power": pp}},
+            {"Vg": vg_off, "duration": 3.0, "laser_cmd2": {"channel": ch_idx, "on": 1}},
         ]
 
-        for _ in range(int(params["cycle_number"])):
-            for i in range(len(wavelengths)):
-                unit = build_optical_block(
-                    self.power_table, channels[i], wavelengths[i], powers[i], params
-                )
-                sequence.extend(unit)
-                
-        sequence.append({"Vg": vg_off, "duration": 5, "laser_cmd2": {"channel": ch_idx, "on": 1}})
+        # --- MODE 2: LASER ONLY ---
+        if hardware_mode == "Laser Only":
+            for _ in range(cycle_number):
+                for i in range(len(wavelengths)):
+                    sequence.append({"Vg": vg_off, "duration": params.get("duration_1", 5.0)})
+                    sequence.append({"Vg": vg_on,  "duration": params.get("duration_2", 1.0)})
+                    
+                    for _ in range(int(params.get("on_off_number", 1))):
+                        sequence.append({"Vg": vg_on, "duration": params.get("duration_3", 2.0), "laser_cmd2": {"channel": ch_idx, "on": 1}})
+                        sequence.append({"Vg": vg_on, "duration": params.get("duration_4", 2.0), "laser_cmd2": {"channel": ch_idx, "on": 1}})
+        
+        # --- MODE 3: LASER + SERVO ---
+        elif hardware_mode == "Laser + Servo":
+            for _ in range(cycle_number):
+                for i in range(len(wavelengths)):
+                    sequence.append({"Vg": vg_off, "duration": params.get("duration_1", 5.0)})
+                    sequence.append({"Vg": vg_on,  "duration": params.get("duration_2", 1.0)})
+                    
+                    for _ in range(int(params.get("on_off_number", 1))):
+                        sequence.append({"Vg": vg_on, "duration": params.get("servo_time_on", 1.0), "laser_cmd3": 1})
+                        sequence.append({"Vg": vg_on, "duration": params.get("servo_time_off", 1.0), "laser_cmd3": 1})
+
+        # Optical Postamble
+        sequence.append({"Vg": vg_off, "duration": 5.0, "laser_cmd2": {"channel": ch_idx, "on": 1}})
         return sequence
 
+    # ------------------------------------------
+    # EXECUTION HELPERS
+    # ------------------------------------------
     def _switch_source(self, laser_cmd1=None, laser_cmd2=None, laser_cmd3=None):
-        if laser_cmd1: 
+        if laser_cmd1 and self.laser: 
             self.status_update.emit("Configuring laser...")
             self.laser.send_cmd(laser_cmd1, wait_for_reply=False) 
-        if laser_cmd2: 
+        if laser_cmd2 and self.laser: 
             self.status_update.emit("Toggling laser ON/OFF...")
             self.laser_channel = laser_cmd2["channel"]
             self.laser.send_cmd(laser_cmd2, wait_for_reply=False) 
@@ -162,7 +172,7 @@ class TimeDepWorker(QThread):
             self.status_update.emit("Toggling Physical Shutter...")
             self.servo.toggle_light()
             self.servo_state = 1 - self.servo_state 
-    
+
     def _execute_measurement(self, filename, params, sequence, config_idx, label):
         vd_const = float(params["vd_const"])
         base_vg = float(params.get("base_vg", 0.0))
@@ -172,7 +182,6 @@ class TimeDepWorker(QThread):
         start_time = time.time()
         last_emit_time = start_time
 
-        # Pre-condition device at resting Gate Voltage
         self.k.set_Vg(base_vg)
         time.sleep(1)
 
@@ -183,14 +192,12 @@ class TimeDepWorker(QThread):
             for step_idx, step in enumerate(sequence):
                 if not self.running: break
 
-                # Trigger Optics Asynchronously
                 self._switch_source(step.get("laser_cmd1"), step.get("laser_cmd2"), step.get("laser_cmd3"))
                 
                 target_vg = step["Vg"]
                 step_end = time.time() + step["duration"]
                 self.status_update.emit(f"[{label}] Step {step_idx+1}/{len(sequence)}: Pulsing to {target_vg}V...")
                 
-                # --- CONTINUOUS PULSE TRAIN LOOP ---
                 while time.time() < step_end:
                     if not self.running: break
 
@@ -199,27 +206,28 @@ class TimeDepWorker(QThread):
                         time.sleep(max(0, time_left))
                         break
 
-                    # 1. Fire pulse and measure!
                     reading = self.k.measure_pulsed_vg(target_vg, base_vg, pulse_width)
                     
                     if reading and len(reading) == 2:
                         I_D, I_G = reading 
                         if I_D is not None:
+                            # Safely clamp the values to prevent infinity bugs!
+                            I_D_record = max(-self.expected_max_id, min(self.expected_max_id, I_D))
+                            I_G_record = max(-self.expected_max_ig, min(self.expected_max_ig, I_G))
+
                             t = time.time() - start_time
-                            
-                            writer.writerow([t, vd_const, target_vg, I_D, I_G, self.current_light_state, self.servo_state])
+                            writer.writerow([t, vd_const, target_vg, I_D_record, I_G_record, self.current_light_state, self.servo_state])
 
                             current_t = time.time()
                             if current_t - last_emit_time > 0.2:
-                                self.new_data.emit(config_idx, t, vd_const, target_vg, I_D, I_G)
+                                self.new_data.emit(config_idx, t, vd_const, target_vg, I_D_record, I_G_record)
                                 last_emit_time = current_t
 
-                    # 2. Prevent burnout
                     time.sleep(rest_time)
 
     def _shutdown_hardware(self):
         self.status_update.emit("Shutting down hardware safely...")
-        if self.servo and self.servo.is_on:
+        if self.servo and getattr(self.servo, 'is_on', False):
             self.servo.toggle_light() 
         if self.laser:
             if self.current_light_state and self.laser_channel is not None:
@@ -228,6 +236,9 @@ class TimeDepWorker(QThread):
         if self.k:
             self.k.shutdown()
 
+    # ------------------------------------------
+    # ORCHESTRATOR
+    # ------------------------------------------
     def run(self):
         try:
             self._init_hardware()
@@ -251,11 +262,14 @@ class TimeDepWorker(QThread):
                     break 
 
                 self._apply_keithley_settings(params)
+                self.k.set_Vd(float(params["vd_const"]))
+                self.k.enable_output('a', True)
+                self.k.enable_output('b', True)
+
                 label = params.get("label", f"Run {params.get('run_number', 1)}")
                 self.new_config.emit(config_idx, label)
                 
                 sequence = self._build_master_sequence(params)
-
                 self._execute_measurement(filename, params, sequence, config_idx, label)
 
                 self.k.enable_output('a', False)
@@ -267,19 +281,29 @@ class TimeDepWorker(QThread):
             
         finally:
             self._shutdown_hardware()
+            
+            # Clear Queue Files on success
+            if "FILE EXISTS ERROR" not in getattr(self, 'status_label_text', ""): 
+                self.status_update.emit("Clearing Queue Files...")
+                for config_file in self.config_files:
+                    try:
+                        config_file.unlink() 
+                    except Exception as e:
+                        print(f"Could not delete {config_file}: {e}")
+
             self.sequence_finished.emit()
 
     def stop(self):
         self.running = False
         self.wait()
 
-# -------------------------------
-# GUI Window
-# -------------------------------
+# ==========================================
+# GUI WINDOW
+# ==========================================
 class TimeDepWindow(QWidget):
     def __init__(self, worker):
         super().__init__()
-        self.setWindowTitle("Pulsed Time Dependent Measurement (Optics)")
+        self.setWindowTitle("Universal Pulsed Time-Dependent Measurement")
         self.worker = worker
         
         self.data_memory = {}
@@ -293,10 +317,14 @@ class TimeDepWindow(QWidget):
         
         self.worker.new_config.connect(self.add_config_line)
         self.worker.new_data.connect(self.update_plot)
-        self.worker.status_update.connect(self.status_label.setText)
+        self.worker.status_update.connect(self.update_status)
         self.worker.sequence_finished.connect(self.on_finished)
         
         self.worker.start()
+
+    def update_status(self, text):
+        self.status_label.setText(text)
+        self.worker.status_label_text = text 
 
     def _setup_ui(self):
         layout = QVBoxLayout()
@@ -367,33 +395,73 @@ class TimeDepWindow(QWidget):
             self.worker.stop()
         event.accept()
 
+
 if __name__ == "__main__":
     RESOURCE_ID = "USB0::0x05E6::0x2636::4407529::INSTR"
     LASER_IP = "10.0.0.2"
 
-    print("Connecting to Laser PC...")
-    laser = LaserController(LASER_IP)
-    print("Laser connected.")
+    # ==========================================
+    # 1. READ QUEUE
+    # ==========================================
+    queue_dir = Path("config/timedep_queue")
+    if not queue_dir.exists():
+        print(f"Queue directory {queue_dir} not found!")
+        sys.exit()
 
-    print("Connecting to Servo Shutter...")
-    try:
-        servo = ServoController() 
-        print("Servo connected.")
-    except Exception as e:
-        print(f"Warning: Could not connect to servo ({e}). Running without physical shutter.")
-        servo = None
+    config_queue = sorted(list(queue_dir.glob("*.json")))
+    if not config_queue:
+        print("Queue is empty. Exiting.")
+        sys.exit()
 
-    config_dir = Path("config")
-    config_queue = [
-        config_dir / "FORMAL_time_dependent_config1.json", 
-        config_dir / "FORMAL_time_dependent_config2.json",
-        config_dir / "FORMAL_time_dependent_config3.json",
-        config_dir / "FORMAL_time_dependent_config4.json",
-    ]
+    # ==========================================
+    # 2. PRE-SCAN CONFIGS FOR HARDWARE NEEDS
+    # ==========================================
+    needs_laser = False
+    needs_servo = False
+    
+    for config_path in config_queue:
+        try:
+            with open(config_path, "r") as f:
+                params = json.load(f)
+                hw_mode = params.get("hardware_mode", "Dark Current")
+                
+                if hw_mode in ["Laser Only", "Laser + Servo"]:
+                    needs_laser = True
+                if hw_mode == "Laser + Servo":
+                    needs_servo = True
+        except Exception as e:
+            print(f"Warning: Could not pre-read {config_path.name} - {e}")
 
+    # ==========================================
+    # 3. CONDITIONALLY CONNECT TO HARDWARE
+    # ==========================================
+    laser = None
+    servo = None
+    
+    if needs_laser:
+        print("Laser required by config. Connecting to Laser PC...")
+        try:
+            laser = LaserController(LASER_IP)
+            print("Laser connected.")
+        except Exception as e:
+            print(f"Laser Connection failed ({e}). Running without laser.")
+
+    if needs_servo:
+        print("Servo required by config. Connecting to Shutter...")
+        try:
+            servo = ServoController() 
+            print("Servo connected.")
+        except Exception as e:
+            print(f"Servo Connection failed ({e}). Running without physical shutter.")
+            
+    if not needs_laser and not needs_servo:
+        print("Standard Dark Current required. Bypassing optical connections.")
+
+    # ==========================================
+    # 4. LAUNCH APP
+    # ==========================================
     app = QApplication(sys.argv)
-    worker = TimeDepWorker(RESOURCE_ID, laser, servo, config_queue)
+    worker = UniversalPulseWorker(RESOURCE_ID, laser, servo, config_queue)
     window = TimeDepWindow(worker)
     window.show()
-
     sys.exit(app.exec_())
