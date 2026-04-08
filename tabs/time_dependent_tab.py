@@ -293,12 +293,9 @@ def render_time_dependent_tab():
         
         default_script = 0 
         if electric == "Continuous DC Vg":
-            if hardware == "Dark Current":
-                default_script = 1 
-            else:
-                default_script = 0 
+            default_script = 0
         elif electric == "Pulsed Vg Train":
-            default_script = 2 
+            default_script = 1
 
         script_to_run = st.selectbox(
             "Select Measurement Script", 
