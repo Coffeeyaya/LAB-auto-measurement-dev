@@ -20,6 +20,7 @@ class AutoIdVgPulseWorker(BaseMeasurementWorker):
         try:
             self._init_hardware()
             self._get_power_table()
+            print(self.power_table)
 
             for config_idx, config_file in enumerate(self.config_files):
                 if not self.running: break
