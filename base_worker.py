@@ -105,8 +105,8 @@ class BaseMeasurementWorker(QThread):
         else:
             self.k.set_autorange('a', 0)
             self.k.set_autorange('b', 0)
-            self.expected_max_id = params.get("fixed_range_a", 1e-5)
-            self.expected_max_ig = params.get("fixed_range_b", 1e-6)
+            self.expected_max_id = params.get("current_range_a", 1e-6) 
+            self.expected_max_ig = params.get("current_range_b", 1e-6)
             self.k.set_range('a', self.expected_max_id)
             self.k.set_range('b', self.expected_max_ig)
 

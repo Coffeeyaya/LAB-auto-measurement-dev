@@ -11,7 +11,7 @@ def render_power_tab():
 
     st.subheader("1. Calibration Parameters")
     
-    p_wav_def, p_ch_def, p_pow_def = "450, 532, 660", "0, 3, 6", "100, 200, 300"
+    p_wav_def, p_ch_def, p_pow_def = "660", "6", "100"
     power_cfg_path = Path("config") / "power_config.json"
     if power_cfg_path.exists():
         with open(power_cfg_path, "r") as f:
@@ -21,9 +21,9 @@ def render_power_tab():
             p_pow_def = ", ".join(map(str, p_params.get("power_arr", [])))
 
     col1, col2, col3 = st.columns(3)
-    p_wavelength_str = col1.text_input("Wavelength Array (nm)", value=p_wav_def, key="p_wav")
-    p_channel_str = col2.text_input("Channel Array", value=p_ch_def, key="p_ch")
-    p_power_str = col3.text_input("Target Power Array (nW)", value=p_pow_def, key="p_pow")
+    p_wavelength_str = col1.text_input("Wavelength Array (nm)", value=p_wav_def, key="p_wav", help='comma separated')
+    p_channel_str = col2.text_input("Channel Array", value=p_ch_def, key="p_ch", help='comma separated')
+    p_power_str = col3.text_input("Target Power Array (nW)", value=p_pow_def, key="p_pow", help='comma separated')
 
     st.subheader("2. Run Scripts")
     p_col1, p_col2, p_col3 = st.columns(3)

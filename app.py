@@ -1,4 +1,5 @@
 import streamlit as st
+from tabs.servo_tab import render_servo_tab
 from tabs.time_dependent_tab import render_time_dependent_tab
 from tabs.idvg_tab import render_idvg_tab
 from tabs.idvd_tab import render_idvd_tab
@@ -25,9 +26,10 @@ def cleanup_temp_files():
 atexit.register(cleanup_temp_files)
 
 st.set_page_config(page_title="Lab Auto", layout="wide")
-st.title("🔬 Lab Automation")
+st.title("Lab Automation")
 
-tab_time_dep, tab_idvg, tab_idvd, tab_power, tab_plot, tab_encoder, tab_vg_pulse, tab_block = st.tabs([
+tab_servo, tab_time_dep, tab_idvg, tab_idvd, tab_power, tab_plot, tab_encoder, tab_vg_pulse, tab_block = st.tabs([
+    "Servo motor control", 
     "⚡ Time-Dependent", 
     "📈 Id-Vg Sweep",
     "📈 Id-Vd Sweep",
@@ -37,6 +39,9 @@ tab_time_dep, tab_idvg, tab_idvd, tab_power, tab_plot, tab_encoder, tab_vg_pulse
     "VG pulse",
     "Build block"
 ])
+
+with tab_servo:
+    render_servo_tab()
 
 with tab_time_dep:
     render_time_dependent_tab()
@@ -53,11 +58,11 @@ with tab_power:
 with tab_plot:
     render_plotter_tab()
 
-with tab_encoder:
-    render_encoder_tab()
+# with tab_encoder:
+#     render_encoder_tab()
 
-with tab_vg_pulse:
-    render_vg_pulse_tab()
+# with tab_vg_pulse:
+#     render_vg_pulse_tab()
 
 # with tab_block:
 #     render_custom_sequence_tab()

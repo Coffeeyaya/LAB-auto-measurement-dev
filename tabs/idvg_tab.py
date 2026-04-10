@@ -5,24 +5,23 @@ from pathlib import Path
 from tabs.helper import launch_in_terminal
 
 def render_idvg_tab():
-    st.markdown("Configure and run your Id-Vg transfer characteristic sweeps.")
 
     # 1. Initialize prefixed defaults
     default_cfg = {
         "idvg_measurement_mode": "Steady-State Sweep", 
-        "idvg_description": "", "idvg_device_number": "", "idvg_run_number": "", "idvg_label": "",
+        "idvg_description": "", "idvg_device_number": "1-1", "idvg_run_number": "1", "idvg_label": "",
         "idvg_vd_const": 1.0, "idvg_vg_start": -5.0, "idvg_vg_stop": 5.0, 
         "idvg_laser_stable_time": 30,
         "idvg_deplete_voltage": 0.0, "idvg_deplete_time": 0,
         "idvg_current_limit_a": 1e-3, "idvg_current_limit_b": 1e-3, 
         "idvg_nplc_a": 1.0, "idvg_nplc_b": 1.0,
-        "idvg_num_points": 51, "idvg_wait_time": 30, 
+        "idvg_num_points": 51, "idvg_wait_time": 0, 
         "idvg_source_to_measure_delay": 0.01,
         "idvg_base_vg": 0.0, 
-        "idvg_pulse_width": 0.005, 
-        "idvg_rest_time": 0.1,
-        "idvg_fixed_range_a": 1e-5,
-        "idvg_fixed_range_b": 1e-6
+        "idvg_pulse_width": 0.001, 
+        "idvg_rest_time": 0.3,
+        "idvg_current_range_a": 1e-6,
+        "idvg_current_range_b": 1e-6
     }
 
     for k, v in default_cfg.items():
@@ -34,7 +33,7 @@ def render_idvg_tab():
     if "idvg_laser_wavelength" not in st.session_state: st.session_state["idvg_laser_wavelength"] = 660
     if "idvg_laser_power" not in st.session_state: st.session_state["idvg_laser_power"] = 100.0
 
-    st.subheader("📂 Load Existing Configuration")
+    st.subheader("📂 Load Existing Configuration (Optional)")
     if "idvg_uploader_key" not in st.session_state: st.session_state["idvg_uploader_key"] = 0
 
     uploaded_idvg = st.file_uploader("Upload a previous JSON config", type=["json"], key=f"idvg_uploader_{st.session_state['idvg_uploader_key']}")
@@ -64,13 +63,16 @@ def render_idvg_tab():
     mode = st.radio("Select the Id-Vg sweep method:", ["Steady-State Sweep", "Pulsed Sweep"], horizontal=True, key="idvg_measurement_mode")
     st.divider()
 
-    st.subheader("📝 General & Keithley")
+    st.subheader("📝 General information")
     col1, col2, col3, col4 = st.columns(4)
-    col1.text_input("Description", key="idvg_description")
+    col1.text_input("Description", key="idvg_description", help="Take notes here")
     col2.text_input("Device Number", key="idvg_device_number")
-    col3.text_input("Run Number", key="idvg_run_number")
+    col3.text_input("Run Number", key="idvg_run_number", help="Change this to prevent overwriting files")
     col4.text_input("Label (e.g., dark)", key="idvg_label")
+    
+    st.divider()
 
+    st.subheader("🔌 Keithley SMU Settings")
     col5, col6, col7 = st.columns(3)
     with col5:
         st.number_input("Current Limit A (A)", format="%e", step=1e-4, key="idvg_current_limit_a")
@@ -79,8 +81,12 @@ def render_idvg_tab():
         st.number_input("NPLC A", step=0.1, key="idvg_nplc_a")
         st.number_input("NPLC B", step=0.1, key="idvg_nplc_b")
     with col7:
+        # if it's steady state sweep, then it uses auto range, so we don't need to set it manually
         if mode == "Pulsed Sweep":
-            st.number_input("Fixed Range A (Max I_ON)", format="%.1e", step=1e-6, key="idvg_fixed_range_a", help="Prevents autorange delays")
+            st.number_input("Current Range A", value=st.session_state.get("idvg_current_range_a", 1e-6), format="%.1e", step=1e-6, key="idvg_current_range_a", help="Measured current range, modify it lower to detect lower current, if measured value > range, then it is clamped at range")
+            st.number_input("Current Range B", value=st.session_state.get("idvg_current_range_b", 1e-6), format="%.1e", step=1e-6, key="idvg_current_range_b", help="Measured current range, modify it lower to detect lower current, if measured value > range, then it is clamped at range")
+        else:
+            st.text("Auto Range Mode")
 
     st.divider()
 
@@ -91,20 +97,28 @@ def render_idvg_tab():
     col3.number_input("Vg Stop (V)", step=0.1, key="idvg_vg_stop")
     col4.number_input("Number of Points", step=1, key="idvg_num_points")
 
-    col5, col6, col7, col8 = st.columns(4)
-    col5.number_input("Pre-Sweep Wait (s)", step=1, key="idvg_wait_time")
+    col_list = st.columns(4) 
+    col_list[0].number_input("Pre-Sweep Wait (s)", min_value=0, step=1, key="idvg_wait_time", help="Wait time before measurement")
     
     if mode == "Steady-State Sweep":
-        col6.number_input("Source-Measure Delay (s)", step=0.01, format="%f", key="idvg_source_to_measure_delay")
-    elif mode == "Pulsed Sweep":
-        col6.number_input("Base Vg (Resting) (V)", step=0.1, key="idvg_base_vg")
-        col7.number_input("Pulse Width (s)", step=0.001, format="%f", key="idvg_pulse_width")
-        col8.number_input("Rest Time (s)", step=0.01, format="%f", key="idvg_rest_time")
+        col_list[1].number_input("Source-Measure Delay (s)", step=0.01, format="%f", key="idvg_source_to_measure_delay")
 
-    st.write("---")
-    col9, col10 = st.columns(2)
-    col9.number_input("Deplete Voltage (V)", step=0.1, key="idvg_deplete_voltage")
-    col10.number_input("Deplete Time (s)", step=1, key="idvg_deplete_time")
+    if mode == "Pulsed Sweep":
+        st.divider()
+        st.subheader("⚡ Pulse Settings")
+        
+        # Create NEW columns specifically for the pulse subheader
+        col_p1, col_p2, col_p3 = st.columns(3)
+        
+        # Note: I added fallback values (0.0, 0.005, 0.1) to .get() to prevent the 0e+0 bug!
+        col_p1.number_input("Base Vg (Resting) (V)", value=st.session_state.get("idvg_base_vg", 0.0), step=0.1, key="idvg_base_vg")
+        col_p2.number_input("Pulse Width (s)", value=st.session_state.get("idvg_pulse_width", 0.001), step=0.001, format="%f", key="idvg_pulse_width")
+        col_p3.number_input("Rest Time (s)", value=st.session_state.get("idvg_rest_time", 0.3), step=0.3, format="%f", key="idvg_rest_time", help="Rest time between 2 pulses")
+
+    # st.write("---")
+    # col9, col10 = st.columns(2)
+    # col9.number_input("Deplete Voltage (V)", step=0.1, key="idvg_deplete_voltage")
+    # col10.number_input("Deplete Time (s)", step=1, key="idvg_deplete_time")
 
     st.divider()
 
@@ -162,7 +176,7 @@ def render_idvg_tab():
 
     with col_btn1:
         st.markdown("**1. Add to Queue**")
-        custom_name = st.text_input("Config Name (Optional)", value="sweep", label_visibility="collapsed", key="idvg_custom_name")
+        custom_name = st.text_input("Config Name (Optional)", value="", label_visibility="collapsed", key="idvg_custom_name")
         
         if st.button("➕ Add Configuration", type="primary", use_container_width=True, key="idvg_save_btn"):
             try:
@@ -187,8 +201,8 @@ def render_idvg_tab():
                     config_dict_idvg["base_vg"] = st.session_state["idvg_base_vg"]
                     config_dict_idvg["pulse_width"] = st.session_state["idvg_pulse_width"]
                     config_dict_idvg["rest_time"] = st.session_state["idvg_rest_time"]
-                    config_dict_idvg["fixed_range_a"] = st.session_state["idvg_fixed_range_a"]
-                    config_dict_idvg["fixed_range_b"] = st.session_state["idvg_fixed_range_b"]
+                    config_dict_idvg["current_range_a"] = st.session_state["idvg_current_range_a"]
+                    config_dict_idvg["current_range_b"] = st.session_state["idvg_current_range_b"]
                 
                 next_idx = len(queued_files) + 1
                 safe_name = custom_name.replace(" ", "_")

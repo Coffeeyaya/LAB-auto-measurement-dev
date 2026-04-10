@@ -5,11 +5,10 @@ from pathlib import Path
 from tabs.helper import launch_in_terminal
 
 def render_time_dependent_tab():
-    st.markdown("Select your hardware configuration and electrical measurement mode to launch the experiment.")
 
-    # 1. Initialize default values
+    ### Initialize default values in session state (stremalit memory)
     default_cfg = {
-        "description": "Time-Dep", "device_number": "1-1", "run_number": "1", "wait_time": 0,
+        "description": "Time-Dep", "device_number": "1-1", "run_number": "1", "time_label": "", "wait_time": 0,
         "current_limit_a": 0.001, "current_limit_b": 0.001, "current_range_a": 1e-06, "current_range_b": 1e-06,
         "nplc_a": 1.0, "nplc_b": 1.0, 
         "vd_const": 1.0, "vg_const": 0.0,
@@ -18,7 +17,7 @@ def render_time_dependent_tab():
         "cycle_number": 3, "on_off_number": 1, "servo_time_on": 1.0, "servo_time_off": 1.0,
         
         # Pulse-specific parameters
-        "base_vg": 0.0, "pulse_width": 0.001, "rest_time": 0.3, "fixed_range_a": 1e-6,
+        "base_vg": 0.0, "pulse_width": 0.001, "rest_time": 0.3,
         
         # The Two-Tiered UI states
         "hardware_mode": "Dark Current", 
@@ -35,6 +34,7 @@ def render_time_dependent_tab():
     if "channel_str" not in st.session_state: st.session_state["channel_str"] = "6"
     if "power_str" not in st.session_state: st.session_state["power_str"] = "100"
 
+    ### Load old config files
     st.subheader("📂 Load Existing Configuration (Optional)")
     if "uploader_key" not in st.session_state: 
         st.session_state["uploader_key"] = 0
@@ -60,9 +60,7 @@ def render_time_dependent_tab():
 
     st.divider()
 
-    # ==========================================
-    # MODE SELECTIONS (The 2-Tier System)
-    # ==========================================
+    ### Select Mode
     col_mode1, col_mode2 = st.columns(2)
     
     with col_mode1:
@@ -83,41 +81,33 @@ def render_time_dependent_tab():
 
     st.divider()
 
-    # ==========================================
-    # UI WIDGETS
-    # ==========================================
+    ### UI widgets
     st.subheader("📝 General Information")
     col1, col2, col3, col4 = st.columns(4)
-    col1.text_input("Description", key="description")
+    col1.text_input("Description", key="description", help="Take notes here")
     col2.text_input("Device Number", key="device_number")
-    col3.text_input("Run Number", key="run_number", help="Change this when comparing DC vs Pulse to prevent overwriting files!")
-    col4.number_input("Wait Time (s)", min_value=0, step=1, key="wait_time")
+    col3.text_input("Run Number", key="run_number", help="Change this to prevent overwriting files")
+    col4.text_input("Label", key="time_label", help="label that will show on the graph")
 
     st.divider()
 
     st.subheader("🔌 Keithley SMU Settings")
     col1, col2, col3, col4 = st.columns(4)
     with col1:
-        st.number_input("Current Limit A (A)", format="%.1e", step=1e-4, key="current_limit_a")
-        st.number_input("Current Limit B (A)", format="%.1e", step=1e-4, key="current_limit_b")
+        st.number_input("Current Limit A (A)", format="%.1e", step=1e-4, key="current_limit_a", help="Max current allowed, used to protect hardware and device")
+        st.number_input("Current Limit B (A)", format="%.1e", step=1e-4, key="current_limit_b", help="Max current allowed, used to protect hardware and device")
     with col2:
-        st.number_input("Current Range B (A)", format="%.1e", step=1e-6, key="current_range_b")
-        if electric == "Continuous DC Vg":
-            st.number_input("Current Range A (A)", format="%.1e", step=1e-6, key="current_range_a")
+        st.number_input("Current Range A (A)", format="%.1e", step=1e-6, key="current_range_a", help="Measured current range, modify it lower to detect lower current, if measured value > range, then it is clamped at range")
+        st.number_input("Current Range B (A)", format="%.1e", step=1e-6, key="current_range_b", help="Measured current range, modify it lower to detect lower current, if measured value > range, then it is clamped at range")
+        
     with col3:
-        st.number_input("NPLC A", step=0.1, key="nplc_a")
-        st.number_input("NPLC B", step=0.1, key="nplc_b")
-    with col4:
-        if electric == "Pulsed Vg Train":
-            # Removed 'value='
-            st.number_input("Fixed Range A (Max I_ON)", 
-                            value=st.session_state.get("fixed_range_a", 1e-6),
-                            format="%.1e", step=1e-6, key="fixed_range_a", 
-                            help="Required to prevent autorange delays during fast pulses.")
+        st.number_input("NPLC A", step=0.1, key="nplc_a", help="Number of power line cycles")
+        st.number_input("NPLC B", step=0.1, key="nplc_b", help="Number of power line cycles")
+    
 
     st.divider()
 
-    st.subheader("⚡ Voltage Settings")
+    st.subheader("⚡ Voltage & Timing Settings")
     col1, col2, col3, col4 = st.columns(4)
     col1.number_input("Vd Const (V)", step=0.1, key="vd_const")
     col2.number_input("Vg ON (Target) (V)", step=0.1, key="vg_on")
@@ -125,18 +115,21 @@ def render_time_dependent_tab():
     if electric == "Pulsed Vg Train":
         # Removed 'value='
         col4.number_input("Base Vg (Resting) (V)", 
-                          value=st.session_state.get("base_vg", 0.0), step=0.1, key="base_vg")
-
-    st.divider()
+                          value=st.session_state.get("base_vg", 0.0), step=0.1, key="base_vg", help="Pulsed mode: rest at base Vg, pulsed at target Vg")
+    
+    col_list = st.columns(4)
+    with col_list[0]:
+        st.number_input("Wait Time (s)", min_value=0, step=1, key="wait_time", help="Wait time before measurement")
+        st.divider()
 
     # Conditionally show Optics
     if hardware in ["Laser Only", "Laser + Servo"]:
         st.subheader("🔦 Optics & Arrays (Comma-separated)")
         col1, col2, col3 = st.columns(3)
         # Removed 'value='
-        col1.text_input("Wavelength Array (nm)", key="wavelength_str")
-        col2.text_input("Channel Array", key="channel_str")
-        col3.text_input("Power Array (nW)", key="power_str")
+        col1.text_input("Wavelength Array (nm)", value=st.session_state.get("wavelength_str", 660), key="wavelength_str")
+        col2.text_input("Channel Array", value=st.session_state.get("channel_str", 6), key="channel_str")
+        col3.text_input("Power Array (nW)", value=st.session_state.get("power_str", 100), key="power_str")
         st.divider()
 
     st.subheader("⏱️ Timing & Sequence Durations")
@@ -147,7 +140,7 @@ def render_time_dependent_tab():
         col1.number_input("Pulse Width (s)", 
                           value=st.session_state.get("pulse_width", 0.001), step=0.001, format="%f", key="pulse_width")
         col2.number_input("Rest Time between pulses (s)", 
-                          value=st.session_state.get("rest_time", 0.3), step=0.01, format="%f", key="rest_time")
+                          value=st.session_state.get("rest_time", 0.3), step=0.01, format="%f", key="rest_time", help='Rest time between two pulses')
         
         st.write("---")
 
@@ -180,7 +173,7 @@ def render_time_dependent_tab():
         
         col5, col6, col7 = st.columns(3)
         col5.number_input("Cycle Number", min_value=1, step=1, key="cycle_number")
-        col6.number_input("Servo Swings (On/Off #)", 
+        col6.number_input("Servo On/Off #", 
                           value=st.session_state.get("on_off_number", 3), min_value=1, step=1, key="on_off_number")
         col7.number_input("Servo open Time (s)", 
                           value=st.session_state.get("servo_time_on", 1), step=0.5, key="servo_time_on")
@@ -189,9 +182,7 @@ def render_time_dependent_tab():
 
     st.divider()
 
-    # ==========================================
-    # ACTIONS & BATCH QUEUE
-    # ==========================================
+    ### Actions and Queue
     st.subheader("📋 Queue Preview & Management")
 
     if electric == "Continuous DC Vg":
@@ -230,12 +221,12 @@ def render_time_dependent_tab():
     else:
         st.warning("📦 Queue is currently empty.")
 
-    # --- ACTION BUTTONS ---
+    # ACTION BUTTONS
     col_btn1, col_btn2, col_btn3 = st.columns(3)
 
     with col_btn1:
         st.markdown("**1. Add to Queue**")
-        custom_name = st.text_input("Config Name (Optional)", value="run", label_visibility="collapsed", key="td_custom_name")
+        custom_name = st.text_input("Config Name (Optional)", value="", label_visibility="collapsed", key="td_custom_name")
         
         if st.button("➕ Add Configuration", type="primary", use_container_width=True, key="td_save_btn"):
             try:
@@ -249,6 +240,7 @@ def render_time_dependent_tab():
                     "wait_time": st.session_state["wait_time"],
                     "current_limit_a": st.session_state["current_limit_a"],
                     "current_limit_b": st.session_state["current_limit_b"],
+                    "current_range_a": st.session_state["current_range_a"],
                     "current_range_b": st.session_state["current_range_b"],
                     "nplc_a": st.session_state["nplc_a"],
                     "nplc_b": st.session_state["nplc_b"],
@@ -261,13 +253,10 @@ def render_time_dependent_tab():
                 }
 
                 # Electrical Appends
-                if electric == "Continuous DC Vg":
-                    config_dict["current_range_a"] = st.session_state.get("current_range_a", 1e-05)
-                elif electric == "Pulsed Vg Train":
+                if electric == "Pulsed Vg Train":
                     config_dict["base_vg"] = st.session_state.get("base_vg", 0.0)
                     config_dict["pulse_width"] = st.session_state.get("pulse_width", 0.005)
                     config_dict["rest_time"] = st.session_state.get("rest_time", 0.1)
-                    config_dict["fixed_range_a"] = st.session_state.get("fixed_range_a", 1e-5)
 
                 # Hardware Appends
                 if hardware == "Laser Only":

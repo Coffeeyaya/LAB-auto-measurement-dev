@@ -5,27 +5,27 @@ from pathlib import Path
 from tabs.helper import launch_in_terminal
 
 def render_idvd_tab():
-    st.markdown("Configure and run your Id-Vd output characteristic sweeps.")
 
     # 1. Initialize prefixed defaults
     default_cfg = {
         "idvd_measurement_mode": "Steady-State Sweep", 
-        "idvd_description": "", "idvd_device_number": "", "idvd_run_number": "", "idvd_label": "",
-        "idvd_vg_const": 0.0, "idvd_vd_start": 0.0, "idvd_vd_stop": 5.0, 
+        "idvd_description": "", "idvd_device_number": "1-1", "idvd_run_number": "1", "idvd_label": "",
+        "idvd_vg_const": 1.0, "idvd_vd_start": -2.0, "idvd_vd_stop": 2.0, 
         "idvd_laser_stable_time": 30,
         "idvd_deplete_voltage": 0.0, "idvd_deplete_time": 0,
         "idvd_current_limit_a": 1e-3, "idvd_current_limit_b": 1e-3, 
         "idvd_nplc_a": 1.0, "idvd_nplc_b": 1.0,
-        "idvd_num_points": 51, "idvd_wait_time": 30, 
+        "idvd_num_points": 51, "idvd_wait_time": 0, 
         
-        # Mode-Specific Defaults
+        # Steady-state sweep
         "idvd_source_to_measure_delay": 0.01,
+        # pulsed Id-Vd
         "idvd_base_vd": 0.0, 
         "idvd_base_vg": 0.0, 
-        "idvd_pulse_width": 0.005, 
-        "idvd_rest_time": 0.1,
-        "idvd_fixed_range_a": 1e-5,
-        "idvd_fixed_range_b": 1e-6
+        "idvd_pulse_width": 0.001, 
+        "idvd_rest_time": 0.3,
+        "idvd_current_range_a": 1e-6,
+        "idvd_current_range_b": 1e-6
     }
 
     for k, v in default_cfg.items():
@@ -37,7 +37,7 @@ def render_idvd_tab():
     if "idvd_laser_wavelength" not in st.session_state: st.session_state["idvd_laser_wavelength"] = 660
     if "idvd_laser_power" not in st.session_state: st.session_state["idvd_laser_power"] = 100.0
 
-    st.subheader("📂 Load Existing Configuration")
+    st.subheader("📂 Load Existing Configuration (Optional)")
     if "idvd_uploader_key" not in st.session_state: st.session_state["idvd_uploader_key"] = 0
 
     uploaded_idvd = st.file_uploader(
@@ -78,10 +78,10 @@ def render_idvd_tab():
 
     st.subheader("📝 General & Keithley")
     col1, col2, col3, col4 = st.columns(4)
-    col1.text_input("Description", key="idvd_description")
+    col1.text_input("Description", key="idvd_description", help="Take notes here")
     col2.text_input("Device Number", key="idvd_device_number")
-    col3.text_input("Run Number", key="idvd_run_number")
-    col4.text_input("Label (e.g., dark)", key="idvd_label")
+    col3.text_input("Run Number", key="idvd_run_number", help="Change this to prevent overwriting files")
+    col4.text_input("Label (e.g., dark)", key="idvd_label", help="label that will show on the graph")
 
     col5, col6, col7 = st.columns(3)
     with col5:
@@ -92,7 +92,10 @@ def render_idvd_tab():
         st.number_input("NPLC B", step=0.1, key="idvd_nplc_b")
     with col7:
         if mode == "Pulsed Sweep":
-            st.number_input("Fixed Range A (Max I_ON)", format="%.1e", step=1e-6, key="idvd_fixed_range_a", help="Required to prevent autorange delays.")
+            st.number_input("Current Range A", value=st.session_state.get("idvd_current_range_a", 1e-6), format="%.1e", step=1e-6, key="idvd_current_range_a", help="Measured current range, modify it lower to detect lower current, if measured value > range, then it is clamped at range")
+            st.number_input("Current Range B", value=st.session_state.get("idvd_current_range_b", 1e-6), format="%.1e", step=1e-6, key="idvd_current_range_b", help="Measured current range, modify it lower to detect lower current, if measured value > range, then it is clamped at range")
+        else:
+            st.text("Auto Range Mode")
 
     st.divider()
 
@@ -104,24 +107,25 @@ def render_idvd_tab():
     col3.number_input("Vd Stop (V)", step=0.1, key="idvd_vd_stop")
     col4.number_input("Number of Points", step=1, key="idvd_num_points")
 
-    col5, col6, col7, col8 = st.columns(4)
-    col5.number_input("Pre-Sweep Wait (s)", step=1, key="idvd_wait_time")
+    col_list = st.columns(4)
+    col_list[0].number_input("Pre-Sweep Wait (s)", step=1, key="idvd_wait_time")
     
     if mode == "Steady-State Sweep":
-        col6.number_input("Source-Measure Delay (s)", step=0.01, format="%f", key="idvd_source_to_measure_delay")
-    elif mode == "Pulsed Sweep":
-        col6.number_input("Base Vd (Resting) (V)", step=0.1, key="idvd_base_vd")
-        col7.number_input("Base Vg (Resting) (V)", step=0.1, key="idvd_base_vg")
-        col8.number_input("Pulse Width (s)", step=0.001, format="%f", key="idvd_pulse_width")
-        
+        col_list[1].number_input("Source-Measure Delay (s)", step=0.01, format="%f", key="idvd_source_to_measure_delay")
     if mode == "Pulsed Sweep":
-        col_r1, col_r2 = st.columns(2)
-        col_r1.number_input("Rest Time (s)", step=0.01, format="%f", key="idvd_rest_time")
+        st.divider()
+        st.subheader("⚡ Pulse Settings")
 
-    st.write("---")
-    col9, col10 = st.columns(2)
-    col9.number_input("Deplete Gate Voltage (V)", step=0.1, key="idvd_deplete_voltage")
-    col10.number_input("Deplete Time (s)", step=1, key="idvd_deplete_time")
+        col_p1, col_p2, col_p3, col_p4 = st.columns(4)
+        col_p1.number_input("Base Vd (Resting) (V)", value=st.session_state.get("idvg_base_vd", 0.0), step=0.1, key="idvd_base_vd")
+        col_p2.number_input("Base Vg (Resting) (V)", value=st.session_state.get("idvg_base_vg", 0.0), step=0.1, key="idvd_base_vg")
+        col_p3.number_input("Pulse Width (s)", value=st.session_state.get("idvd_pulse_width", 0.001), step=0.001, format="%f", key="idvd_pulse_width")
+        col_p4.number_input("Rest Time (s)", value=st.session_state.get("idvd_rest_time", 0.3), step=0.01, format="%f", key="idvd_rest_time")
+
+    # st.write("---")
+    # col9, col10 = st.columns(2)
+    # col9.number_input("Deplete Gate Voltage (V)", step=0.1, key="idvd_deplete_voltage")
+    # col10.number_input("Deplete Time (s)", step=1, key="idvd_deplete_time")
 
     st.divider()
 
@@ -141,7 +145,7 @@ def render_idvd_tab():
     # ACTIONS & BATCH QUEUE
     # ==========================================
     st.subheader("📋 Queue Preview & Management")
-    
+
     if mode == "Steady-State Sweep":
         queue_dir = Path("config/idvd_queue")
         target_script = "run_idvd.py"
@@ -226,8 +230,8 @@ def render_idvd_tab():
                     config_dict_idvd["base_vg"] = st.session_state["idvd_base_vg"]
                     config_dict_idvd["pulse_width"] = st.session_state["idvd_pulse_width"]
                     config_dict_idvd["rest_time"] = st.session_state["idvd_rest_time"]
-                    config_dict_idvd["fixed_range_a"] = st.session_state["idvd_fixed_range_a"]
-                    config_dict_idvd["fixed_range_b"] = st.session_state["idvd_fixed_range_b"]
+                    config_dict_idvd["current_range_a"] = st.session_state["idvd_current_range_a"]
+                    config_dict_idvd["current_range_b"] = st.session_state["idvd_current_range_b"]
                 
                 next_idx = len(queued_files) + 1
                 safe_name = custom_name.replace(" ", "_")
