@@ -148,7 +148,7 @@ if __name__ == "__main__":
     RESOURCE_ID = "USB0::0x05E6::0x2636::4407529::INSTR"
     LIGHT_IP = "10.0.0.2" 
     
-    queue_dir = Path("config/idvd_queue")
+    queue_dir = Path("config/idvd_pulse_queue")
     if not queue_dir.exists():
         print(f"Queue directory {queue_dir} not found!")
         sys.exit()

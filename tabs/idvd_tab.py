@@ -141,7 +141,14 @@ def render_idvd_tab():
     # ACTIONS & BATCH QUEUE
     # ==========================================
     st.subheader("📋 Queue Preview & Management")
-    queue_dir = Path("config/idvd_queue")
+    
+    if mode == "Steady-State Sweep":
+        queue_dir = Path("config/idvd_queue")
+        target_script = "run_idvd.py"
+    else:
+        queue_dir = Path("config/idvd_pulse_queue")
+        target_script = "run_idvd_pulse.py"
+
     queue_dir.mkdir(exist_ok=True, parents=True)
     queued_files = sorted(list(queue_dir.glob("*.json")))
 
@@ -240,21 +247,18 @@ def render_idvd_tab():
 
     with col_btn2:
         st.markdown("**2. Run Queue**")
-        default_script_index = 0 if mode == "Steady-State Sweep" else 1
-
-        script_to_run = st.selectbox(
-            "Select Script", 
-            ("idvd.py", "idvd_pulse.py"), 
-            index=default_script_index,
-            label_visibility="collapsed"
-        )
         
-        dynamic_run_key = f"idvd_run_btn_{mode.replace(' ', '_')}"
-        if st.button("▶ Run Script in Terminal", type="secondary", use_container_width=True, key=dynamic_run_key):
+        # Display which script is cued up to run (for clarity)
+        st.info(f"Target Script: `{target_script}`")
+        
+        dynamic_run_key = f"idvd_run_{mode.replace(' ', '_')}"
+        
+        # Changed button type to "primary" since it's the main action
+        if st.button("▶ Run Script in Terminal", type="primary", use_container_width=True, key=dynamic_run_key):
             if not queued_files:
-                st.error("The queue is empty! Add a configuration first.")
+                st.error(f"The {mode} queue is empty! Add a configuration first.")
             else:
-                success, msg = launch_in_terminal(script_to_run)
+                success, msg = launch_in_terminal(target_script)
                 if success: st.success(msg)
                 else: st.error(msg)
             

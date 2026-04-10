@@ -237,7 +237,7 @@ if __name__ == "__main__":
     LASER_IP = "10.0.0.2"
 
     # 1. READ QUEUE
-    queue_dir = Path("config/timedep_queue")
+    queue_dir = Path("config/time_pulse_queue")
     if not queue_dir.exists():
         print(f"Queue directory {queue_dir} not found!")
         sys.exit()

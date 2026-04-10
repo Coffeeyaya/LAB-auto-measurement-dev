@@ -9,16 +9,16 @@ def render_time_dependent_tab():
 
     # 1. Initialize default values
     default_cfg = {
-        "description": "Standard Time-Dep", "device_number": "1-1", "run_number": "1", "wait_time": 0,
-        "current_limit_a": 0.001, "current_limit_b": 0.001, "current_range_a": 1e-05, "current_range_b": 1e-05,
+        "description": "Time-Dep", "device_number": "1-1", "run_number": "1", "wait_time": 0,
+        "current_limit_a": 0.001, "current_limit_b": 0.001, "current_range_a": 1e-06, "current_range_b": 1e-06,
         "nplc_a": 1.0, "nplc_b": 1.0, 
         "vd_const": 1.0, "vg_const": 0.0,
         "vg_on": 1.0, "vg_off": 0.0,
-        "duration_1": 5.0, "duration_2": 1.0, "duration_3": 2.0, "duration_4": 2.0,
+        "duration_1": 1.0, "duration_2": 1.0, "duration_3": 2.0, "duration_4": 2.0,
         "cycle_number": 3, "on_off_number": 1, "servo_time_on": 1.0, "servo_time_off": 1.0,
         
         # Pulse-specific parameters
-        "base_vg": 0.0, "pulse_width": 0.005, "rest_time": 0.1, "fixed_range_a": 1e-5,
+        "base_vg": 0.0, "pulse_width": 0.001, "rest_time": 0.3, "fixed_range_a": 1e-6,
         
         # The Two-Tiered UI states
         "hardware_mode": "Dark Current", 
@@ -110,7 +110,10 @@ def render_time_dependent_tab():
     with col4:
         if electric == "Pulsed Vg Train":
             # Removed 'value='
-            st.number_input("Fixed Range A (Max I_ON)", format="%.1e", step=1e-6, key="fixed_range_a", help="Required to prevent autorange delays during fast pulses.")
+            st.number_input("Fixed Range A (Max I_ON)", 
+                            value=st.session_state.get("fixed_range_a", 1e-6),
+                            format="%.1e", step=1e-6, key="fixed_range_a", 
+                            help="Required to prevent autorange delays during fast pulses.")
 
     st.divider()
 
@@ -121,7 +124,8 @@ def render_time_dependent_tab():
     col3.number_input("Vg OFF (Target) (V)", step=0.1, key="vg_off")
     if electric == "Pulsed Vg Train":
         # Removed 'value='
-        col4.number_input("Base Vg (Resting) (V)", step=0.1, key="base_vg")
+        col4.number_input("Base Vg (Resting) (V)", 
+                          value=st.session_state.get("base_vg", 0.0), step=0.1, key="base_vg")
 
     st.divider()
 
@@ -140,8 +144,11 @@ def render_time_dependent_tab():
     if electric == "Pulsed Vg Train":
         col1, col2 = st.columns(2)
         # Removed 'value='
-        col1.number_input("Pulse Width (s)", step=0.001, format="%f", key="pulse_width")
-        col2.number_input("Rest Time between pulses (s)", step=0.01, format="%f", key="rest_time")
+        col1.number_input("Pulse Width (s)", 
+                          value=st.session_state.get("pulse_width", 0.001), step=0.001, format="%f", key="pulse_width")
+        col2.number_input("Rest Time between pulses (s)", 
+                          value=st.session_state.get("rest_time", 0.3), step=0.01, format="%f", key="rest_time")
+        
         st.write("---")
 
     # Smart Labelling based on Electrical Mode
@@ -173,9 +180,12 @@ def render_time_dependent_tab():
         
         col5, col6, col7 = st.columns(3)
         col5.number_input("Cycle Number", min_value=1, step=1, key="cycle_number")
-        col6.number_input("Servo Swings (On/Off #)", min_value=1, step=1, key="on_off_number")
-        col7.number_input("Servo open Time (s)", step=0.5, key="servo_time_on")
-        col7.number_input("Servo close Time (s)", step=0.5, key="servo_time_off")
+        col6.number_input("Servo Swings (On/Off #)", 
+                          value=st.session_state.get("on_off_number", 3), min_value=1, step=1, key="on_off_number")
+        col7.number_input("Servo open Time (s)", 
+                          value=st.session_state.get("servo_time_on", 1), step=0.5, key="servo_time_on")
+        col7.number_input("Servo close Time (s)", 
+                          value=st.session_state.get("servo_time_off", 1), step=0.5, key="servo_time_off")
 
     st.divider()
 
@@ -183,7 +193,14 @@ def render_time_dependent_tab():
     # ACTIONS & BATCH QUEUE
     # ==========================================
     st.subheader("📋 Queue Preview & Management")
-    queue_dir = Path("config/timedep_queue") # or idvg_queue
+
+    if electric == "Continuous DC Vg":
+        queue_dir = Path("config/time_queue")
+        target_script = "run_time.py"
+    else:
+        queue_dir = Path("config/time_pulse_queue")
+        target_script = "run_time_pulse.py"
+        
     queue_dir.mkdir(exist_ok=True, parents=True)
     queued_files = sorted(list(queue_dir.glob("*.json")))
 
@@ -292,28 +309,17 @@ def render_time_dependent_tab():
     with col_btn2:
         st.markdown("**2. Run Queue**")
         
-        default_script = 0 
-        if electric == "Continuous DC Vg":
-            default_script = 0
-        elif electric == "Pulsed Vg Train":
-            default_script = 1
-
-        script_to_run = st.selectbox(
-            "Select Measurement Script", 
-            (
-                "time_dep.py",    # 0: Continuous DC Vg
-                "time_dep_pulse.py"  # 1: Pulsed
-            ), 
-            index=default_script,
-            label_visibility="collapsed"
-        )
+        # Display which script is cued up to run (for clarity)
+        st.info(f"Target Script: `{target_script}`")
         
         dynamic_run_key = f"td_run_{hardware.replace(' ', '_')}_{electric.replace(' ', '_')}"
-        if st.button("▶ Run Script in Terminal", type="secondary", use_container_width=True, key=dynamic_run_key):
+        
+        # Changed button type to "primary" since it's the main action
+        if st.button("▶ Run Script in Terminal", type="primary", use_container_width=True, key=dynamic_run_key):
             if not queued_files:
-                st.error("The queue is empty! Add a configuration first.")
+                st.error(f"The {electric} queue is empty! Add a configuration first.")
             else:
-                success, msg = launch_in_terminal(script_to_run)
+                success, msg = launch_in_terminal(target_script)
                 if success: st.success(msg)
                 else: st.error(msg)
 
