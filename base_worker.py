@@ -30,14 +30,26 @@ class TimeDepData:
 # ==========================================
 # UTILITY FUNCTIONS
 # ==========================================
+# def get_pp_exact(df, wavelength, power_nw):
+#     if df is None: return None
+#     try:
+#         return float(df.loc[int(wavelength), str(power_nw)])
+#     except KeyError:
+#         print(f"Warning: Cannot convert {power_nw}nW to PP for {wavelength}nm.")
+#         return None
+
 def get_pp_exact(df, wavelength, power_nw):
     if df is None: return None
     try:
-        return float(df.loc[int(wavelength), str(power_nw)])
+        # 1. Force it to a float to handle strings like "100.0"
+        # 2. Force it to an int to drop the decimal (100)
+        # 3. Force it to a string to match the CSV column ("100")
+        col_name = str(int(float(power_nw)))
+        
+        return float(df.loc[int(wavelength), col_name])
     except KeyError:
         print(f"Warning: Cannot convert {power_nw}nW to PP for {wavelength}nm.")
         return None
-
 # ==========================================
 # BASE WORKER CLASS
 # ==========================================
