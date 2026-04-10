@@ -135,10 +135,10 @@ def render_idvg_tab():
 
     st.subheader("📋 Queue Preview & Management")
     if mode == "Steady-State Sweep":
-        queue_dir = Path("config/idvd_queue")
+        queue_dir = Path("config/idvg_queue")
         target_script = "run_idvd.py"
     else:
-        queue_dir = Path("config/idvd_pulse_queue")
+        queue_dir = Path("config/idvg_pulse_queue")
         target_script = "run_idvd_pulse.py"
 
     queue_dir.mkdir(exist_ok=True, parents=True)
