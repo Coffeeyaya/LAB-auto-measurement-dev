@@ -31,7 +31,7 @@ def render_idvg_tab():
     if "idvg_laser_enable" not in st.session_state: st.session_state["idvg_laser_enable"] = False
     if "idvg_laser_channel" not in st.session_state: st.session_state["idvg_laser_channel"] = 6
     if "idvg_laser_wavelength" not in st.session_state: st.session_state["idvg_laser_wavelength"] = 660
-    if "idvg_laser_power" not in st.session_state: st.session_state["idvg_laser_power"] = 100.0
+    if "idvg_laser_power" not in st.session_state: st.session_state["idvg_laser_power"] = 100 ### can't be float
 
     st.subheader("📂 Load Existing Configuration (Optional)")
     if "idvg_uploader_key" not in st.session_state: st.session_state["idvg_uploader_key"] = 0
@@ -49,7 +49,7 @@ def render_idvg_tab():
                         st.session_state["idvg_laser_enable"] = True
                         st.session_state["idvg_laser_channel"] = v.get("channel", 6)
                         st.session_state["idvg_laser_wavelength"] = v.get("wavelength", 660)
-                        st.session_state["idvg_laser_power"] = float(v.get("power", 100.0))
+                        st.session_state["idvg_laser_power"] = float(v.get("power", 100))
                 else:
                     st.session_state[f"idvg_{k}"] = v
             st.session_state["idvg_uploader_key"] += 1
@@ -128,7 +128,7 @@ def render_idvg_tab():
     col_l1, col_l2, col_l3, col_l4 = st.columns(4)
     col_l1.number_input("Channel", step=1, key="idvg_laser_channel", disabled=is_disabled)
     col_l2.number_input("Wavelength (nm)", step=1, key="idvg_laser_wavelength", disabled=is_disabled)
-    col_l3.number_input("Power (nW)", step=1.0, key="idvg_laser_power", disabled=is_disabled)
+    col_l3.number_input("Power (nW)", step=1, key="idvg_laser_power", disabled=is_disabled) ### can't be float
     col_l4.number_input("Laser Stable Time (s)", step=1, key="idvg_laser_stable_time", disabled=is_disabled)
 
     st.divider()
