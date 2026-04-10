@@ -55,7 +55,8 @@ class UniversalPulseWorker(QThread):
         self.k.clean_instrument()
         self.k.config()
 
-        pt_path = Path("calibration") / "pp_df.csv"
+    def _get_power_table(self):
+        pt_path = Path("calibration") / "pp_df.csv" # power table path
         if pt_path.exists():
             self.power_table = pd.read_csv(pt_path, index_col=0)
         else:
@@ -68,8 +69,8 @@ class UniversalPulseWorker(QThread):
         device = params.get('device_number', '0')
         run_num = params.get('run_number', 1)
         
-        filename = output_dir / f"time_universal_{device}_{run_num}.csv"
-        config_backup = output_dir / f"time_universal_{device}_{run_num}_config.json"
+        filename = output_dir / f"time_{device}_{run_num}.csv"
+        config_backup = output_dir / f"time_{device}_{run_num}_config.json"
         
         if filename.exists() or config_backup.exists():
             raise FileExistsError(f"{filename.name} already exists. Aborting to prevent overwrite!")
@@ -242,6 +243,7 @@ class UniversalPulseWorker(QThread):
     def run(self):
         try:
             self._init_hardware()
+            self._get_power_table()
 
             for config_idx, config_file in enumerate(self.config_files):
                 if not self.running: break
@@ -281,16 +283,6 @@ class UniversalPulseWorker(QThread):
             
         finally:
             self._shutdown_hardware()
-            
-            # Clear Queue Files on success
-            if "FILE EXISTS ERROR" not in getattr(self, 'status_label_text', ""): 
-                self.status_update.emit("Clearing Queue Files...")
-                for config_file in self.config_files:
-                    try:
-                        config_file.unlink() 
-                    except Exception as e:
-                        print(f"Could not delete {config_file}: {e}")
-
             self.sequence_finished.emit()
 
     def stop(self):
