@@ -57,7 +57,7 @@ class BaseMeasurementWindow(QWidget):
     
 class TimeDepWindow(BaseMeasurementWindow):
     def __init__(self, worker):
-        super().__init__(worker, window_title="Pulsed Time-Dependent Measurement")
+        super().__init__(worker, window_title="Time-Dependent Measurement")
         
         self.lines_id = {}
         self.lines_ig = {}

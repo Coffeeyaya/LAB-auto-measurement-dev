@@ -38,18 +38,7 @@ class TimeDepData:
 #         print(f"Warning: Cannot convert {power_nw}nW to PP for {wavelength}nm.")
 #         return None
 
-def get_pp_exact(df, wavelength, power_nw):
-    if df is None: return None
-    try:
-        # 1. Force it to a float to handle strings like "100.0"
-        # 2. Force it to an int to drop the decimal (100)
-        # 3. Force it to a string to match the CSV column ("100")
-        col_name = str(int(float(power_nw)))
-        
-        return float(df.loc[int(wavelength), col_name])
-    except KeyError:
-        print(f"Warning: Cannot convert {power_nw}nW to PP for {wavelength}nm.")
-        return None
+
 # ==========================================
 # BASE WORKER CLASS
 # ==========================================
@@ -85,6 +74,20 @@ class BaseMeasurementWorker(QThread):
         pt_path = Path("calibration") / "pp_df.csv"
         if pt_path.exists():
             self.power_table = pd.read_csv(pt_path, index_col=0)
+
+    def get_pp_exact(self, wavelength, power_nw):
+        df = self.power_table
+        if df is None: return None
+        try:
+            # 1. Force it to a float to handle strings like "100.0"
+            # 2. Force it to an int to drop the decimal (100)
+            # 3. Force it to a string to match the CSV column ("100")
+            col_name = str(int(float(power_nw)))
+            
+            return float(df.loc[int(wavelength), col_name])
+        except KeyError:
+            print(f"Warning: Cannot convert {power_nw}nW to PP for {wavelength}nm.")
+            return None
 
     def _setup_files(self, params, prefix):
         output_dir = Path("data")
@@ -143,7 +146,7 @@ class BaseMeasurementWorker(QThread):
     def _setup_laser_steady(self, params):
         if params.get("laser_settings") and self.laser:
             ls = params["laser_settings"]
-            pp = get_pp_exact(self.power_table, ls['wavelength'], ls['power'])
+            pp = self.get_pp_exact(ls['wavelength'], ls['power'])
             
             self.current_channel = ls['channel']
             self.status_update.emit("Configuring Laser")

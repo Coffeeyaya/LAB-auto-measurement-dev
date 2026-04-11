@@ -12,17 +12,6 @@ from base_worker import BaseMeasurementWorker, TimeDepData
 from base_gui import TimeDepWindow
 
 # ==========================================
-# HELPER
-# ==========================================
-def get_pp_exact(power_table, wavelength, power_nw):
-    if power_table is None: return None
-    try:
-        return float(power_table.loc[int(wavelength), str(power_nw)])
-    except KeyError:
-        print(f"Warning: Cannot convert {power_nw}nW to PP for {wavelength}nm.")
-        return None
-
-# ==========================================
 # THE UNIVERSAL WORKER THREAD (PULSED)
 # ==========================================
 class TimeDepWorker(BaseMeasurementWorker):
@@ -65,7 +54,7 @@ class TimeDepWorker(BaseMeasurementWorker):
 
         ch_idx = channels[0]
         # wavelength = wavelengths[0]
-        pp = get_pp_exact(self.power_table, wavelengths[0], powers[0])
+        pp = self.get_pp_exact(wavelengths[0], powers[0])
 
         # Optical setup
         sequence = [
@@ -192,7 +181,7 @@ class TimeDepWorker(BaseMeasurementWorker):
                     time.sleep(1)
 
                 try:
-                    filename = self._setup_files(params, prefix="time_pulse")
+                    filename = self._setup_files(params, prefix="time_steady")
                 except FileExistsError as e:
                     self.status_label_text = f"FILE EXISTS ERROR: {e}"
                     self.status_update.emit(self.status_label_text)
