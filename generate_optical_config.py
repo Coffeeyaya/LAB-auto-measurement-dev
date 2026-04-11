@@ -88,7 +88,7 @@ if __name__ == "__main__":
                 power=pwr, 
                 cycle_number=5, 
                 servo_time_on=1.0,
-                servo_time_off=3.0
+                servo_time_off=5.0
             )
             counter += 1
         
