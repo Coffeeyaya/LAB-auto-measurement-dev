@@ -2,7 +2,7 @@
     "hardware_mode": "Laser + Servo",
     "electrical_mode": "Pulsed Vg Train",
     "description": "Time-Dep",
-    "device_number": "6-7",
+    "device_number": "7-6",
     "run_number": 2,
     "wait_time": 5,
     "current_limit_a": 0.001,
