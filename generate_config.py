@@ -127,7 +127,7 @@ if __name__ == "__main__":
         generate_from_base(
             base_dict=base_config, 
             output_dir="config/time_pulse_queue",
-            run_number=i + 1,
+            run_number=i + 7,
             # Use our custom keyword to trigger the interceptor!
-            power_arr=pwr, 
+            power_arr=[pwr], 
         )
