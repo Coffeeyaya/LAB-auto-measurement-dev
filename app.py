@@ -5,6 +5,7 @@ from tabs.idvg_tab import render_idvg_tab
 from tabs.idvd_tab import render_idvd_tab
 from tabs.power_tab import render_power_tab
 from tabs.plotter_tab import render_plotter_tab
+from tabs.batch_tab import render_batch_generator_tab
 from tabs.encoder import render_encoder_tab
 from tabs.pulse_tab import render_vg_pulse_tab
 from tabs.build_block_tab import render_custom_sequence_tab
@@ -28,13 +29,14 @@ atexit.register(cleanup_temp_files)
 st.set_page_config(page_title="Lab Auto", layout="wide")
 st.title("Lab Automation")
 
-tab_servo, tab_time_dep, tab_idvg, tab_idvd, tab_power, tab_plot, tab_encoder, tab_vg_pulse, tab_block = st.tabs([
+tab_servo, tab_time_dep, tab_idvg, tab_idvd, tab_power, tab_plot, tab_batch_generator, tab_encoder, tab_vg_pulse, tab_block = st.tabs([
     "Servo motor control", 
     "⚡ Time-Dependent", 
     "📈 Id-Vg Sweep",
     "📈 Id-Vd Sweep",
     "🔦 Power Calibration", 
     "📊 Data Plotter",
+    "Batch Generator",
     "📡 Optical Encoder",
     "VG pulse",
     "Build block"
@@ -57,6 +59,9 @@ with tab_power:
 
 with tab_plot:
     render_plotter_tab()
+
+with tab_batch_generator:
+    render_batch_generator_tab()
 
 # with tab_encoder:
 #     render_encoder_tab()
