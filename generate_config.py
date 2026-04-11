@@ -114,7 +114,7 @@ if __name__ == "__main__":
     #         vg_on=vg, 
     #     )
     # time  
-    BASE_TEMPLATE_PATH = "/Users/tsaiyunchen/Desktop/lab/master/measurement_dev/measure/config/base_file/07_LaserServo_PulsedVgTrain_.json"
+    BASE_TEMPLATE_PATH = "/Users/tsaiyunchen/Desktop/lab/master/measurement_dev/measure/config/time_pulse_queue/12_LaserServo_PulsedVgTrain_.json"
     try:
         with open(BASE_TEMPLATE_PATH, 'r') as f:
             base_config = json.load(f)
