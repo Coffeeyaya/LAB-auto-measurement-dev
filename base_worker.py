@@ -181,11 +181,11 @@ class BaseMeasurementWorker(QThread):
     def _cleanup_queue(self):
         if "FILE EXISTS ERROR" not in self.status_label_text: 
             self.status_update.emit("Clearing Queue Files...")
-            for config_file in self.config_files:
-                try:
-                    config_file.unlink() 
-                except Exception as e:
-                    print(f"Could not delete {config_file}: {e}")
+            # for config_file in self.config_files:
+            #     try:
+            #         config_file.unlink() 
+            #     except Exception as e:
+            #         print(f"Could not delete {config_file}: {e}")
 
     def stop(self):
         self.running = False
