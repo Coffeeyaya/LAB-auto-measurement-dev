@@ -3,7 +3,7 @@
     "electrical_mode": "Pulsed Vg Train",
     "description": "Time-Dep",
     "device_number": "7-6",
-    "run_number": 1,
+    "run_number": 5,
     "wait_time": 5,
     "current_limit_a": 0.001,
     "current_limit_b": 0.001,
@@ -26,9 +26,7 @@
     "channel_arr": [
         6
     ],
-    "power_arr": [
-        25
-    ],
+    "power_arr": 200,
     "on_off_number": 1,
     "servo_time_on": 1.0,
     "servo_time_off": 9.0

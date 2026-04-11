@@ -56,29 +56,35 @@ def generate_from_base(base_dict, output_dir="config/time_pulse_queue", **kwargs
 # ==========================================
 if __name__ == "__main__":
     
-    # 1. Load your base template
-    BASE_TEMPLATE_PATH = "config/base_file/02_pulse_.json"
-    
+    # BASE_TEMPLATE_PATH = "config/base_file/02_pulse_.json"
+    BASE_TEMPLATE_PATH = "/Users/tsaiyunchen/Desktop/lab/master/measurement_dev/measure/config/base_file/01_LaserServo_PulsedVgTrain_.json"
+
     try:
         with open(BASE_TEMPLATE_PATH, 'r') as f:
             base_config = json.load(f)
     except FileNotFoundError:
         print(f"❌ Could not find {BASE_TEMPLATE_PATH}.")
         exit()
-
-    # ---------------------------------------------------------
-    # Example: Sweeping the nested Laser Power!
-    # ---------------------------------------------------------
-    print("\n--- Generating Laser Power Sweep ---")
     
-    # Let's sweep the power from 10nW up to 100nW
+    # power_test_points = [25, 50, 100, 200, 400]
+    
+    # for i,pwr in enumerate(power_test_points):
+    #     generate_from_base(
+    #         base_dict=base_config, 
+    #         output_dir="config/idvg_pulse_queue",
+    #         run_number=i + 2,
+    #         # Use our custom keyword to trigger the interceptor!
+    #         laser_power=pwr, 
+    #     )
+
+    
     power_test_points = [25, 50, 100, 200, 400]
     
     for i,pwr in enumerate(power_test_points):
         generate_from_base(
             base_dict=base_config, 
-            output_dir="config/idvg_pulse_queue",
+            output_dir="config/time_pulse_queue",
             run_number=i + 2,
             # Use our custom keyword to trigger the interceptor!
-            laser_power=pwr, 
+            power_arr=pwr, 
         )

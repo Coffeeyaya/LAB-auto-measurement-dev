@@ -26,9 +26,7 @@
     "channel_arr": [
         6
     ],
-    "power_arr": [
-        200
-    ],
+    "power_arr": 100,
     "on_off_number": 1,
     "servo_time_on": 1.0,
     "servo_time_off": 9.0
