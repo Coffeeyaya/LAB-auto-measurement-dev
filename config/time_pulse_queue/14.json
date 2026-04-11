@@ -1,9 +1,9 @@
 {
-    "hardware_mode": "Dark Current",
+    "hardware_mode": "Laser + Servo",
     "electrical_mode": "Pulsed Vg Train",
     "description": "Time-Dep",
     "device_number": "7-6",
-    "run_number": "1",
+    "run_number": 25,
     "wait_time": 5,
     "current_limit_a": 0.001,
     "current_limit_b": 0.001,
@@ -12,12 +12,24 @@
     "nplc_a": 1.0,
     "nplc_b": 1.0,
     "vd_const": 1.0,
-    "vg_on": 0.0,
+    "vg_on": 0.6,
     "vg_off": 0.0,
     "cycle_number": 5,
     "duration_1": 2.0,
     "duration_2": 2.0,
     "base_vg": 0.0,
     "pulse_width": 0.001,
-    "rest_time": 0.3
+    "rest_time": 0.3,
+    "wavelength_arr": [
+        660
+    ],
+    "channel_arr": [
+        6
+    ],
+    "power_arr": [
+        200
+    ],
+    "on_off_number": 1,
+    "servo_time_on": 1.0,
+    "servo_time_off": 9.0
 }

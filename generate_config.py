@@ -122,12 +122,16 @@ if __name__ == "__main__":
         print(f"❌ Could not find {BASE_TEMPLATE_PATH}.")
         exit()  
     power_test_points = [25, 50, 100, 200, 400]
-    
-    for i,pwr in enumerate(power_test_points):
-        generate_from_base(
-            base_dict=base_config, 
-            output_dir="config/time_pulse_queue",
-            run_number=i + 7,
-            # Use our custom keyword to trigger the interceptor!
-            power_arr=[pwr], 
-        )
+    vg_test_points = [0.2, 0.4, 0.6, 0.8, 1.0]
+    count = 12
+    for i, vg in enumerate(vg_test_points):
+        for j,pwr in enumerate(power_test_points):
+            generate_from_base(
+                base_dict=base_config, 
+                output_dir="config/time_pulse_queue",
+                run_number=count,
+                # Use our custom keyword to trigger the interceptor!
+                power_arr=[pwr], 
+                vg_on=vg
+            )
+            count += 1
