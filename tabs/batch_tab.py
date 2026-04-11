@@ -41,8 +41,7 @@ def generate_batch_files(base_dict, target_dir, param_key, param_values, run_num
         if "time_label" in new_config: new_config["time_label"] = new_label
         if "label" in new_config: new_config["label"] = new_label
         
-        # Safe filename formatting (e.g. 1.5 -> 1p5)
-        # safe_val = str(val).replace(".", "p")
+        # Clean sequential filename
         filename = f"{start_idx + i:02d}.json"
         
         full_path = Path(target_dir) / filename
@@ -53,12 +52,25 @@ def generate_batch_files(base_dict, target_dir, param_key, param_values, run_num
         
     return generated_files
 
+
+# ==========================================
+# 2. STREAMLIT TAB UI
+# ==========================================
 def render_batch_generator_tab():
-    # ==========================================
-    # 2. STREAMLIT UI
-    # ==========================================
     st.title("🗄️ Batch Generator")
-    st.markdown("Easily generate a batch of configuration files by selecting a base template from your input folder.")
+    st.markdown("Easily generate a batch of configuration files by selecting a base template and an output queue.")
+
+    # --- FOLDER DISCOVERY LOGIC ---
+    config_base_path = Path("config")
+    config_base_path.mkdir(exist_ok=True)
+    
+    # Auto-create some default folders so the dropdowns are never completely empty
+    (config_base_path / "templates").mkdir(exist_ok=True)
+    (config_base_path / "time_pulse_queue").mkdir(exist_ok=True)
+    
+    # Grab all subdirectories inside config/
+    available_dirs = [d for d in config_base_path.iterdir() if d.is_dir()]
+    available_dirs.sort(key=lambda x: x.name) # Sort alphabetically for a clean UI
 
     col1, col2 = st.columns(2)
     base_config = None 
@@ -66,10 +78,13 @@ def render_batch_generator_tab():
     with col1:
         st.subheader("1. Input Directory (Source)")
         
-        # Let the user define the input folder (defaults to "input")
-        in_dir_str = st.text_input("Look for templates in:", value="config/input")
-        input_dir = Path(in_dir_str)
-        input_dir.mkdir(exist_ok=True) # Auto-create if it doesn't exist
+        # Selectbox automatically populated with folders inside /config
+        input_dir = st.selectbox(
+            "Look for templates in:", 
+            options=available_dirs, 
+            format_func=lambda x: x.name, 
+            key="input_dir_select"
+        )
         
         json_files = sorted(list(input_dir.glob("*.json")))
         
@@ -86,12 +101,18 @@ def render_batch_generator_tab():
     with col2:
         st.subheader("2. Output Directory (Destination)")
         
-        # Let the user define the output folder (defaults to "output")
-        out_dir_str = st.text_input("Save batch files to:", value="config/output")
-        output_dir = Path(out_dir_str)
+        # Try to default the output dropdown to a different folder than the input dropdown
+        default_out_idx = 1 if len(available_dirs) > 1 else 0
         
+        # Selectbox automatically populated with folders inside /config
+        output_dir = st.selectbox(
+            "Save batch files to:", 
+            options=available_dirs, 
+            format_func=lambda x: x.name, 
+            index=default_out_idx,
+            key="output_dir_select"
+        )
         
-
     st.divider()
 
     # --- Sweep Generation UI ---
