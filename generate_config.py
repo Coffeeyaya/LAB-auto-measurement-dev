@@ -57,7 +57,8 @@ def generate_from_base(base_dict, output_dir="config/time_pulse_queue", **kwargs
 if __name__ == "__main__":
     
     # BASE_TEMPLATE_PATH = "config/base_file/02_pulse_.json"
-    BASE_TEMPLATE_PATH = "/Users/tsaiyunchen/Desktop/lab/master/measurement_dev/measure/config/base_file/01_LaserServo_PulsedVgTrain_.json"
+    BASE_TEMPLATE_PATH = "/Users/tsaiyunchen/Desktop/lab/master/measurement_dev/measure/config/base_file/02_pulse_sweep.json"
+    # BASE_TEMPLATE_PATH = "/Users/tsaiyunchen/Desktop/lab/master/measurement_dev/measure/config/base_file/01_LaserServo_PulsedVgTrain_.json"
 
     try:
         with open(BASE_TEMPLATE_PATH, 'r') as f:
@@ -66,25 +67,25 @@ if __name__ == "__main__":
         print(f"❌ Could not find {BASE_TEMPLATE_PATH}.")
         exit()
     
-    # power_test_points = [25, 50, 100, 200, 400]
-    
-    # for i,pwr in enumerate(power_test_points):
-    #     generate_from_base(
-    #         base_dict=base_config, 
-    #         output_dir="config/idvg_pulse_queue",
-    #         run_number=i + 2,
-    #         # Use our custom keyword to trigger the interceptor!
-    #         laser_power=pwr, 
-    #     )
-
-    
     power_test_points = [25, 50, 100, 200, 400]
     
     for i,pwr in enumerate(power_test_points):
         generate_from_base(
             base_dict=base_config, 
-            output_dir="config/time_pulse_queue",
+            output_dir="config/idvd_pulse_queue",
             run_number=i + 2,
             # Use our custom keyword to trigger the interceptor!
-            power_arr=pwr, 
+            laser_power=pwr, 
         )
+
+    
+    # power_test_points = [25, 50, 100, 200, 400]
+    
+    # for i,pwr in enumerate(power_test_points):
+    #     generate_from_base(
+    #         base_dict=base_config, 
+    #         output_dir="config/time_pulse_queue",
+    #         run_number=i + 2,
+    #         # Use our custom keyword to trigger the interceptor!
+    #         power_arr=pwr, 
+    #     )
