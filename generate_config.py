@@ -1,54 +1,40 @@
 import json
 import os
+import copy
 
-def generate_time_dep_config(device_number, vg_on, output_dir="config/time_pulse_queue", **kwargs):
+def generate_from_base(base_dict, output_dir="config/time_pulse_queue", **kwargs):
     """
-    Generates a JSON configuration file for Time-Dependent measurements.
+    Safely clones a base dictionary, updates parameters using kwargs, 
+    and saves it sequentially to the output directory.
     """
-    # 1. Ensure the output directory exists
+    # 1. PREVENT THE COPY ISSUE: Create an isolated clone of the base dictionary
+    config = copy.deepcopy(base_dict)
+    
+    # 2. Ensure the output directory exists
     os.makedirs(output_dir, exist_ok=True)
     
-    # 2. Define the baseline template (using your provided JSON)
-    config = {
-        "hardware_mode": "Dark Current",
-        "electrical_mode": "Pulsed Vg Train",
-        "description": "Time-Dep",
-        "device_number": str(device_number), # Ensured as string
-        "run_number": "1",
-        "wait_time": 0,
-        "current_limit_a": 0.001,
-        "current_limit_b": 0.001,
-        "current_range_a": 1e-07,
-        "current_range_b": 1e-07,
-        "nplc_a": 1.0,
-        "nplc_b": 1.0,
-        "vd_const": 1.0,
-        "vg_on": float(vg_on),               # Ensured as float
-        "vg_off": 0.0,
-        "cycle_number": 5,
-        "duration_1": 2.0,
-        "duration_2": 2.0,
-        "base_vg": 0.0,
-        "pulse_width": 0.001,
-        "rest_time": 0.3
-    }
-    
-    # 3. Overwrite any additional parameters passed via kwargs
+    # 3. Overwrite parameters with whatever you passed in the loop (e.g., vg_on=0.5)
     config.update(kwargs)
     
-    # 4. Create a clean, sequenced filename
-    # Count existing files to automatically increment the prefix index
+    # 4. Count existing files to automatically increment the prefix index
     existing_files = [f for f in os.listdir(output_dir) if f.endswith('.json')]
     next_idx = len(existing_files) + 1
     
-    # Example filename: 01_DarkCurrent_PulsedVgTrain_Dev1-1_Vg1.0V.json
-    hw_prefix = config["hardware_mode"].replace(" ", "")
-    elec_prefix = config["electrical_mode"].replace(" ", "")
-    filename = f"{next_idx:02d}_{hw_prefix}_{elec_prefix}_Dev{device_number}_Vg{vg_on}V.json"
+    # 5. Build a dynamic filename based on what was changed
+    hw_prefix = config.get("hardware_mode", "Device").replace(" ", "").replace("+", "")
+    elec_prefix = config.get("electrical_mode", "Mode").replace(" ", "")
+    device = config.get("device_number", "X")
     
+    # Create a suffix out of the kwargs you changed so the filename tells you exactly what is inside
+    # e.g., "vg_on-0.5_pulse_width-0.01"
+    changed_params_str = "_".join([f"{k}-{str(v).replace('.', 'p')}" for k, v in kwargs.items()])
+    if not changed_params_str:
+        changed_params_str = "base_copy"
+        
+    filename = f"{next_idx:02d}_{hw_prefix}_{elec_prefix}_Dev{device}_{changed_params_str}.json"
     full_path = os.path.join(output_dir, filename)
     
-    # 5. Save the dictionary as a formatted JSON file
+    # 6. Save the dictionary as a formatted JSON file
     with open(full_path, 'w') as f:
         json.dump(config, f, indent=4)
         
@@ -56,19 +42,49 @@ def generate_time_dep_config(device_number, vg_on, output_dir="config/time_pulse
     return full_path
 
 # ==========================================
-# USAGE EXAMPLES
+# USAGE EXAMPLES (YOUR CUSTOM FOR-LOOPS)
 # ==========================================
 if __name__ == "__main__":
     
-    # Example 1: Generate a single file
-    # generate_time_dep_config(device_number="6-7", vg_on=1.5)
+    # A. Define where your base template is located
+    BASE_TEMPLATE_PATH = "/Users/tsaiyunchen/Desktop/lab/master/measurement_dev/measure/config/base_file/01_LaserServo_PulsedVgTrain_.json"
     
-    # Example 2: Use kwargs to override other defaults (like run_number or cycle_number)
-    # generate_time_dep_config(device_number="1-2", vg_on=2.0, run_number="2", cycle_number=10)
+    # B. Load it ONCE before the loops start
+    try:
+        with open(BASE_TEMPLATE_PATH, 'r') as f:
+            base_config = json.load(f)
+    except FileNotFoundError:
+        print(f"❌ Could not find {BASE_TEMPLATE_PATH}. Please check the path.")
+        exit()
+
+    # ---------------------------------------------------------
+    # Example 1: A simple 1D sweep you write yourself
+    # ---------------------------------------------------------
+    print("\n--- Generating 1D Sweep ---")
+    # vg_test_points = [0.2, 0.4, 0.6, 0.8, 1.0]
+    powers = [25, 50, 100, 200, 400]
+    for idx, p in enumerate(powers):
+        # Notice we pass 'base_config', and then any parameters we want to change!
+        generate_from_base(
+            base_dict=base_config, 
+            output_dir="config/time_pulse_queue",
+            power_arr=[p], 
+            run_number=idx+1,
+        )
+
+    # ---------------------------------------------------------
+    # Example 2: A nested 2D loop you write yourself
+    # ---------------------------------------------------------
+    # print("\n--- Generating 2D Grid Sweep ---")
+    # voltages = [1.0, 2.0]
+    # pulse_widths = [0.001, 0.010]
     
-    # Example 3: Batch generate a sequence of Vg_ON voltages!
-    print("\n--- Generating Batch Sequence ---")
-    vg_test_points = [0.2, 0.4, 0.6, 0.8, 1.0]
-    
-    for idx, vg in enumerate(vg_test_points):
-        generate_time_dep_config(device_number="6-7", vg_on=vg, run_number=idx)
+    # for vg in voltages:
+    #     for pw in pulse_widths:
+    #         generate_from_base(
+    #             base_dict=base_config,
+    #             output_dir="config/time_pulse_queue",
+    #             vg_on=vg,
+    #             pulse_width=pw,
+    #             time_label=f"Vg={vg}V | PW={pw}s"
+    #         )
