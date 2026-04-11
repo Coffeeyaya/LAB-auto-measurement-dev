@@ -15,7 +15,7 @@ def generate_optical_config(device_number, vg_on, wavelength=660, power=100.0, o
         "description": "Time-Dep",
         "device_number": str(device_number),
         "run_number": "1",
-        "wait_time": 10,
+        "wait_time": 5,
         "current_limit_a": 0.001,
         "current_limit_b": 0.001,
         "current_range_a": 1e-07,
@@ -38,7 +38,7 @@ def generate_optical_config(device_number, vg_on, wavelength=660, power=100.0, o
         "power_arr": [float(power)],
         "on_off_number": 1,
         "servo_time_on": 1.0,
-        "servo_time_off": 3.0
+        "servo_time_off": 5.0
     }
     
     # 3. Overwrite any additional parameters passed via kwargs
