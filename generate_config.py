@@ -56,46 +56,65 @@ def generate_from_base(base_dict, output_dir="config/time_pulse_queue", **kwargs
 # ==========================================
 if __name__ == "__main__":
     # idvg
-    BASE_TEMPLATE_PATH = "config/base_file/02_pulse_.json"
-    try:
-        with open(BASE_TEMPLATE_PATH, 'r') as f:
-            base_config = json.load(f)
-    except FileNotFoundError:
-        print(f"❌ Could not find {BASE_TEMPLATE_PATH}.")
-        exit()
+    # BASE_TEMPLATE_PATH = ""
+    # try:
+    #     with open(BASE_TEMPLATE_PATH, 'r') as f:
+    #         base_config = json.load(f)
+    # except FileNotFoundError:
+    #     print(f"❌ Could not find {BASE_TEMPLATE_PATH}.")
+    #     exit()
 
-    power_test_points = [25, 50, 100, 200, 400]
+    # power_test_points = [25, 50, 100, 200, 400]
     
-    for i,pwr in enumerate(power_test_points):
-        generate_from_base(
-            base_dict=base_config, 
-            output_dir="config/idvg_pulse_queue",
-            run_number=i + 2,
-            # Use our custom keyword to trigger the interceptor!
-            laser_power=pwr, 
-        )
+    # for i,pwr in enumerate(power_test_points):
+    #     generate_from_base(
+    #         base_dict=base_config, 
+    #         output_dir="",
+    #         run_number=i + 2,
+    #         # Use our custom keyword to trigger the interceptor!
+    #         laser_power=pwr, 
+    #     )
 
-    # idvd
-    BASE_TEMPLATE_PATH = "config/base_file/02_pulse_.json"
-    try:
-        with open(BASE_TEMPLATE_PATH, 'r') as f:
-            base_config = json.load(f)
-    except FileNotFoundError:
-        print(f"❌ Could not find {BASE_TEMPLATE_PATH}.")
-        exit()
-    power_test_points = [25, 50, 100, 200, 400]
+    # # idvd
+    # BASE_TEMPLATE_PATH = ""
+    # try:
+    #     with open(BASE_TEMPLATE_PATH, 'r') as f:
+    #         base_config = json.load(f)
+    # except FileNotFoundError:
+    #     print(f"❌ Could not find {BASE_TEMPLATE_PATH}.")
+    #     exit()
+    # power_test_points = [25, 50, 100, 200, 400]
     
-    for i,pwr in enumerate(power_test_points):
-        generate_from_base(
-            base_dict=base_config, 
-            output_dir="config/idvd_pulse_queue",
-            run_number=i + 2,
-            # Use our custom keyword to trigger the interceptor!
-            laser_power=pwr, 
-        )
+    # for i,pwr in enumerate(power_test_points):
+    #     generate_from_base(
+    #         base_dict=base_config, 
+    #         output_dir="config/idvd_pulse_queue",
+    #         run_number=i + 2,
+    #         # Use our custom keyword to trigger the interceptor!
+    #         laser_power=pwr, 
+    #     )
 
+    
+    # time dark
+    # BASE_TEMPLATE_PATH = "/Users/tsaiyunchen/Desktop/lab/master/measurement_dev/measure/config/base_file/01_DarkCurrent_PulsedVgTrain_.json"
+    # try:
+    #     with open(BASE_TEMPLATE_PATH, 'r') as f:
+    #         base_config = json.load(f)
+    # except FileNotFoundError:
+    #     print(f"❌ Could not find {BASE_TEMPLATE_PATH}.")
+    #     exit()  
+    # vg_points = [0.2, 0.4, 0.6, 0.8, 1.0]
+    
+    # for i,vg in enumerate(vg_points):
+    #     generate_from_base(
+    #         base_dict=base_config, 
+    #         output_dir="config/time_pulse_queue",
+    #         run_number=i + 2,
+    #         # Use our custom keyword to trigger the interceptor!
+    #         vg_on=vg, 
+    #     )
     # time  
-    BASE_TEMPLATE_PATH = "config/base_file/02_pulse_.json"
+    BASE_TEMPLATE_PATH = "/Users/tsaiyunchen/Desktop/lab/master/measurement_dev/measure/config/base_file/07_LaserServo_PulsedVgTrain_.json"
     try:
         with open(BASE_TEMPLATE_PATH, 'r') as f:
             base_config = json.load(f)
@@ -108,7 +127,7 @@ if __name__ == "__main__":
         generate_from_base(
             base_dict=base_config, 
             output_dir="config/time_pulse_queue",
-            run_number=i + 2,
+            run_number=i + 1,
             # Use our custom keyword to trigger the interceptor!
             power_arr=pwr, 
         )
