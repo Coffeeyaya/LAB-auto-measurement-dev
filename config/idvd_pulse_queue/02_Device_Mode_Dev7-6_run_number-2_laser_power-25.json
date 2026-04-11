@@ -8,7 +8,7 @@
     "vd_start": -2.0,
     "vd_stop": 2.0,
     "num_points": 101,
-    "wait_time": 10,
+    "wait_time": 0,
     "deplete_voltage": 0.0,
     "deplete_time": 0,
     "current_limit_a": 0.001,
