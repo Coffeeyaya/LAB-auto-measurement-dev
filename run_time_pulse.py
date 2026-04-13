@@ -160,7 +160,7 @@ class TimeDepPulseWorker(BaseMeasurementWorker):
 
                     time.sleep(rest_time)
 
-    def _execute_baseline_reset(self, params, label, filename):
+    def _execute_baseline_reset(self, filename, params, sequence, config_idx, label):
         """
         Independent mode: Applies Vg=0, measures DC current until |Id| drops below target.
         """
@@ -188,6 +188,7 @@ class TimeDepPulseWorker(BaseMeasurementWorker):
                     break
                     
                 reading = self.k.measure()
+                
                 if reading and len(reading) == 2:
                     I_D, I_G = reading
                     if I_D is not None:
@@ -195,7 +196,16 @@ class TimeDepPulseWorker(BaseMeasurementWorker):
                         
                         # Save the data point
                         writer.writerow([t, vd_const, 0.0, I_D, I_G])
-                        f_csv.flush() # CRITICAL: Ensure it writes to disk immediately!
+                        # f_csv.flush() # CRITICAL: Ensure it writes to disk immediately!
+                        current_t = time.time()
+                        if current_t - last_emit_time > 0.2:
+                            # Pack and Emit DataClass Object
+                            packet = TimeDepData(
+                                Time=t, Vd=vd_const, Vg=0.0, 
+                                Id=I_D, Ig=I_G
+                            )
+                            self.new_data.emit(config_idx, packet)
+                            last_emit_time = current_t
                         
                         current_id_abs = abs(I_D)
                         
