@@ -49,17 +49,18 @@ def render_time_dependent_tab():
     )
 
     if uploaded_file is not None:
-        try:
-            uploaded_cfg = json.load(uploaded_file)
-            for k, v in uploaded_cfg.items():
-                if k in ["wavelength_arr", "channel_arr", "power_arr"]:
-                    st.session_state[k.replace("_arr", "_str")] = ", ".join(map(str, v))
-                else:
-                    st.session_state[k] = v
-            st.session_state["uploader_key"] += 1
-            st.rerun()
-        except Exception as e:
-            st.error(f"Failed to read JSON file: {e}")
+        uploaded_config = json.load(uploaded_file)
+        
+        # Loop through the uploaded JSON and push it to session_state
+        for key, value in uploaded_config.items():
+            
+            # --- THE FIX ---
+            # Force these specific keys to be strings so text_input doesn't crash
+            if key in ["run_number", "device_number", "description"]:
+                st.session_state[key] = str(value)
+                
+            else:
+                st.session_state[key] = value
 
     st.divider()
 
