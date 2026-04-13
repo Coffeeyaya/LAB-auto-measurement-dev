@@ -160,7 +160,7 @@ class TimeDepPulseWorker(BaseMeasurementWorker):
 
                     time.sleep(rest_time)
 
-    def _execute_baseline_reset(self, filename, params, sequence, config_idx, label):
+    def _execute_baseline_reset(self, filename, params, config_idx, label):
         """
         Independent mode: Applies Vg=0, measures DC current until |Id| drops below target.
         """
@@ -264,7 +264,7 @@ class TimeDepPulseWorker(BaseMeasurementWorker):
                     self.k.enable_output('a', True)
                     self.k.enable_output('b', True)
                     self._apply_base_keithley_settings(params, autorange=True)
-                    self._execute_baseline_reset(params, label, filename)
+                    self._execute_baseline_reset(filename, params, config_idx, label)
                     self.k.enable_output('a', False)
                     self.k.enable_output('b', False)
                     continue # <--- CRITICAL: Skips the CSV creation and sequence builder below
