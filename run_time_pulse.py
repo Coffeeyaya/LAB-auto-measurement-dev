@@ -160,6 +160,41 @@ class TimeDepPulseWorker(BaseMeasurementWorker):
 
                     time.sleep(rest_time)
 
+    def _execute_baseline_reset(self, params, label):
+        """
+        Independent mode: Applies Vg=0, measures DC current until |Id| drops below target.
+        """
+        vd_const = float(params.get("vd_const", 1.0))
+        target_baseline = float(params.get("target_baseline", 1e-11))
+        timeout = float(params.get("timeout", 600)) # Default 10 minutes timeout
+        
+        self.status_update.emit(f"[{label}] Starting Baseline Reset. Target: {target_baseline:.2e} A")
+        
+        # Apply standard dark conditions
+        self.k.set_Vg(0.0)
+        self.k.set_Vd(vd_const)
+
+        start_time = time.time()
+        
+        while self.running:
+            # Safeguard: Don't wait forever
+            if time.time() - start_time > timeout:
+                self.status_update.emit(f"[{label}] Timeout reached ({timeout}s). Proceeding anyway.")
+                break
+                
+            reading = self.k.measure()
+            if reading and len(reading) == 2:
+                I_D, I_G = reading
+                if I_D is not None:
+                    current_id_abs = abs(I_D)
+                    # self.status_update.emit(f"[{label}] Wait: |Id| = {current_id_abs:.2e} A (Target: < {target_baseline:.2e} A)")
+                    
+                    if current_id_abs <= target_baseline:
+                        self.status_update.emit(f"[{label}] Baseline reached! ({current_id_abs:.2e} A)")
+                        break
+            
+            time.sleep(0.1)
+
     # ------------------------------------------
     # ORCHESTRATOR
     # ------------------------------------------
@@ -174,7 +209,8 @@ class TimeDepPulseWorker(BaseMeasurementWorker):
             self._get_power_table()
 
             for config_idx, config_file in enumerate(self.config_files):
-                if not self.running: break
+                if not self.running: 
+                    break
 
                 self.status_update.emit(f"Loading config: {config_file.name}...")
                 with open(config_file, "r") as f:
@@ -193,6 +229,21 @@ class TimeDepPulseWorker(BaseMeasurementWorker):
                     self.status_update.emit(self.status_label_text)
                     break 
 
+                label = params.get("label", f"Run {params.get('run_number', 1)}")
+                self.new_config.emit(config_idx, label)
+                
+                ### -- baseline reset -- ###
+                hw_mode = params.get("hardware_mode", "Dark Current")
+                if hw_mode == "Baseline Reset":
+                    self.k.enable_output('a', True)
+                    self.k.enable_output('b', True)
+                    self._apply_base_keithley_settings(params, autorange=True)
+                    self._execute_baseline_reset(params, label)
+                    self.k.enable_output('a', False)
+                    self.k.enable_output('b', False)
+                    continue # <--- CRITICAL: Skips the CSV creation and sequence builder below
+                ### ------------------- ###
+
                 # Apply Settings (AUTORANGE MUST BE OFF FOR PULSES)
                 self._apply_base_keithley_settings(params, autorange=False)
                 
@@ -200,9 +251,6 @@ class TimeDepPulseWorker(BaseMeasurementWorker):
                 self.k.enable_output('a', True)
                 self.k.enable_output('b', True)
 
-                label = params.get("label", f"Run {params.get('run_number', 1)}")
-                self.new_config.emit(config_idx, label)
-                
                 # Build and Execute Sequence
                 sequence = self._build_sequence_single(params)
                 self._execute_time_pulse_measurement(filename, params, sequence, config_idx, label)

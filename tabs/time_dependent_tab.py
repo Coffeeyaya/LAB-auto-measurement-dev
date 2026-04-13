@@ -18,6 +18,9 @@ def render_time_dependent_tab():
         
         # Pulse-specific parameters
         "base_vg": 0.0, "pulse_width": 0.001, "rest_time": 0.3,
+
+        # Baseline Reset parameters
+        "target_baseline": 1e-11, "timeout": 600,
         
         # The Two-Tiered UI states
         "hardware_mode": "Dark Current", 
@@ -67,7 +70,7 @@ def render_time_dependent_tab():
         st.subheader("🛠️ Hardware Setup")
         hardware = st.radio(
             "Select physical configuration:",
-            ["Dark Current", "Laser Only", "Laser + Servo"],
+            ["Dark Current", "Laser Only", "Laser + Servo", "Baseline Reset"],
             key="hardware_mode"
         )
         
@@ -76,7 +79,7 @@ def render_time_dependent_tab():
         electric = st.radio(
             "Select Gate Voltage behavior:",
             ["Continuous DC Vg", "Pulsed Vg Train"],
-            key="electrical_mode"
+            key="electrical_mode",
         )
 
     st.divider()
@@ -96,9 +99,12 @@ def render_time_dependent_tab():
     with col1:
         st.number_input("Current Limit A (A)", format="%.1e", step=1e-4, key="current_limit_a", help="Max current allowed, used to protect hardware and device")
         st.number_input("Current Limit B (A)", format="%.1e", step=1e-4, key="current_limit_b", help="Max current allowed, used to protect hardware and device")
-    with col2:
-        st.number_input("Current Range A (A)", format="%.1e", step=1e-6, key="current_range_a", help="Measured current range, modify it lower to detect lower current, if measured value > range, then it is clamped at range")
-        st.number_input("Current Range B (A)", format="%.1e", step=1e-6, key="current_range_b", help="Measured current range, modify it lower to detect lower current, if measured value > range, then it is clamped at range")
+    if hardware != "Baseline Reset":
+        with col2:
+            st.number_input("Current Range A (A)", format="%.1e", step=1e-6, key="current_range_a", help="Measured current range, modify it lower to detect lower current, if measured value > range, then it is clamped at range")
+            st.number_input("Current Range B (A)", format="%.1e", step=1e-6, key="current_range_b", help="Measured current range, modify it lower to detect lower current, if measured value > range, then it is clamped at range")
+    else:
+        st.text("Auto Range Mode")
         
     with col3:
         st.number_input("NPLC A", step=0.1, key="nplc_a", help="Number of power line cycles")
@@ -110,75 +116,83 @@ def render_time_dependent_tab():
     st.subheader("⚡ Voltage & Timing Settings")
     col1, col2, col3, col4 = st.columns(4)
     col1.number_input("Vd Const (V)", step=0.1, key="vd_const")
-    col2.number_input("Vg ON (Target) (V)", step=0.1, key="vg_on")
-    col3.number_input("Vg OFF (Target) (V)", step=0.1, key="vg_off")
-    if electric == "Pulsed Vg Train":
-        # Removed 'value='
-        col4.number_input("Base Vg (Resting) (V)", 
-                          value=st.session_state.get("base_vg", 0.0), step=0.1, key="base_vg", help="Pulsed mode: rest at base Vg, pulsed at target Vg")
-    
-    col_list = st.columns(4)
-    with col_list[0]:
-        st.number_input("Wait Time (s)", min_value=0, step=1, key="wait_time", help="Wait time before measurement")
-        st.divider()
 
-    # Conditionally show Optics
-    if hardware in ["Laser Only", "Laser + Servo"]:
-        st.subheader("🔦 Optics & Arrays (Comma-separated)")
-        col1, col2, col3 = st.columns(3)
-        # Removed 'value='
-        col1.text_input("Wavelength Array (nm)", value=st.session_state.get("wavelength_str", 660), key="wavelength_str")
-        col2.text_input("Channel Array", value=st.session_state.get("channel_str", 6), key="channel_str")
-        col3.text_input("Power Array (nW)", value=st.session_state.get("power_str", 100), key="power_str")
-        st.divider()
+    if hardware == "Baseline Reset":
+        col2.number_input("Target Baseline (A)", value=st.session_state.get('target_baseline', 1e-11),
+                          format="%.1e", step=1e-11, key="target_baseline", help="Measurement stops when |Id| drops below this value.")
+        col3.number_input("Timeout (s)", value=st.session_state.get('timeout', 600),
+                          min_value=60, step=60, key="timeout", help="Failsafe timeout if baseline is never reached.")
+    else:
+        col2.number_input("Vg ON (Target) (V)", step=0.1, key="vg_on")
+        col3.number_input("Vg OFF (Target) (V)", step=0.1, key="vg_off")
 
-    st.subheader("⏱️ Timing & Sequence Durations")
-    
-    if electric == "Pulsed Vg Train":
-        col1, col2 = st.columns(2)
-        # Removed 'value='
-        col1.number_input("Pulse Width (s)", 
-                          value=st.session_state.get("pulse_width", 0.001), step=0.001, format="%f", key="pulse_width")
-        col2.number_input("Rest Time between pulses (s)", 
-                          value=st.session_state.get("rest_time", 0.3), step=0.01, format="%f", key="rest_time", help='Rest time between two pulses')
+        if electric == "Pulsed Vg Train":
+            # Removed 'value='
+            col4.number_input("Base Vg (Resting) (V)", 
+                            value=st.session_state.get("base_vg", 0.0), step=0.1, key="base_vg", help="Pulsed mode: rest at base Vg, pulsed at target Vg")
         
-        st.write("---")
+        col_list = st.columns(4)
+        with col_list[0]:
+            st.number_input("Wait Time (s)", min_value=0, step=1, key="wait_time", help="Wait time before measurement")
+            st.divider()
 
-    # Smart Labelling based on Electrical Mode
-    lbl_dur1 = "Dur 1 (Pulse Train @ Vg OFF)" if electric == "Pulsed Vg Train" else "Dur 1 (Hold @ Vg OFF)"
-    lbl_dur2 = "Dur 2 (Pulse Train @ Vg ON)" if electric == "Pulsed Vg Train" else "Dur 2 (Hold @ Vg ON)"
+        # Conditionally show Optics
+        if hardware in ["Laser Only", "Laser + Servo"]:
+            st.subheader("🔦 Optics & Arrays (Comma-separated)")
+            col1, col2, col3 = st.columns(3)
+            # Removed 'value='
+            col1.text_input("Wavelength Array (nm)", value=st.session_state.get("wavelength_str", 660), key="wavelength_str")
+            col2.text_input("Channel Array", value=st.session_state.get("channel_str", 6), key="channel_str")
+            col3.text_input("Power Array (nW)", value=st.session_state.get("power_str", 100), key="power_str")
+            st.divider()
 
-    # Removed 'value=' from all conditional widgets below
-    if hardware == "Dark Current":
-        col1, col2, col3 = st.columns(3)
-        col1.number_input(lbl_dur1, step=0.5, key="duration_1")
-        col2.number_input(lbl_dur2, step=0.5, key="duration_2")
-        col3.number_input("Cycle Number", min_value=1, step=1, key="cycle_number")
-
-    elif hardware == "Laser Only":
-        col1, col2, col3, col4 = st.columns(4)
-        col1.number_input(lbl_dur1, step=0.5, key="duration_1")
-        col2.number_input(lbl_dur2, step=0.5, key="duration_2")
-        col3.number_input("Dur 3 (Laser ON)", step=0.5, key="duration_3")
-        col4.number_input("Dur 4 (Laser OFF)", step=0.5, key="duration_4")
+        st.subheader("⏱️ Timing & Sequence Durations")
         
-        col5, col6 = st.columns(2)
-        col5.number_input("Cycle Number", min_value=1, step=1, key="cycle_number")
-        col6.number_input("ON/OFF Number", min_value=1, step=1, key="on_off_number")
+        if electric == "Pulsed Vg Train":
+            col1, col2 = st.columns(2)
+            # Removed 'value='
+            col1.number_input("Pulse Width (s)", 
+                            value=st.session_state.get("pulse_width", 0.001), step=0.001, format="%f", key="pulse_width")
+            col2.number_input("Rest Time between pulses (s)", 
+                            value=st.session_state.get("rest_time", 0.3), step=0.01, format="%f", key="rest_time", help='Rest time between two pulses')
+            
+            st.write("---")
 
-    elif hardware == "Laser + Servo":
-        col1, col2, col3, col4 = st.columns(4)
-        col1.number_input(lbl_dur1, step=0.5, key="duration_1")
-        col2.number_input(lbl_dur2, step=0.5, key="duration_2")
-        
-        col5, col6, col7 = st.columns(3)
-        col5.number_input("Cycle Number", min_value=1, step=1, key="cycle_number")
-        col6.number_input("Servo On/Off #", 
-                          value=st.session_state.get("on_off_number", 3), min_value=1, step=1, key="on_off_number")
-        col7.number_input("Servo open Time (s)", 
-                          value=st.session_state.get("servo_time_on", 1), step=0.5, key="servo_time_on")
-        col7.number_input("Servo close Time (s)", 
-                          value=st.session_state.get("servo_time_off", 1), step=0.5, key="servo_time_off")
+        # Smart Labelling based on Electrical Mode
+        lbl_dur1 = "Dur 1 (Pulse Train @ Vg OFF)" if electric == "Pulsed Vg Train" else "Dur 1 (Hold @ Vg OFF)"
+        lbl_dur2 = "Dur 2 (Pulse Train @ Vg ON)" if electric == "Pulsed Vg Train" else "Dur 2 (Hold @ Vg ON)"
+
+        # Removed 'value=' from all conditional widgets below
+        if hardware == "Dark Current":
+            col1, col2, col3 = st.columns(3)
+            col1.number_input(lbl_dur1, step=0.5, key="duration_1")
+            col2.number_input(lbl_dur2, step=0.5, key="duration_2")
+            col3.number_input("Cycle Number", min_value=1, step=1, key="cycle_number")
+
+        elif hardware == "Laser Only":
+            col1, col2, col3, col4 = st.columns(4)
+            col1.number_input(lbl_dur1, step=0.5, key="duration_1")
+            col2.number_input(lbl_dur2, step=0.5, key="duration_2")
+            col3.number_input("Dur 3 (Laser ON)", step=0.5, key="duration_3")
+            col4.number_input("Dur 4 (Laser OFF)", step=0.5, key="duration_4")
+            
+            col5, col6 = st.columns(2)
+            col5.number_input("Cycle Number", min_value=1, step=1, key="cycle_number")
+            col6.number_input("ON/OFF Number", min_value=1, step=1, key="on_off_number")
+
+        elif hardware == "Laser + Servo":
+            col1, col2, col3, col4 = st.columns(4)
+            col1.number_input(lbl_dur1, step=0.5, key="duration_1")
+            col2.number_input(lbl_dur2, step=0.5, key="duration_2")
+            
+            col5, col6, col7 = st.columns(3)
+            col5.number_input("Cycle Number", min_value=1, step=1, key="cycle_number")
+            col6.number_input("Servo On/Off #", 
+                            value=st.session_state.get("on_off_number", 3), min_value=1, step=1, key="on_off_number")
+            col7.number_input("Servo open Time (s)", 
+                            value=st.session_state.get("servo_time_on", 1), step=0.5, key="servo_time_on")
+            col7.number_input("Servo close Time (s)", 
+                            value=st.session_state.get("servo_time_off", 1), step=0.5, key="servo_time_off")
 
     st.divider()
 
@@ -245,35 +259,42 @@ def render_time_dependent_tab():
                     "nplc_a": st.session_state["nplc_a"],
                     "nplc_b": st.session_state["nplc_b"],
                     "vd_const": st.session_state["vd_const"],
-                    "vg_on": st.session_state.get("vg_on", 1.0),
-                    "vg_off": st.session_state.get("vg_off", 0.0),
-                    "cycle_number": st.session_state.get("cycle_number", 3),
-                    "duration_1": st.session_state.get("duration_1", 5.0),
-                    "duration_2": st.session_state.get("duration_2", 1.0)
                 }
 
-                # Electrical Appends
-                if electric == "Pulsed Vg Train":
-                    config_dict["base_vg"] = st.session_state.get("base_vg", 0.0)
-                    config_dict["pulse_width"] = st.session_state.get("pulse_width", 0.005)
-                    config_dict["rest_time"] = st.session_state.get("rest_time", 0.1)
 
-                # Hardware Appends
-                if hardware == "Laser Only":
-                    config_dict["duration_3"] = st.session_state.get("duration_3", 2.0)
-                    config_dict["duration_4"] = st.session_state.get("duration_4", 2.0)
-                    config_dict["wavelength_arr"] = [int(x.strip()) for x in st.session_state.get("wavelength_str", "660").split(",")]
-                    config_dict["channel_arr"] = [int(x.strip()) for x in st.session_state.get("channel_str", "6").split(",")]
-                    config_dict["power_arr"] = [float(x.strip()) for x in st.session_state.get("power_str", "100").split(",")]
-                    config_dict["on_off_number"] = st.session_state.get("on_off_number", 1)
+                # --- Handle Baseline Reset Exclusively ---
+                if hardware == "Baseline Reset":
+                    config_dict["target_baseline"] = st.session_state["target_baseline"]
+                    config_dict["timeout"] = st.session_state["timeout"]
+                else:
+                    config_dict["vg_on"] = st.session_state.get("vg_on", 1.0)
+                    config_dict["vg_off"] = st.session_state.get("vg_off", 0.0)
+                    config_dict["cycle_number"] = st.session_state.get("cycle_number", 3)
+                    config_dict["duration_1"] = st.session_state.get("duration_1", 5.0)
+                    config_dict["duration_2"] = st.session_state.get("duration_2", 1.0)
 
-                if hardware == "Laser + Servo":
-                    config_dict["wavelength_arr"] = [int(x.strip()) for x in st.session_state.get("wavelength_str", "660").split(",")]
-                    config_dict["channel_arr"] = [int(x.strip()) for x in st.session_state.get("channel_str", "6").split(",")]
-                    config_dict["power_arr"] = [float(x.strip()) for x in st.session_state.get("power_str", "100").split(",")]
-                    config_dict["on_off_number"] = st.session_state.get("on_off_number", 1)
-                    config_dict["servo_time_on"] = st.session_state.get("servo_time_on", 1.0)
-                    config_dict["servo_time_off"] = st.session_state.get("servo_time_off", 1.0)
+                    # Electrical Appends
+                    if electric == "Pulsed Vg Train":
+                        config_dict["base_vg"] = st.session_state.get("base_vg", 0.0)
+                        config_dict["pulse_width"] = st.session_state.get("pulse_width", 0.005)
+                        config_dict["rest_time"] = st.session_state.get("rest_time", 0.1)
+
+                    # Hardware Appends
+                    if hardware == "Laser Only":
+                        config_dict["duration_3"] = st.session_state.get("duration_3", 2.0)
+                        config_dict["duration_4"] = st.session_state.get("duration_4", 2.0)
+                        config_dict["wavelength_arr"] = [int(x.strip()) for x in st.session_state.get("wavelength_str", "660").split(",")]
+                        config_dict["channel_arr"] = [int(x.strip()) for x in st.session_state.get("channel_str", "6").split(",")]
+                        config_dict["power_arr"] = [float(x.strip()) for x in st.session_state.get("power_str", "100").split(",")]
+                        config_dict["on_off_number"] = st.session_state.get("on_off_number", 1)
+
+                    if hardware == "Laser + Servo":
+                        config_dict["wavelength_arr"] = [int(x.strip()) for x in st.session_state.get("wavelength_str", "660").split(",")]
+                        config_dict["channel_arr"] = [int(x.strip()) for x in st.session_state.get("channel_str", "6").split(",")]
+                        config_dict["power_arr"] = [float(x.strip()) for x in st.session_state.get("power_str", "100").split(",")]
+                        config_dict["on_off_number"] = st.session_state.get("on_off_number", 1)
+                        config_dict["servo_time_on"] = st.session_state.get("servo_time_on", 1.0)
+                        config_dict["servo_time_off"] = st.session_state.get("servo_time_off", 1.0)
 
                 # Create sequenced filename
                 next_idx = len(queued_files) + 1
