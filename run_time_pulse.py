@@ -175,11 +175,14 @@ class TimeDepPulseWorker(BaseMeasurementWorker):
         self.k.set_Vd(vd_const)
 
         start_time = time.time()
-        last_emit_time = start_time
+        
+        # FIX 2: Separate timers for data and UI
+        last_data_emit = start_time
+        last_ui_emit = start_time
 
         with open(filename, 'w', newline='') as f_csv:
             writer = csv.writer(f_csv)
-            writer.writerow(["Time", "V_D", "V_G", "I_D", "I_G"])
+            writer.writerow(["Time", "V_D", "V_G", "I_D", "I_G", "Light_State", "Servo_State"])
 
             while self.running:
                 # Safeguard: Don't wait forever
@@ -194,26 +197,29 @@ class TimeDepPulseWorker(BaseMeasurementWorker):
                     if I_D is not None:
                         t = time.time() - start_time
                         
-                        # Save the data point
-                        writer.writerow([t, vd_const, 0.0, I_D, I_G])
+                        # Save the data point (added 0s for light/servo state)
+                        writer.writerow([t, vd_const, 0.0, I_D, I_G, 0, 0])
                         f_csv.flush() # CRITICAL: Ensure it writes to disk immediately!
+                        
                         current_t = time.time()
-                        if current_t - last_emit_time > 0.2:
-                            # Pack and Emit DataClass Object
+                        if current_t - last_data_emit > 0.2:
+                            
+                            # FIX 1: Safely clamp data and add missing Light/Servo states
+                            I_D_clamped, I_G_clamped = self.clamp_data(I_D, I_G)
                             packet = TimeDepData(
                                 Time=t, Vd=vd_const, Vg=0.0, 
-                                Id=I_D, Ig=I_G
+                                Id=I_D_clamped, Ig=I_G_clamped,
+                                Light_State=0, Servo_State=0 
                             )
                             self.new_data.emit(config_idx, packet)
-                            last_emit_time = current_t
+                            last_data_emit = current_t
                         
                         current_id_abs = abs(I_D)
                         
-                        # Update the UI every 2 seconds so we don't spam the GUI thread
-                        current_t = time.time()
-                        if current_t - last_emit_time > 2.0:
-                            # self.status_update.emit(f"[{label}] Wait: |Id| = {current_id_abs:.2e} A (Target: < {target_baseline:.2e} A)")
-                            last_emit_time = current_t
+                        # Update the UI every 2 seconds
+                        if current_t - last_ui_emit > 2.0:
+                            self.status_update.emit(f"[{label}] Wait: |Id| = {current_id_abs:.2e} A (Target: < {target_baseline:.2e} A)")
+                            last_ui_emit = current_t
                         
                         if current_id_abs <= target_baseline:
                             self.status_update.emit(f"[{label}] Baseline reached! ({current_id_abs:.2e} A)")
@@ -258,17 +264,27 @@ class TimeDepPulseWorker(BaseMeasurementWorker):
                 label = params.get("label", f"Run {params.get('run_number', 1)}")
                 self.new_config.emit(config_idx, label)
                 
-                ### -- baseline reset -- ###
-                hw_mode = params.get("hardware_mode", "Dark Current")
+                ### -- BASELINE RESET MODE -- ###
                 if hw_mode == "Baseline Reset":
+                    # try:
+                    #     # FIX 3: Name the file "baseline_" instead of "time_pulse_"
+                    #     filename = self._setup_files(params, prefix="baseline")
+                    # except FileExistsError as e:
+                    #     self.status_update.emit(f"FILE EXISTS ERROR: {e}")
+                    #     break 
+                        
                     self.k.enable_output('a', True)
                     self.k.enable_output('b', True)
+                    
+                    # Turn OFF autorange so Keithley doesn't get stuck clicking 
                     self._apply_base_keithley_settings(params, autorange=True)
+                    
                     self._execute_baseline_reset(filename, params, config_idx, label)
+                    
                     self.k.enable_output('a', False)
                     self.k.enable_output('b', False)
-                    continue # <--- CRITICAL: Skips the CSV creation and sequence builder below
-                ### ------------------- ###
+                    continue # Skips the rest of the loop for this config
+                ### ------------------------- ###
 
                 # Apply Settings (AUTORANGE MUST BE OFF FOR PULSES)
                 self._apply_base_keithley_settings(params, autorange=False)
