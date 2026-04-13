@@ -160,7 +160,7 @@ class TimeDepPulseWorker(BaseMeasurementWorker):
 
                     time.sleep(rest_time)
 
-    def _execute_baseline_reset(self, params, label):
+    def _execute_baseline_reset(self, params, label, filename):
         """
         Independent mode: Applies Vg=0, measures DC current until |Id| drops below target.
         """
@@ -175,25 +175,41 @@ class TimeDepPulseWorker(BaseMeasurementWorker):
         self.k.set_Vd(vd_const)
 
         start_time = time.time()
-        
-        while self.running:
-            # Safeguard: Don't wait forever
-            if time.time() - start_time > timeout:
-                self.status_update.emit(f"[{label}] Timeout reached ({timeout}s). Proceeding anyway.")
-                break
-                
-            reading = self.k.measure()
-            if reading and len(reading) == 2:
-                I_D, I_G = reading
-                if I_D is not None:
-                    current_id_abs = abs(I_D)
-                    # self.status_update.emit(f"[{label}] Wait: |Id| = {current_id_abs:.2e} A (Target: < {target_baseline:.2e} A)")
+        last_emit_time = start_time
+
+        with open(filename, 'w', newline='') as f_csv:
+            writer = csv.writer(f_csv)
+            writer.writerow(["Time", "V_D", "V_G", "I_D", "I_G"])
+
+            while self.running:
+                # Safeguard: Don't wait forever
+                if time.time() - start_time > timeout:
+                    self.status_update.emit(f"[{label}] Timeout reached ({timeout}s). Proceeding anyway.")
+                    break
                     
-                    if current_id_abs <= target_baseline:
-                        self.status_update.emit(f"[{label}] Baseline reached! ({current_id_abs:.2e} A)")
-                        break
-            
-            time.sleep(0.1)
+                reading = self.k.measure()
+                if reading and len(reading) == 2:
+                    I_D, I_G = reading
+                    if I_D is not None:
+                        t = time.time() - start_time
+                        
+                        # Save the data point
+                        writer.writerow([t, vd_const, 0.0, I_D, I_G])
+                        f_csv.flush() # CRITICAL: Ensure it writes to disk immediately!
+                        
+                        current_id_abs = abs(I_D)
+                        
+                        # Update the UI every 2 seconds so we don't spam the GUI thread
+                        current_t = time.time()
+                        if current_t - last_emit_time > 2.0:
+                            # self.status_update.emit(f"[{label}] Wait: |Id| = {current_id_abs:.2e} A (Target: < {target_baseline:.2e} A)")
+                            last_emit_time = current_t
+                        
+                        if current_id_abs <= target_baseline:
+                            self.status_update.emit(f"[{label}] Baseline reached! ({current_id_abs:.2e} A)")
+                            break
+                
+                time.sleep(0.1)
 
     # ------------------------------------------
     # ORCHESTRATOR
