@@ -7,7 +7,8 @@ from pathlib import Path
 # ==========================================
 # 1. CORE GENERATOR FUNCTION
 # ==========================================
-def generate_batch_files(base_dict, target_dir, param_key, param_values, run_number_start):
+def generate_batch_files(base_dict, target_dir, param_key, param_values, run_number_start, 
+                         insert_baseline=False, target_baseline=1e-11, timeout=600):
     generated_files = []
     
     # Ensure the target directory exists
@@ -15,13 +16,38 @@ def generate_batch_files(base_dict, target_dir, param_key, param_values, run_num
     
     # Count existing files in the target directory to continue the numbering sequence
     existing_files = [f for f in os.listdir(target_dir) if f.endswith('.json')]
-    start_idx = len(existing_files) + 1
+    file_idx = len(existing_files) + 1
     
-    hw_prefix = base_dict.get("hardware_mode", "Sweep").replace(" ", "").replace("+", "")
-    elec_prefix = base_dict.get("electrical_mode", base_dict.get("measurement_mode", "Mode")).replace(" ", "")
     device = base_dict.get("device_number", "Dev")
     
     for i, val in enumerate(param_values):
+        current_run_number = int(run_number_start) + i
+        
+        # ---------------------------------------------------------
+        # STEP A: GENERATE BASELINE RESET CONFIG (If enabled)
+        # ---------------------------------------------------------
+        if insert_baseline:
+            baseline_config = {
+                "hardware_mode": "Baseline Reset",
+                "device_number": device,
+                "run_number": str(current_run_number), # Share run number so CSVs pair up perfectly
+                "target_baseline": target_baseline,
+                "timeout": timeout,
+                "vd_const": base_dict.get("vd_const", 1.0),
+                "label": f"Reset before Run {current_run_number} ({param_key}={val})"
+            }
+            
+            baseline_filename = f"{file_idx:02d}_BaselineReset.json"
+            full_path = Path(target_dir) / baseline_filename
+            with open(full_path, 'w') as f:
+                json.dump(baseline_config, f, indent=4)
+                
+            generated_files.append(baseline_filename)
+            file_idx += 1 # Increment index for the formal measurement
+
+        # ---------------------------------------------------------
+        # STEP B: GENERATE FORMAL MEASUREMENT CONFIG
+        # ---------------------------------------------------------
         new_config = copy.deepcopy(base_dict)
         
         # Nested Interceptor for optical settings
@@ -35,20 +61,23 @@ def generate_batch_files(base_dict, target_dir, param_key, param_values, run_num
             new_config[param_key] = val
         
         # Update labels and run numbers
-        new_config["run_number"] = f"{int(run_number_start) + i}"
+        new_config["run_number"] = str(current_run_number)
         existing_label = new_config.get("time_label", new_config.get("label", ""))
         new_label = f"{existing_label} | {param_key}={val}".strip(" |")
+        
         if "time_label" in new_config: new_config["time_label"] = new_label
         if "label" in new_config: new_config["label"] = new_label
         
         # Clean sequential filename
-        filename = f"{start_idx + i:02d}.json"
+        hw_prefix = new_config.get("hardware_mode", "Sweep").replace(" ", "").replace("+", "")
+        meas_filename = f"{file_idx:02d}_{hw_prefix}_Measure.json"
         
-        full_path = Path(target_dir) / filename
+        full_path = Path(target_dir) / meas_filename
         with open(full_path, 'w') as f:
             json.dump(new_config, f, indent=4)
             
-        generated_files.append(filename)
+        generated_files.append(meas_filename)
+        file_idx += 1 # Increment index for the next cycle
         
     return generated_files
 
@@ -78,7 +107,6 @@ def render_batch_generator_tab():
     with col1:
         st.subheader("1. Input Directory (Source)")
         
-        # Selectbox automatically populated with folders inside /config
         input_dir = st.selectbox(
             "Look for templates in:", 
             options=available_dirs, 
@@ -101,10 +129,8 @@ def render_batch_generator_tab():
     with col2:
         st.subheader("2. Output Directory (Destination)")
         
-        # Try to default the output dropdown to a different folder than the input dropdown
         default_out_idx = 1 if len(available_dirs) > 1 else 0
         
-        # Selectbox automatically populated with folders inside /config
         output_dir = st.selectbox(
             "Save batch files to:", 
             options=available_dirs, 
@@ -119,7 +145,6 @@ def render_batch_generator_tab():
     if base_config is not None:
         st.subheader("3. Define Parameter Sweep")
         
-        # Extract keys dynamically
         available_keys = list(base_config.keys())
         if base_config.get("laser_settings") is not None:
             available_keys.extend(["laser_power", "laser_wavelength", "laser_channel"])
@@ -130,7 +155,6 @@ def render_batch_generator_tab():
         with col3:
             param_to_sweep = st.selectbox("Select Parameter to Change:", options=available_keys)
             
-            # Display current value
             if param_to_sweep.startswith("laser_"):
                 nested_key = param_to_sweep.replace("laser_", "")
                 current_val = base_config["laser_settings"].get(nested_key, "N/A")
@@ -142,13 +166,28 @@ def render_batch_generator_tab():
         with col4:
             val_str = st.text_input("Enter Sweep Values (comma-separated):", placeholder="e.g., 1.0, 2.0, 3.0")
             run_number_start = st.number_input("Enter starting run_number: ", min_value=1, value=1, step=1)
-            
+        
+        st.divider()
+        
+        # --- NEW: Baseline Reset Interleaving Logic ---
+        st.subheader("4. Baseline Reset Injection")
+        insert_baseline = st.checkbox("Insert a 'Baseline Reset' before each formal measurement", value=False)
+        
+        target_baseline = 1e-11
+        timeout = 600
+        
+        if insert_baseline:
+            col_b1, col_b2 = st.columns(2)
+            target_baseline = col_b1.number_input("Target Baseline (A)", format="%.1e", step=1e-11, value=1e-11)
+            timeout = col_b2.number_input("Timeout (s)", min_value=60, step=60, value=600)
+
+        st.write("") # spacing
+        
         if st.button("🚀 Generate Batch Queue", type="primary", use_container_width=True):
             if not val_str.strip():
                 st.error("Please enter at least one value to sweep.")
             else:
                 try:
-                    # Safely parse the comma-separated string
                     parsed_values = []
                     for v in val_str.split(','):
                         v_clean = v.strip()
@@ -157,13 +196,16 @@ def render_batch_generator_tab():
                         else:
                             parsed_values.append(int(v_clean))
                     
-                    # Execute generation using the user's defined output directory
+                    # Execute generation 
                     generated_files = generate_batch_files(
                         base_dict=base_config, 
                         target_dir=output_dir, 
                         param_key=param_to_sweep, 
                         param_values=parsed_values,
-                        run_number_start=run_number_start
+                        run_number_start=run_number_start,
+                        insert_baseline=insert_baseline,
+                        target_baseline=target_baseline,
+                        timeout=timeout
                     )
                     
                     st.success(f"✅ Successfully generated {len(generated_files)} files in the `{output_dir.name}` folder!")

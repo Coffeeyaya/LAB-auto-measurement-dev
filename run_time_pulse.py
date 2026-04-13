@@ -248,35 +248,23 @@ class TimeDepPulseWorker(BaseMeasurementWorker):
                 with open(config_file, "r") as f:
                     params = json.load(f)
                 
-                # Pre-run dark stabilization
-                for i in range(params.get("wait_time", 0), 0, -1):
-                    if not self.running: break
-                    self.status_update.emit(f"Initial wait... {i}s")
-                    time.sleep(1)
-
-                try:
-                    filename = self._setup_files(params, prefix="time_pulse")
-                except FileExistsError as e:
-                    self.status_label_text = f"FILE EXISTS ERROR: {e}"
-                    self.status_update.emit(self.status_label_text)
-                    break 
+                
 
                 label = params.get("label", f"Run {params.get('run_number', 1)}")
                 self.new_config.emit(config_idx, label)
                 
                 ### -- BASELINE RESET MODE -- ###
                 if hw_mode == "Baseline Reset":
-                    # try:
-                    #     # FIX 3: Name the file "baseline_" instead of "time_pulse_"
-                    #     filename = self._setup_files(params, prefix="baseline")
-                    # except FileExistsError as e:
-                    #     self.status_update.emit(f"FILE EXISTS ERROR: {e}")
-                    #     break 
+                    try:
+                        # FIX 3: Name the file "baseline_" instead of "time_pulse_"
+                        filename = self._setup_files(params, prefix="baseline")
+                    except FileExistsError as e:
+                        self.status_update.emit(f"FILE EXISTS ERROR: {e}")
+                        break 
                         
                     self.k.enable_output('a', True)
                     self.k.enable_output('b', True)
                     
-                    # Turn OFF autorange so Keithley doesn't get stuck clicking 
                     self._apply_base_keithley_settings(params, autorange=True)
                     
                     self._execute_baseline_reset(filename, params, config_idx, label)
@@ -286,8 +274,21 @@ class TimeDepPulseWorker(BaseMeasurementWorker):
                     continue # Skips the rest of the loop for this config
                 ### ------------------------- ###
 
+                try:
+                    filename = self._setup_files(params, prefix="time_pulse")
+                except FileExistsError as e:
+                    self.status_label_text = f"FILE EXISTS ERROR: {e}"
+                    self.status_update.emit(self.status_label_text)
+                    break 
+
+                # Pre-run dark stabilization
+                for i in range(params.get("wait_time", 0), 0, -1):
+                    if not self.running: break
+                    self.status_update.emit(f"Initial wait... {i}s")
+                    time.sleep(1)
                 # Apply Settings (AUTORANGE MUST BE OFF FOR PULSES)
                 self._apply_base_keithley_settings(params, autorange=False)
+
                 
                 self.k.set_Vd(float(params["vd_const"]))
                 self.k.enable_output('a', True)

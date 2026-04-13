@@ -139,7 +139,8 @@ class BaseMeasurementWorker(QThread):
             
             self.current_channel = ls['channel']
             self.status_update.emit("Configuring Laser")
-            self.laser.send_cmd({"channel": ls['channel'], "wavelength": ls['wavelength'], "power": pp}, wait_for_reply=True)
+            # self.laser.send_cmd({"channel": ls['channel'], "wavelength": ls['wavelength'], "power": pp}, wait_for_reply=True)
+            self.laser.send_cmd({"channel": ls['channel'], "power": pp}, wait_for_reply=True)
             self.status_update.emit("Turning Light ON...")
             self.laser.send_cmd({"channel": self.current_channel, "on": 1}, wait_for_reply=True)
             
