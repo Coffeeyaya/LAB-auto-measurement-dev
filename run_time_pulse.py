@@ -196,7 +196,7 @@ class TimeDepPulseWorker(BaseMeasurementWorker):
                         
                         # Save the data point
                         writer.writerow([t, vd_const, 0.0, I_D, I_G])
-                        # f_csv.flush() # CRITICAL: Ensure it writes to disk immediately!
+                        f_csv.flush() # CRITICAL: Ensure it writes to disk immediately!
                         current_t = time.time()
                         if current_t - last_emit_time > 0.2:
                             # Pack and Emit DataClass Object
