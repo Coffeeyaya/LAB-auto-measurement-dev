@@ -276,7 +276,7 @@ class TimeDepPulseWorker(BaseMeasurementWorker):
 
                 label = params.get("label", f"Run {params.get('run_number', 1)}")
                 self.new_config.emit(config_idx, label)
-                
+                hw_mode = params.get("hard_ware_mode", 'Dark current')
                 ### -- BASELINE RESET MODE -- ###
                 if hw_mode == "Baseline Reset":
                     try:
