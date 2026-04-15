@@ -71,7 +71,7 @@ def render_time_dependent_tab():
         st.subheader("🛠️ Hardware Setup")
         hardware = st.radio(
             "Select physical configuration:",
-            ["Dark Current", "Laser Only", "Laser + Servo", "Baseline Reset"],
+            ["Dark Current", "Laser Only", "Laser + Servo", "Baseline Reset", "Baseline Reset @ Vg"], # <-- ADDED NEW MODE
             key="hardware_mode"
         )
         
@@ -120,9 +120,28 @@ def render_time_dependent_tab():
 
     if hardware == "Baseline Reset":
         col2.number_input("Target Baseline (A)", value=st.session_state.get('target_baseline', 1e-11),
-                          format="%.1e", step=1e-11, key="target_baseline", help="Measurement stops when |Id| drops below this value.")
+                          format="%.1e", step=1e-11, key="target_baseline")
         col3.number_input("Timeout (s)", value=st.session_state.get('timeout', 600),
-                          min_value=60, step=60, key="timeout", help="Failsafe timeout if baseline is never reached.")
+                          min_value=60, step=60, key="timeout")
+        col4.number_input("Target Vg [Pulse] (V)", step=0.1, key="vg_on")
+        
+        # Add a dedicated row for the pulse timing parameters
+        col_b1, col_b2, col_b3, col_b4 = st.columns(4)
+        col_b1.number_input("Base Vg [Resting] (V)", value=st.session_state.get("base_vg", 0.0), step=0.1, key="base_vg")
+        col_b2.number_input("Pulse Width (s)", value=st.session_state.get("pulse_width", 0.001), step=0.001, format="%f", key="pulse_width")
+        col_b3.number_input("Rest Time (s)", value=st.session_state.get("rest_time", 0.3), step=0.01, format="%f", key="rest_time")
+    ### Baseline reset at Vg pulse
+    elif hardware == "Baseline Reset @ Vg":
+        col2.number_input("Target Baseline (A)", value=st.session_state.get('target_baseline', 1e-11),
+                          format="%.1e", step=1e-11, key="target_baseline")
+        col3.number_input("Timeout (s)", value=st.session_state.get('timeout', 600),
+                          min_value=60, step=60, key="timeout")
+        col4.number_input("Target Vg [Pulse] (V)", step=0.1, key="vg_on")
+        
+        col_b1, col_b2, col_b3, col_b4 = st.columns(4)
+        col_b1.number_input("Base Vg [Resting] (V)", value=st.session_state.get("base_vg", 0.0), step=0.1, key="base_vg")
+        col_b2.number_input("Pulse Width (s)", value=st.session_state.get("pulse_width", 0.001), step=0.001, format="%f", key="pulse_width")
+        col_b3.number_input("Rest Time (s)", value=st.session_state.get("rest_time", 0.3), step=0.01, format="%f", key="rest_time")
     else:
         col2.number_input("Vg ON (Target) (V)", step=0.1, key="vg_on")
         col3.number_input("Vg OFF (Target) (V)", step=0.1, key="vg_off")
@@ -264,9 +283,15 @@ def render_time_dependent_tab():
 
 
                 # --- Handle Baseline Reset Exclusively ---
-                if hardware == "Baseline Reset":
+                if hardware in ["Baseline Reset", "Baseline Reset @ Vg"]:
                     config_dict["target_baseline"] = st.session_state["target_baseline"]
                     config_dict["timeout"] = st.session_state["timeout"]
+                    # Add the new pulsing variables
+                    if hardware == "Baseline Reset @ Vg":
+                        config_dict["vg_on"] = st.session_state.get("vg_on", 1.0)
+                        config_dict["base_vg"] = st.session_state.get("base_vg", 0.0)
+                        config_dict["pulse_width"] = st.session_state.get("pulse_width", 0.001)
+                        config_dict["rest_time"] = st.session_state.get("rest_time", 0.3)
                 else:
                     config_dict["vg_on"] = st.session_state.get("vg_on", 1.0)
                     config_dict["vg_off"] = st.session_state.get("vg_off", 0.0)

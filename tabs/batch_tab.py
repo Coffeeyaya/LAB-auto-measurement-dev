@@ -8,7 +8,9 @@ from pathlib import Path
 # 1. CORE GENERATOR FUNCTION
 # ==========================================
 def generate_batch_files(base_dict, target_dir, param_key, param_values, run_number_start, 
-                         insert_baseline=False, target_baseline=1e-11, timeout=600):
+                         baseline_mode="None", target_baseline=1e-11, timeout=600,
+                         baseline_vg_on=1.0, baseline_base_vg=0.0, 
+                         baseline_pulse_width=0.001, baseline_rest_time=0.3):
     generated_files = []
     
     # Ensure the target directory exists
@@ -26,9 +28,12 @@ def generate_batch_files(base_dict, target_dir, param_key, param_values, run_num
         # ---------------------------------------------------------
         # STEP A: GENERATE BASELINE RESET CONFIG (If enabled)
         # ---------------------------------------------------------
-        if insert_baseline:
+        if baseline_mode != "None":
+            # Map the UI selection to the exact hardware_mode string the backend expects
+            hw_mode_str = "Baseline Reset" if baseline_mode == "Baseline Reset (DC)" else "Baseline Reset @ Vg"
+            
             baseline_config = {
-                "hardware_mode": "Baseline Reset",
+                "hardware_mode": hw_mode_str,
                 "device_number": device,
                 "run_number": str(current_run_number), # Share run number so CSVs pair up perfectly
                 "target_baseline": target_baseline,
@@ -36,6 +41,13 @@ def generate_batch_files(base_dict, target_dir, param_key, param_values, run_num
                 "vd_const": base_dict.get("vd_const", 1.0),
                 "label": f"Reset before Run {current_run_number} ({param_key}={val})"
             }
+            
+            # Append the specific pulsed variables if that mode was chosen
+            if hw_mode_str == "Baseline Reset @ Vg":
+                baseline_config["vg_on"] = baseline_vg_on
+                baseline_config["base_vg"] = baseline_base_vg
+                baseline_config["pulse_width"] = baseline_pulse_width
+                baseline_config["rest_time"] = baseline_rest_time
             
             baseline_filename = f"{file_idx:02d}_BaselineReset.json"
             full_path = Path(target_dir) / baseline_filename
@@ -93,13 +105,11 @@ def render_batch_generator_tab():
     config_base_path = Path("config")
     config_base_path.mkdir(exist_ok=True)
     
-    # Auto-create some default folders so the dropdowns are never completely empty
     (config_base_path / "templates").mkdir(exist_ok=True)
     (config_base_path / "time_pulse_queue").mkdir(exist_ok=True)
     
-    # Grab all subdirectories inside config/
     available_dirs = [d for d in config_base_path.iterdir() if d.is_dir()]
-    available_dirs.sort(key=lambda x: x.name) # Sort alphabetically for a clean UI
+    available_dirs.sort(key=lambda x: x.name) 
 
     col1, col2 = st.columns(2)
     base_config = None 
@@ -171,15 +181,32 @@ def render_batch_generator_tab():
         
         # --- NEW: Baseline Reset Interleaving Logic ---
         st.subheader("4. Baseline Reset Injection")
-        insert_baseline = st.checkbox("Insert a 'Baseline Reset' before each formal measurement", value=False)
         
+        baseline_mode = st.radio(
+            "Insert a recovery step before each formal measurement:",
+            ["None", "Baseline Reset (DC)", "Baseline Reset @ Vg (Pulsed)"],
+            horizontal=True
+        )
+        
+        # Default initialization
         target_baseline = 1e-11
         timeout = 600
+        baseline_vg_on = 1.0
+        baseline_base_vg = 0.0
+        baseline_pulse_width = 0.001
+        baseline_rest_time = 0.3
         
-        if insert_baseline:
+        if baseline_mode != "None":
             col_b1, col_b2 = st.columns(2)
             target_baseline = col_b1.number_input("Target Baseline (A)", format="%.1e", step=1e-11, value=1e-11)
             timeout = col_b2.number_input("Timeout (s)", min_value=60, step=60, value=600)
+            
+            if baseline_mode == "Baseline Reset @ Vg (Pulsed)":
+                col_b3, col_b4, col_b5, col_b6 = st.columns(4)
+                baseline_vg_on = col_b3.number_input("Target Vg [Pulse] (V)", value=1.0, step=0.1, key="bat_vg_on")
+                baseline_base_vg = col_b4.number_input("Base Vg [Resting] (V)", value=0.0, step=0.1, key="bat_base_vg")
+                baseline_pulse_width = col_b5.number_input("Pulse Width (s)", value=0.001, step=0.001, format="%f", key="bat_pw")
+                baseline_rest_time = col_b6.number_input("Rest Time (s)", value=0.3, step=0.01, format="%f", key="bat_rt")
 
         st.write("") # spacing
         
@@ -203,9 +230,13 @@ def render_batch_generator_tab():
                         param_key=param_to_sweep, 
                         param_values=parsed_values,
                         run_number_start=run_number_start,
-                        insert_baseline=insert_baseline,
+                        baseline_mode=baseline_mode,
                         target_baseline=target_baseline,
-                        timeout=timeout
+                        timeout=timeout,
+                        baseline_vg_on=baseline_vg_on,
+                        baseline_base_vg=baseline_base_vg,
+                        baseline_pulse_width=baseline_pulse_width,
+                        baseline_rest_time=baseline_rest_time
                     )
                     
                     st.success(f"✅ Successfully generated {len(generated_files)} files in the `{output_dir.name}` folder!")

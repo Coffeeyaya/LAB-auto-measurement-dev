@@ -251,6 +251,59 @@ class TimeDepPulseWorker(BaseMeasurementWorker):
                 
                 time.sleep(0.1)
 
+    def _execute_baseline_reset_vg(self, filename, params, config_idx, label):
+        vd_const = float(params.get("vd_const", 1.0))
+        vg = float(params.get("vg_on", 1.0))
+        base_vg = float(params.get("base_vg", 0.0))
+        pulse_width = float(params.get("pulse_width", 0.001))
+        rest_time = float(params.get("rest_time", 0.3))
+        
+        target_baseline = float(params.get("target_baseline", 1e-11))
+        timeout = float(params.get("timeout", 600))
+        
+        self.status_update.emit(f"[{label}] Pulsed Baseline Reset. Target: < {target_baseline:.2e} A")
+        self.k.set_Vd(vd_const)
+
+        start_time = time.time()
+        last_data_emit = start_time
+        last_ui_emit = start_time
+
+        with open(filename, 'w', newline='') as f_csv:
+            writer = csv.writer(f_csv)
+            writer.writerow(["Time", "V_D", "V_G", "I_D", "I_G", "Light_State", "Servo_State"])
+
+            while self.running:
+                if time.time() - start_time > timeout:
+                    self.status_update.emit(f"[{label}] Timeout reached.")
+                    break
+                
+                # Uses your dedicated Pulsed Vg function!
+                reading = self.k.measure_pulsed_vg(vg_pulse=vg, vg_base=base_vg, pulse_width=pulse_width, rest_time=rest_time)
+                
+                if reading and len(reading) == 2:
+                    I_D, I_G = reading
+                    if I_D is not None:
+                        t = time.time() - start_time
+                        
+                        writer.writerow([t, vd_const, base_vg, I_D, I_G, 0, 0])
+                        f_csv.flush()
+                        
+                        current_t = time.time()
+                        if current_t - last_data_emit > 0.2:
+                            I_D_clamped, I_G_clamped = self.clamp_data(I_D, I_G)
+                            packet = TimeDepData(t, vd_const, base_vg, I_D_clamped, I_G_clamped, 0, 0)
+                            self.new_data.emit(config_idx, packet)
+                            last_data_emit = current_t
+                        
+                        current_id_abs = abs(I_D)
+                        if current_t - last_ui_emit > 2.0:
+                            self.status_update.emit(f"[{label}] |Id| = {current_id_abs:.2e} A")
+                            last_ui_emit = current_t
+                        
+                        if current_id_abs <= target_baseline:
+                            self.status_update.emit(f"[{label}] Baseline reached!")
+                            break
+
     # ------------------------------------------
     # ORCHESTRATOR
     # ------------------------------------------
@@ -276,7 +329,7 @@ class TimeDepPulseWorker(BaseMeasurementWorker):
 
                 label = params.get("label", f"Run {params.get('run_number', 1)}")
                 self.new_config.emit(config_idx, label)
-                hw_mode = params.get("hard_ware_mode", 'Dark current')
+                hw_mode = params.get("hardware_mode", 'Dark current')
                 ### -- BASELINE RESET MODE -- ###
                 if hw_mode == "Baseline Reset":
                     try:
@@ -297,6 +350,23 @@ class TimeDepPulseWorker(BaseMeasurementWorker):
                     self.k.enable_output('b', False)
                     continue # Skips the rest of the loop for this config
                 ### ------------------------- ###
+                if hw_mode == "Baseline Reset @ Vg":
+                    try:
+                        # FIX 3: Name the file "baseline_" instead of "time_pulse_"
+                        filename = self._setup_files(params, prefix="baseline")
+                    except FileExistsError as e:
+                        self.status_update.emit(f"FILE EXISTS ERROR: {e}")
+                        break 
+
+                    self.k.enable_output('a', True)
+                    self.k.enable_output('b', True)
+                    
+                    self._apply_base_keithley_settings(params, autorange=False)
+                    self._execute_baseline_reset_vg(filename, params, config_idx, label)
+                    
+                    self.k.enable_output('a', False)
+                    self.k.enable_output('b', False)
+                    continue # Skips the rest of the loop for this config
 
                 try:
                     filename = self._setup_files(params, prefix="time_pulse")
