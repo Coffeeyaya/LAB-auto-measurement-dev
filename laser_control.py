@@ -1,5 +1,5 @@
 import time
-from LabAuto.laser import init_AOTF, change_power_function, press_on_button, change_lambda_function
+from LabAuto.laser import init_AOTF, grab_and_click_AOTF, change_power_function, press_on_button, change_lambda_function
 from LabAuto.network import create_server, Connection
 
 def run_laser_server(host="0.0.0.0", port=5001):
@@ -25,7 +25,11 @@ def run_laser_server(host="0.0.0.0", port=5001):
                     
                     if not data:
                         continue
-                        
+                    ###    
+                    print("Command received! Refocusing AOTF Window...")
+                    grab_and_click_AOTF()
+                    ###
+
                     channel_recv = data.get("channel")
                     wavelength_recv = data.get("wavelength")
                     power_recv = data.get("power")

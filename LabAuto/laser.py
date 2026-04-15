@@ -34,6 +34,23 @@ def init_AOTF():
             grid[i][fields[j]] = (col_x, row_y)
     return grid
 
+def grab_and_click_AOTF():
+    while True:
+        try:
+            win = gw.getWindowsWithTitle("AOTF Controller")
+            win = win[0]
+            win.restore()
+            win.moveTo(0, 0)
+            win.activate()
+            break
+        except gw.PyGetWindowException:
+            pyautogui.click(win.left, win.top)
+    
+    # pyautogui.moveTo(200, 500)
+    # time.sleep(1)
+    # pyautogui.click(200, 500)
+    # time.sleep(1)
+
 def get_popup_window(window_title, timeout=5.0):
     start_time = time.time()
     

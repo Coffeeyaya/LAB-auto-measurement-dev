@@ -28,6 +28,30 @@ class TimeDepPulseWorker(BaseMeasurementWorker):
         """
         sequence = []
         hardware_mode = params.get("hardware_mode", "Dark Current")
+
+        # ==========================================
+        # THE NEW CUSTOM BLOCK PARSER
+        # ==========================================
+        if hardware_mode == "Custom Blocks":
+            blocks = params.get("sequence_blocks", [])
+            cycle_number = int(params.get("cycle_number", 1)) 
+            
+            for _ in range(cycle_number):
+                for b in blocks:
+                    step = {"Vg": b["vg"], "duration": b["duration"]}
+                    
+                    # --- STRING RENAMED HERE ---
+                    if b["type"] == "Laser Settings":
+                        pp = self.get_pp_exact(b["wavelength"], b["power"])
+                        step["laser_cmd1"] = {"channel": b["channel"], "power": pp}
+                        step["laser_cmd2"] = {"channel": b["channel"], "on": 1}
+                        
+                    elif b["type"] == "Servo Shutter":
+                        step["laser_cmd3"] = 1
+                        
+                    sequence.append(step)
+                    
+            return sequence
         
         vg_off = params.get('vg_off', 0.0)
         vg_on = params.get('vg_on', 1.0)
