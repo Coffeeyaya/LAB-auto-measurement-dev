@@ -278,7 +278,7 @@ class TimeDepPulseWorker(BaseMeasurementWorker):
                     break
                 
                 # Uses your dedicated Pulsed Vg function!
-                reading = self.k.measure_pulsed_vg(vg_pulse=vg, vg_base=base_vg, pulse_width=pulse_width, rest_time=rest_time)
+                reading = self.k.measure_pulsed_vg(target_vg=vg, base_vg=base_vg, pulse_width=pulse_width)
                 
                 if reading and len(reading) == 2:
                     I_D, I_G = reading
@@ -303,6 +303,7 @@ class TimeDepPulseWorker(BaseMeasurementWorker):
                         if current_id_abs <= target_baseline:
                             self.status_update.emit(f"[{label}] Baseline reached!")
                             break
+                        time.sleep(rest_time)
 
     # ------------------------------------------
     # ORCHESTRATOR
