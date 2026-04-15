@@ -123,13 +123,6 @@ def render_time_dependent_tab():
                           format="%.1e", step=1e-11, key="target_baseline")
         col3.number_input("Timeout (s)", value=st.session_state.get('timeout', 600),
                           min_value=60, step=60, key="timeout")
-        col4.number_input("Target Vg [Pulse] (V)", step=0.1, key="vg_on")
-        
-        # Add a dedicated row for the pulse timing parameters
-        col_b1, col_b2, col_b3, col_b4 = st.columns(4)
-        col_b1.number_input("Base Vg [Resting] (V)", value=st.session_state.get("base_vg", 0.0), step=0.1, key="base_vg")
-        col_b2.number_input("Pulse Width (s)", value=st.session_state.get("pulse_width", 0.001), step=0.001, format="%f", key="pulse_width")
-        col_b3.number_input("Rest Time (s)", value=st.session_state.get("rest_time", 0.3), step=0.01, format="%f", key="rest_time")
     ### Baseline reset at Vg pulse
     elif hardware == "Baseline Reset @ Vg":
         col2.number_input("Target Baseline (A)", value=st.session_state.get('target_baseline', 1e-11),
