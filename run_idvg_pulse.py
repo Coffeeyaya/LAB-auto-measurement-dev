@@ -33,6 +33,7 @@ class AutoIdVgPulseWorker(BaseMeasurementWorker):
                 except FileExistsError as e:
                     self.status_label_text = f"FILE EXISTS ERROR: {e}"
                     self.status_update.emit(self.status_label_text)
+                    print(f"\n[!] STOPPING: {e}")
                     break 
 
                 self._apply_base_keithley_settings(params, autorange=False) ### pulse -> can't autorange
@@ -49,6 +50,7 @@ class AutoIdVgPulseWorker(BaseMeasurementWorker):
 
         except Exception as e:
             self.status_update.emit(f"Hardware Error: {e}")
+            print(f"\n[!] FATAL HARDWARE ERROR: {e}")
             
         finally:
             self._shutdown_hardware()
@@ -157,7 +159,8 @@ if __name__ == "__main__":
         print("Queue is empty. Exiting.")
         sys.exit()
 
-    needs_laser = any("laser_settings" in json.load(open(f)) for f in config_queue)
+    # This checks if laser_settings actually contains data (is not None)
+    needs_laser = any(json.load(open(f)).get("laser_settings") is not None for f in config_queue)
     laser = None
 
     if needs_laser:
