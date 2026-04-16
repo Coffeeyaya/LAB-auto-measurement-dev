@@ -56,11 +56,15 @@ def render_time_dependent_tab():
             
             # --- THE FIX ---
             # Force these specific keys to be strings so text_input doesn't crash
-            if key in ["run_number", "device_number", "description"]:
+            if key in ["run_number", "device_number", "description", "time_label"]:
                 st.session_state[key] = str(value)
                 
             else:
                 st.session_state[key] = value
+                
+        # --- THE AUTO-DELETE TRICK ---
+        st.session_state["uploader_key"] += 1
+        st.rerun()
 
     st.divider()
 
