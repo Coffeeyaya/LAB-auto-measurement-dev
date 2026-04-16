@@ -76,7 +76,25 @@ class AutoIdVgPulseWorker(BaseMeasurementWorker):
         time.sleep(1) 
 
         self.status_update.emit(f"[{label}] Steady Sweeping Vd={vd_const}V...")
-        vg_points = np.linspace(params["vg_start"], params["vg_stop"], int(params["num_points"]))
+        # 1. Generate the forward sweep
+        vg_start = float(params["vg_start"])
+        vg_stop = float(params["vg_stop"])
+        num_points = int(params["num_points"])
+        
+        vg_points_forward = np.linspace(vg_start, vg_stop, num_points)
+        
+        # 2. Check the JSON config for Dual Sweep
+        if params.get("sweep_direction") == "Dual Sweep (Forward + Reverse)":
+            # Generate reverse sweep, but slice off the first point [1:] 
+            # so we don't measure the peak voltage twice in a row!
+            vg_points_reverse = np.linspace(vg_stop, vg_start, num_points)[1:]
+            
+            # Glue them together into one seamless array
+            vg_points = np.concatenate((vg_points_forward, vg_points_reverse))
+            self.status_update.emit(f"[{label}] Dual Sweeping Vd={vd_const}V...")
+        else:
+            vg_points = vg_points_forward
+            self.status_update.emit(f"[{label}] Forward Sweeping Vd={vd_const}V...")
         # delay = params.get("source_to_measure_delay", 0.01)
 
         with open(filename, 'w', newline='') as f_csv:

@@ -21,7 +21,8 @@ def render_idvg_tab():
         "idvg_pulse_width": 0.001, 
         "idvg_rest_time": 0.3,
         "idvg_current_range_a": 1e-6,
-        "idvg_current_range_b": 1e-6
+        "idvg_current_range_b": 1e-6,
+        "idvg_sweep_direction": "Forward Only",
     }
 
     for k, v in default_cfg.items():
@@ -107,6 +108,7 @@ def render_idvg_tab():
     col2.number_input("Vg Start (V)", step=0.1, key="idvg_vg_start")
     col3.number_input("Vg Stop (V)", step=0.1, key="idvg_vg_stop")
     col4.number_input("Number of Points", step=1, key="idvg_num_points")
+    st.radio("Sweep Direction", ["Forward Only", "Dual Sweep (Forward + Reverse)"], horizontal=True, key="idvg_sweep_direction")
 
     col_list = st.columns(4) 
     col_list[0].number_input("Pre-Sweep Wait (s)", min_value=0.0, step=1.0, key="idvg_wait_time", help="Wait time before measurement")
@@ -203,7 +205,8 @@ def render_idvg_tab():
                     "vg_stop": st.session_state["idvg_vg_stop"], "num_points": st.session_state["idvg_num_points"],
                     "wait_time": st.session_state["idvg_wait_time"], "current_limit_a": st.session_state["idvg_current_limit_a"],
                     "current_limit_b": st.session_state["idvg_current_limit_b"], "nplc_a": st.session_state["idvg_nplc_a"],
-                    "nplc_b": st.session_state["idvg_nplc_b"], "laser_settings": laser_settings, "laser_stable_time": st.session_state["idvg_laser_stable_time"]
+                    "nplc_b": st.session_state["idvg_nplc_b"], "laser_settings": laser_settings, "laser_stable_time": st.session_state["idvg_laser_stable_time"],
+                    "sweep_direction": st.session_state["idvg_sweep_direction"],
                 }
                 
                 if mode == "Steady-State Sweep": config_dict_idvg["source_to_measure_delay"] = st.session_state["idvg_source_to_measure_delay"]
