@@ -115,7 +115,7 @@ class BaseMeasurementWorker(QThread):
             self.k.set_range('b', self.expected_max_ig)
 
     def _precondition_device(self, params):
-        wait_time = params.get("wait_time", 0)
+        wait_time = int(params.get("wait_time", 0))
         for i in range(wait_time, 0, -1):
             if not self.running: break
             self.status_update.emit(f"Dark Stabilization... {i}s")
