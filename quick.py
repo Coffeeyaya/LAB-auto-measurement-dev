@@ -51,7 +51,7 @@ def update_device_number_in_folder(folder_path, new_device_number, target_keys=N
         except Exception as e:
             print(f"Error processing {file_path.name}: {e}")
 
-    print(f"\n🎉 Done! Updated {updated_count} out of {len(json_files)} files.")
+    print(f"\n Done! Updated {updated_count} out of {len(json_files)} files.")
 
 if __name__ == "__main__":
     # ==========================================
