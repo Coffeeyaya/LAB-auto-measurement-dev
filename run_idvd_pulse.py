@@ -33,6 +33,7 @@ class AutoIdVdPulseWorker(BaseMeasurementWorker):
                 except FileExistsError as e:
                     self.status_label_text = f"FILE EXISTS ERROR: {e}"
                     self.status_update.emit(self.status_label_text)
+                    print(f"\n[!] STOPPING: {e}")
                     break 
 
                 self._apply_base_keithley_settings(params, autorange=False) ### pulse -> can't autorange
@@ -49,6 +50,7 @@ class AutoIdVdPulseWorker(BaseMeasurementWorker):
 
         except Exception as e:
             self.status_update.emit(f"Hardware Error: {e}")
+            print(f"\n[!] FATAL HARDWARE ERROR: {e}")
             
         finally:
             self._shutdown_hardware()
@@ -76,7 +78,7 @@ class AutoIdVdPulseWorker(BaseMeasurementWorker):
         time.sleep(1) 
 
         self.status_update.emit(f"[{label}] Pulsed Sweeping Vd={vg_const}V...")
-        vd_points = np.linspace(params["vd_start"], params["vd_stop"], params["num_points"])
+        vd_points = np.linspace(params["vd_start"], params["vd_stop"], int(params["num_points"]))
         # delay = params.get("source_to_measure_delay", 0.01)
 
         with open(filename, 'w', newline='') as f_csv:

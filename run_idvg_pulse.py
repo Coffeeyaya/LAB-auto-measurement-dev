@@ -76,7 +76,7 @@ class AutoIdVgPulseWorker(BaseMeasurementWorker):
         time.sleep(1) 
 
         self.status_update.emit(f"[{label}] Steady Sweeping Vd={vd_const}V...")
-        vg_points = np.linspace(params["vg_start"], params["vg_stop"], params["num_points"])
+        vg_points = np.linspace(params["vg_start"], params["vg_stop"], int(params["num_points"]))
         # delay = params.get("source_to_measure_delay", 0.01)
 
         with open(filename, 'w', newline='') as f_csv:
