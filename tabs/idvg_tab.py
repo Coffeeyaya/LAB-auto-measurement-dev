@@ -42,18 +42,29 @@ def render_idvg_tab():
         try:
             uploaded_cfg = json.load(uploaded_idvg)
             for k, v in uploaded_cfg.items():
-                if k == "laser_settings":
+                
+                # 1. Map saved JSON keys to UI keys AND cast text fields to string
+                if k in ["run_number", "device_number", "description", "label"]:
+                    st.session_state[f"idvg_{k}"] = str(v)
+                    
+                elif k == "laser_settings":
                     if v is None:
                         st.session_state["idvg_laser_enable"] = False
                     else:
                         st.session_state["idvg_laser_enable"] = True
                         st.session_state["idvg_laser_channel"] = v.get("channel", 6)
                         st.session_state["idvg_laser_wavelength"] = v.get("wavelength", 660)
-                        st.session_state["idvg_laser_power"] = float(v.get("power", 100))
+                        
+                        # 2. Strictly cast to integer so step=1 doesn't crash the widget
+                        st.session_state["idvg_laser_power"] = int(v.get("power", 100)) 
                 else:
+                    # 3. Standard numerical mappings (vd_const, nplc, etc.)
                     st.session_state[f"idvg_{k}"] = v
+            
+            # This is your trick to "immediately remove the uploaded file"!
             st.session_state["idvg_uploader_key"] += 1
             st.rerun()
+            
         except Exception as e:
             st.error(f"Failed to read JSON: {e}")
 
@@ -98,7 +109,7 @@ def render_idvg_tab():
     col4.number_input("Number of Points", step=1, key="idvg_num_points")
 
     col_list = st.columns(4) 
-    col_list[0].number_input("Pre-Sweep Wait (s)", min_value=0, step=1, key="idvg_wait_time", help="Wait time before measurement")
+    col_list[0].number_input("Pre-Sweep Wait (s)", min_value=0.0, step=1.0, key="idvg_wait_time", help="Wait time before measurement")
     
     if mode == "Steady-State Sweep":
         col_list[1].number_input("Source-Measure Delay (s)", step=0.01, format="%f", key="idvg_source_to_measure_delay")
@@ -113,7 +124,7 @@ def render_idvg_tab():
         # Note: I added fallback values (0.0, 0.005, 0.1) to .get() to prevent the 0e+0 bug!
         col_p1.number_input("Base Vg (Resting) (V)", value=st.session_state.get("idvg_base_vg", 0.0), step=0.1, key="idvg_base_vg")
         col_p2.number_input("Pulse Width (s)", value=st.session_state.get("idvg_pulse_width", 0.001), step=0.001, format="%f", key="idvg_pulse_width")
-        col_p3.number_input("Rest Time (s)", value=st.session_state.get("idvg_rest_time", 0.3), step=0.3, format="%f", key="idvg_rest_time", help="Rest time between 2 pulses")
+        col_p3.number_input("Rest Time (s)", value=st.session_state.get("idvg_rest_time", 0.3), step=0.01, format="%f", key="idvg_rest_time", help="Rest time between 2 pulses")
 
     # st.write("---")
     # col9, col10 = st.columns(2)
@@ -190,8 +201,7 @@ def render_idvg_tab():
                     "run_number": st.session_state["idvg_run_number"], "label": st.session_state["idvg_label"],
                     "vd_const": st.session_state["idvg_vd_const"], "vg_start": st.session_state["idvg_vg_start"],
                     "vg_stop": st.session_state["idvg_vg_stop"], "num_points": st.session_state["idvg_num_points"],
-                    "wait_time": st.session_state["idvg_wait_time"], "deplete_voltage": st.session_state["idvg_deplete_voltage"],
-                    "deplete_time": st.session_state["idvg_deplete_time"], "current_limit_a": st.session_state["idvg_current_limit_a"],
+                    "wait_time": st.session_state["idvg_wait_time"], "current_limit_a": st.session_state["idvg_current_limit_a"],
                     "current_limit_b": st.session_state["idvg_current_limit_b"], "nplc_a": st.session_state["idvg_nplc_a"],
                     "nplc_b": st.session_state["idvg_nplc_b"], "laser_settings": laser_settings, "laser_stable_time": st.session_state["idvg_laser_stable_time"]
                 }
