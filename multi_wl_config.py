@@ -4,8 +4,6 @@ import os
 def generate_configs(laser_template_path, reset_template_path, output_dir, experiment_matrix):
     """
     Generates customized JSON config files for Laser Servo and Baseline Reset.
-    
-    experiment_matrix: List of dictionaries defining the variables for each run.
     """
     # 1. Load the base templates
     try:
@@ -22,43 +20,46 @@ def generate_configs(laser_template_path, reset_template_path, output_dir, exper
     os.makedirs(output_dir, exist_ok=True)
 
     # 2. Iterate through the array of inputs and generate files
-    for run_config in experiment_matrix:
+    # Using enumerate gives us an index 'i' starting at 0
+    for i, run_config in enumerate(experiment_matrix):
         run_str = str(run_config["run_number"])
         ch = run_config["channel"]
         wl = run_config["wavelength"]
         pwr = run_config["power"]
         
-        # --- Generate Laser Measurement Config ---
-        laser_data = laser_template.copy()
+        # Calculate alternating prefixes: 
+        # i=0 -> reset=1, laser=2
+        # i=1 -> reset=3, laser=4
+        reset_prefix = (2 * i) + 1
+        laser_prefix = (2 * i) + 2
         
-        # Update run number and array parameters
+        # --- Generate Baseline Reset Config (Comes First) ---
+        reset_data = reset_template.copy()
+        reset_data["run_number"] = run_str
+        
+        # :02d forces the number to be 2 digits, padding with a zero if necessary
+        reset_filename = f"{reset_prefix:02d}_BaselineReset_run{run_str}.json"
+        reset_filepath = os.path.join(output_dir, reset_filename)
+        
+        with open(reset_filepath, 'w') as f:
+            json.dump(reset_data, f, indent=4)
+
+        # --- Generate Laser Measurement Config (Comes Second) ---
+        laser_data = laser_template.copy()
         laser_data["run_number"] = run_str
         laser_data["channel_arr"] = [ch]
         laser_data["wavelength_arr"] = [wl]
-        
-        # Convert power to float just to match your 100.0 format in the template
         laser_data["power_arr"] = [float(pwr)] 
         
-        # Name the file descriptively
-        laser_filename = f"0{run_str}_LaserServo_run{run_str}_ch{ch}_{wl}nm.json"
+        # :02d forces the number to be 2 digits, padding with a zero if necessary
+        laser_filename = f"{laser_prefix:02d}_LaserServo_run{run_str}_ch{ch}_{wl}nm.json"
         laser_filepath = os.path.join(output_dir, laser_filename)
         
         with open(laser_filepath, 'w') as f:
             json.dump(laser_data, f, indent=4)
             
-        # --- Generate Baseline Reset Config ---
-        reset_data = reset_template.copy()
-        
-        # Update run number (baseline reset doesn't need optical params)
-        reset_data["run_number"] = run_str
-        
-        reset_filename = f"0{run_str}_BaselineReset_run{run_str}.json"
-        reset_filepath = os.path.join(output_dir, reset_filename)
-        
-        with open(reset_filepath, 'w') as f:
-            json.dump(reset_data, f, indent=4)
-            
     print(f"Success: Generated {len(experiment_matrix) * 2} config files in '{output_dir}'.")
+
 
 if __name__ == "__main__":
     # Define your array of inputs here. 
@@ -85,8 +86,8 @@ if __name__ == "__main__":
     ]
     
     # Paths to the template files you uploaded
-    LASER_TEMPLATE = '/Users/tsaiyunchen/Desktop/lab/master/measurement_dev/measure/config/time_pulse_queue/01_LaserServo_PulsedVgTrain_.json'
-    RESET_TEMPLATE = '/Users/tsaiyunchen/Desktop/lab/master/measurement_dev/measure/config/time_pulse_queue/02_BaselineReset_PulsedVgTrain_.json'
+    LASER_TEMPLATE = 'config/time_pulse_queue/01_LaserServo_PulsedVgTrain_.json'
+    RESET_TEMPLATE = 'config/time_pulse_queue/02_BaselineReset_PulsedVgTrain_.json'
     OUTPUT_FOLDER = 'config/generated_configs'
     
     generate_configs(
