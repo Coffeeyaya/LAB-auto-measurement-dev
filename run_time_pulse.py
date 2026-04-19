@@ -77,12 +77,12 @@ class TimeDepPulseWorker(BaseMeasurementWorker):
         ###
 
         ch_idx = channels[0]
-        # wavelength = wavelengths[0]
+        wavelength = wavelengths[0]
         pp = self.get_pp_exact(wavelengths[0], powers[0])
 
         # Optical setup
         sequence = [
-            # {"Vg": vg_off, "duration": 5.0, "laser_cmd1": {"channel": ch_idx, "wavelength": wavelength}},
+            {"Vg": vg_off, "duration": 5.0, "laser_cmd1": {"channel": ch_idx, "wavelength": wavelength}},
             {"Vg": vg_off, "duration": 5.0, "laser_cmd1": {"channel": ch_idx, "power": pp}}
         ]
 

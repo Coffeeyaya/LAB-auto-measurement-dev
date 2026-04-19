@@ -65,9 +65,23 @@ if __name__ == "__main__":
     # Different wavelengths correspond to different AOTF channels.
     my_experiment_matrix = [
         {"run_number": "1", "channel": 0, "wavelength": 450, "power": 100},
-        {"run_number": "2", "channel": 2, "wavelength": 532, "power": 100},
-        {"run_number": "3", "channel": 4, "wavelength": 600, "power": 100},
-        {"run_number": "4", "channel": 6, "wavelength": 660, "power": 100},
+        {"run_number": "2", "channel": 0, "wavelength": 470, "power": 100},
+        {"run_number": "3", "channel": 1, "wavelength": 490, "power": 100},
+        {"run_number": "4", "channel": 2, "wavelength": 510, "power": 100},
+        {"run_number": "5", "channel": 3, "wavelength": 530, "power": 100},
+        {"run_number": "6", "channel": 3, "wavelength": 550, "power": 100},
+        {"run_number": "7", "channel": 4, "wavelength": 570, "power": 100},
+        {"run_number": "8", "channel": 4, "wavelength": 590, "power": 100},
+        {"run_number": "9", "channel": 4, "wavelength": 610, "power": 100},
+        {"run_number": "10", "channel": 5, "wavelength": 620, "power": 100},
+        {"run_number": "11", "channel": 5, "wavelength": 630, "power": 100},
+        {"run_number": "12", "channel": 5, "wavelength": 640, "power": 100},
+        {"run_number": "13", "channel": 6, "wavelength": 650, "power": 100},
+        {"run_number": "14", "channel": 6, "wavelength": 660, "power": 100},
+        {"run_number": "15", "channel": 6, "wavelength": 670, "power": 100},
+        {"run_number": "16", "channel": 7, "wavelength": 680, "power": 100},
+        {"run_number": "17", "channel": 7, "wavelength": 690, "power": 100},
+        {"run_number": "18", "channel": 7, "wavelength": 700, "power": 100},
     ]
     
     # Paths to the template files you uploaded
