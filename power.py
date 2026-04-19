@@ -5,6 +5,7 @@ import pandas as pd
 import time
 import json
 import os
+import csv
 from pathlib import Path
 from LabAuto.laser_remote import LaserController
 
@@ -62,8 +63,12 @@ def find_pp_for_target_power(laser,
 
     return best_pp, measured_power
 
+import csv
+import os
+import pandas as pd
+import numpy as np
 
-def multi_power_multi_wavelength(laser, channel_arr, wavelength_arr, power_arr):
+def multi_power_multi_wavelength(laser, channel_arr, wavelength_arr, power_arr, log_filename="calibration/incremental_log.csv"):
 
     n_wavelength = len(wavelength_arr)
     n_power = len(power_arr)
@@ -71,58 +76,95 @@ def multi_power_multi_wavelength(laser, channel_arr, wavelength_arr, power_arr):
     pp_table = np.zeros((n_wavelength, n_power))
     power_table = np.zeros((n_wavelength, n_power))
     
-    # --- MODIFIED: Sort powers ascending to allow dynamic bounding ---
     sorted_powers = sorted(power_arr)
 
-    pm = PowerMeter()
-    try:
-        pm.zero_sensor() 
-        for i, wavelength in enumerate(wavelength_arr):
-            
-            # Reset the minimum bound to 1 at the start of each new wavelength
-            current_pp_min = 1 
-            
-            for j, target_p_nw in enumerate(sorted_powers):
-                target_power = target_p_nw * 1e-9
-                channel = str(channel_arr[i]) 
+    # =========================================================
+    # 1. RESUME LOGIC: Load previously completed measurements
+    # =========================================================
+    completed_data = {}
+    if os.path.exists(log_filename):
+        try:
+            df_log = pd.read_csv(log_filename)
+            for _, row in df_log.iterrows():
+                # Cast to float to ensure matching works perfectly (e.g., 660 == 660.0)
+                wl = float(row["Wavelength (nm)"])
+                tgt_p = float(row["Target Power (nW)"])
+                completed_data[(wl, tgt_p)] = (row["PP"], row["Measured Power (nW)"])
+            print(f"Resuming measurement: Found {len(completed_data)} previously saved points.")
+        except Exception as e:
+            print(f"Could not read existing log (starting fresh): {e}")
+
+    # Create directory and write header ONLY if the file doesn't exist
+    os.makedirs(os.path.dirname(log_filename), exist_ok=True)
+    file_exists = os.path.exists(log_filename)
+    
+    with open(log_filename, 'a', newline='') as f:
+        writer = csv.writer(f)
+        if not file_exists or os.path.getsize(log_filename) == 0:
+            writer.writerow(["Wavelength (nm)", "Target Power (nW)", "PP", "Measured Power (nW)"])
+
+        pm = PowerMeter() # Initialize PowerMeter once
+        try:
+            pm.zero_sensor() 
+            for i, wavelength in enumerate(wavelength_arr):
+                current_pp_min = 1 
                 
-                # Pass the dynamic current_pp_min instead of a hardcoded 1
-                pp, measured_power = find_pp_for_target_power(
-                    laser=laser, pm=pm, channel=channel, target_power=target_power, 
-                    wavelength=wavelength, pp_min=current_pp_min, pp_max=150
-                )
-                
-                # --- OPTIMIZATION: Update the minimum bound for the next target power ---
-                if pp is not None:
-                    # We know the next power is higher, so it MUST require at least this PP
-                    current_pp_min = pp 
-                
-                pp_table[i, j] = pp
-                power_table[i, j] = measured_power * 1e+9
+                for j, target_p_nw in enumerate(sorted_powers):
+                    
+                    # =========================================================
+                    # 2. CHECK CACHE: Skip physical measurement if already done
+                    # =========================================================
+                    if (float(wavelength), float(target_p_nw)) in completed_data:
+                        pp, measured_power_nw = completed_data[(float(wavelength), float(target_p_nw))]
+                        print(f"Skipping {wavelength}nm at {target_p_nw}nW (Loaded from log).")
+                        
+                        # Populate final matrices with cached data
+                        pp_table[i, j] = pp
+                        power_table[i, j] = measured_power_nw
+                        
+                        # Crucial: Keep updating current_pp_min so the optimization still works!
+                        current_pp_min = pp 
+                        continue 
+                    
+                    # =========================================================
+                    # 3. MEASURE: Only triggers if not in the log
+                    # =========================================================
+                    target_power = target_p_nw * 1e-9
+                    channel = str(channel_arr[i]) 
+                    
+                    pp, measured_power = find_pp_for_target_power(
+                        laser=laser, pm=pm, channel=channel, target_power=target_power, 
+                        wavelength=wavelength, pp_min=current_pp_min, pp_max=150
+                    )
+                    
+                    if pp is not None:
+                        current_pp_min = pp 
+                    
+                    pp_table[i, j] = pp
+                    power_table[i, j] = measured_power * 1e+9
 
-        measured_power_df = pd.DataFrame(
-            power_table,                 
-            index=wavelength_arr,       
-            columns=sorted_powers       # Ensure columns match the sorted order
-        )
+                    # Append new data point immediately
+                    writer.writerow([wavelength, target_p_nw, pp, measured_power * 1e+9])
+                    f.flush() # Force write to hard drive immediately to prevent data loss on crash
 
-        pp_df = pd.DataFrame(
-            pp_table,                 
-            index=wavelength_arr,       
-            columns=sorted_powers       # Ensure columns match the sorted order
-        )
+            # Generate final DataFrames
+            measured_power_df = pd.DataFrame(
+                power_table, index=wavelength_arr, columns=sorted_powers
+            )
+            pp_df = pd.DataFrame(
+                pp_table, index=wavelength_arr, columns=sorted_powers
+            )
 
-        measured_power_df.index.name = "Wavelength (nm)"
-        measured_power_df.columns.name = "Target Power (nW)"
-        pp_df.index.name = "Wavelength (nm)"
-        pp_df.columns.name = "Target Power (nW)"
+            measured_power_df.index.name = "Wavelength (nm)"
+            measured_power_df.columns.name = "Target Power (nW)"
+            pp_df.index.name = "Wavelength (nm)"
+            pp_df.columns.name = "Target Power (nW)"
 
-        return pp_df, measured_power_df
+            return pp_df, measured_power_df
 
-    finally:
-        print('power meter closed')
-        pm.close_meter()
-
+        finally:
+            print('Power meter closed.')
+            pm.close_meter()
 
 if __name__ == "__main__":
     LIGHT_IP = "10.0.0.2" 
