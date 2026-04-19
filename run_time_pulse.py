@@ -76,8 +76,8 @@ class TimeDepPulseWorker(BaseMeasurementWorker):
             return []
         ###
 
-        ch_idx = channels[0]
-        wavelength = wavelengths[0]
+        ch_idx = int(channels[0])
+        wavelength = int(wavelengths[0])
         pp = self.get_pp_exact(wavelengths[0], powers[0])
 
         # Optical setup
