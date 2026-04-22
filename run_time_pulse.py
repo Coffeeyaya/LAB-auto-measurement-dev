@@ -475,7 +475,7 @@ if __name__ == "__main__":
                 
                 if hw_mode in ["Laser Only", "Laser + Servo", "Optical Encoder"]:
                     needs_laser = True
-                if hw_mode == "Laser + Servo":
+                if hw_mode == ["Laser + Servo", "Optical Encoder"]:
                     needs_servo = True
         except Exception as e:
             pass
