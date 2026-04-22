@@ -106,12 +106,41 @@ def render_encoder_tab():
     # ==========================================
     # ACTIONS & SAVING
     # ==========================================
-    st.subheader("🚀 Add to Time-Pulse Queue")
+    st.subheader("🚀 Queue Management & Actions")
     
     queue_dir = Path("config/time_pulse_queue")
     queue_dir.mkdir(exist_ok=True, parents=True)
     queued_files = sorted(list(queue_dir.glob("*.json")))
 
+    # --- NEW: Queue Preview & Clear Logic ---
+    if queued_files:
+        col_sel, col_clr = st.columns([3, 1])
+        
+        # 1. Select a file from the queue to preview
+        selected_file = col_sel.selectbox(
+            "Select a queued file to preview:", 
+            options=queued_files, 
+            format_func=lambda x: x.name,
+            key="enc_preview_select"
+        )
+        
+        # 2. Display the content
+        if selected_file:
+            with st.expander(f"🔍 Previewing: {selected_file.name}", expanded=False):
+                with open(selected_file, "r") as f:
+                    preview_data = json.load(f)
+                st.json(preview_data)
+
+        # 3. The Clear Button
+        st.write("") # Quick alignment fix
+        if col_clr.button("🗑️ Clear Queue", use_container_width=True, key="enc_clear_queue"):
+            for f in queued_files: 
+                f.unlink() # Physically deletes the JSON file
+            st.rerun()
+    else:
+        st.warning("📦 Queue is currently empty.")
+
+    st.write("---") # Visual separator
     col_btn1, col_btn2 = st.columns(2)
 
     with col_btn1:
@@ -145,8 +174,21 @@ def render_encoder_tab():
                     "wait_time": st.session_state["enc_wait_time"]
                 }
                 
-                next_idx = len(queued_files) + 1
-                filename = f"{next_idx:02d}_Encoder_{st.session_state['enc_device_number']}.json"
+                # FIX: Safely find the highest existing index prefix in the folder
+                highest_idx = 0
+                for f in queued_files:
+                    try:
+                        # Extracts the "05" from "05_Encoder_1-1.json"
+                        prefix = int(f.name.split('_')[0])
+                        highest_idx = max(highest_idx, prefix)
+                    except ValueError:
+                        pass
+                        
+                next_idx = highest_idx + 1
+                
+                # Added a short timestamp to guarantee it never overwrites
+                timestamp = int(time.time()) % 10000 
+                filename = f"{next_idx:02d}_Encoder_{st.session_state['enc_device_number']}_{timestamp}.json"
                 
                 with open(queue_dir / filename, "w") as f:
                     json.dump(config_dict_enc, f, indent=4)
@@ -156,7 +198,7 @@ def render_encoder_tab():
                 st.rerun()
 
     with col_btn2:
-        if st.button("▶ Run Script in Terminal", type="secondary", use_container_width=True, key="enc_run_btn"):
+        if st.button("▶ Run Script in Terminal (run_time_pulse)", type="secondary", use_container_width=True, key="enc_run_btn"):
             if not queued_files:
                 st.error("The queue is empty! Add a configuration first.")
             else:
