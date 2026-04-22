@@ -61,7 +61,7 @@ def render_encoder_tab():
         if str(raw_bin) != final_bin: st.caption(f"⚠️ *Filtered invalid characters. Transmitting:* `{final_bin}`")
             
     col_e2.number_input("Bit Duration (s)", step=0.1, key="enc_bit_duration", help="How long each bit holds the Vg state before moving to the next bit")
-    total_time = len(final_bin) * st.session_state["enc_bit_duration"] + 16 
+    total_time = (len(final_bin) + 5) * st.session_state["enc_bit_duration"] + 16 
     st.info(f"⏱️ **Estimated Transmission Time:** ~{total_time:.1f} seconds")
 
     st.divider()
