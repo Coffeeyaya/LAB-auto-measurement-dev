@@ -47,7 +47,12 @@ class TimeDepPulseWorker(BaseMeasurementWorker):
             sequence.append({"Vg": base_vg, "duration": 5.0, "laser_cmd1": {"channel": ch_idx, "wavelength": wavelength}})
             sequence.append({"Vg": base_vg, "duration": 5.0, "laser_cmd1": {"channel": ch_idx, "power": pp}})
             sequence.append({"Vg": base_vg, "duration": 3.0, "laser_cmd2": {"channel": ch_idx, "on": 1}})
-            
+            init_step_on = {"Vg": vg_on, "duration": 3 * bit_duration / 4}
+            init_step_off = {"Vg": base_vg, "duration": bit_duration / 4}
+            for i in range(5):
+                sequence.append(init_step_on)
+                sequence.append(init_step_off)
+                
             # 2. Encode the Binary String
             for bit in binary_string:
                 # Every bit holds Vg_ON for bit_duration
