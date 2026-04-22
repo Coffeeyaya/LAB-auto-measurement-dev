@@ -13,5 +13,5 @@ def check_binary_balance(message):
     print(f"Total '0's:     {zeros} ({zeros/total_bits:.1%})")
 
 # Test your own message here!
-my_message = "Use Machine Learning to classify photodetector signals."
+my_message = "My motivation runs, but I prefer walking."
 check_binary_balance(my_message)

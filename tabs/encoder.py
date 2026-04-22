@@ -2,7 +2,10 @@ import streamlit as st
 import json
 import time
 from pathlib import Path
+import pandas as pd
 from tabs.helper import launch_in_terminal
+import streamlit.components.v1 as components
+import numpy as np
 
 def render_encoder_tab():
     st.title("📡 Optical Encoder")
@@ -47,7 +50,7 @@ def render_encoder_tab():
     # ENCODING ENGINE
     # ==========================================
     st.subheader("1. Message Payload")
-    enc_mode = st.radio("Encoding Mode", ["ASCII Text", "Raw Binary"], horizontal=True, key="enc_mode")
+    enc_mode = st.radio("Encoding Mode", ["ASCII Text", "Raw Binary", "2D Canvas (10x10)"], horizontal=True, key="enc_mode")
     col_e1, col_e2 = st.columns([3, 1])
     
     final_bin = ""
@@ -55,11 +58,115 @@ def render_encoder_tab():
         raw_msg = col_e1.text_input("Message to Transmit", key="enc_raw_message")
         final_bin = "".join([format(ord(c), '08b') for c in raw_msg])
         st.caption(f"📠 **Live Translation ({len(final_bin)} bits):** `{final_bin}`")
-    else:
+    elif enc_mode == "Raw Binary":
         raw_bin = col_e1.text_input("Binary String (1s and 0s)", key="enc_binary_string")
         final_bin = "".join([c for c in str(raw_bin) if c in ['0', '1']])
-        if str(raw_bin) != final_bin: st.caption(f"⚠️ *Filtered invalid characters. Transmitting:* `{final_bin}`")
+        if str(raw_bin) != final_bin: 
+            st.caption(f"⚠️ *Filtered invalid characters. Transmitting:* `{final_bin}`")
+    # --- MODE 3: NATIVE PIXEL ART EDITOR (10x10 GRID) ---
+    elif enc_mode == "2D Canvas (10x10)":
+        with col_e1:
+            st.markdown("**Draw your shape!** (Click and drag to paint pixels)")
             
+            # 1. The Custom HTML/JS Engine
+            pixel_editor_html = """
+            <!DOCTYPE html>
+            <html>
+            <head>
+            <style>
+              body { background-color: #0e1117; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; margin: 0; padding: 10px; }
+              .grid { display: grid; grid-template-columns: repeat(10, 25px); gap: 2px; background: #444; border: 3px solid #555; touch-action: none; }
+              .cell { width: 25px; height: 25px; background: black; cursor: crosshair; user-select: none; border-radius: 2px; }
+              .cell.active { background: white; box-shadow: 0 0 5px rgba(255,255,255,0.5); }
+              .controls { margin-top: 15px; display: flex; gap: 10px; width: 100%; justify-content: center;}
+              button { padding: 10px 15px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; }
+              #copyBtn { background: #ff4b4b; color: white; }
+              #copyBtn:hover { background: #ff6b6b; }
+              #clearBtn { background: #333; color: white; border: 1px solid #555; }
+              #clearBtn:hover { background: #444; }
+              .stats { margin-top: 10px; font-size: 14px; color: #aaa; font-weight: bold; }
+            </style>
+            </head>
+            <body>
+              <div class="grid" id="grid"></div>
+              <div class="stats" id="stats">Balance: 0 White / 100 Black</div>
+              <div class="controls">
+                <button id="copyBtn">📋 Copy 100-bit String</button>
+                <button id="clearBtn">🗑️ Clear</button>
+              </div>
+
+              <script>
+                const grid = document.getElementById('grid');
+                const stats = document.getElementById('stats');
+                const copyBtn = document.getElementById('copyBtn');
+                let isDrawing = false;
+                let drawMode = true; 
+                let cells = [];
+
+                for (let i = 0; i < 100; i++) {
+                  const cell = document.createElement('div');
+                  cell.className = 'cell';
+                  cells.push(cell);
+                  grid.appendChild(cell);
+
+                  // Handles clicking and dragging
+                  cell.addEventListener('mousedown', (e) => {
+                    isDrawing = true;
+                    drawMode = !cell.classList.contains('active');
+                    cell.classList.toggle('active', drawMode);
+                    updateStats();
+                  });
+                  cell.addEventListener('mouseover', (e) => {
+                    if (isDrawing) {
+                      cell.classList.toggle('active', drawMode);
+                      updateStats();
+                    }
+                  });
+                }
+
+                window.addEventListener('mouseup', () => isDrawing = false);
+
+                document.getElementById('clearBtn').addEventListener('click', () => {
+                  cells.forEach(c => c.classList.remove('active'));
+                  updateStats();
+                });
+
+                function getBinaryString() {
+                  return cells.map(c => c.classList.contains('active') ? '1' : '0').join('');
+                }
+
+                function updateStats() {
+                  const str = getBinaryString();
+                  const ones = (str.match(/1/g) || []).length;
+                  const zeros = 100 - ones;
+                  
+                  if (ones === 50) {
+                     stats.innerHTML = `<span style="color: #00ff00;">⚖️ Perfect ML Balance! (50 White / 50 Black)</span>`;
+                  } else {
+                     stats.innerHTML = `Balance: ${ones} White / ${zeros} Black`;
+                  }
+                }
+
+                copyBtn.addEventListener('click', () => {
+                  navigator.clipboard.writeText(getBinaryString()).then(() => {
+                    const oldText = copyBtn.innerText;
+                    copyBtn.innerText = "✅ Copied to Clipboard!";
+                    setTimeout(() => copyBtn.innerText = oldText, 2000);
+                  });
+                });
+              </script>
+            </body>
+            </html>
+            """
+            
+            # 2. Render the HTML widget
+            components.html(pixel_editor_html, height=420)
+            
+            # 3. The Streamlit Bridge
+            final_bin = st.text_input("📠 **Paste your copied string here:**", key="canvas_paste")
+            st.text(f'#1s = {final_bin.count("1")}, #0s = {final_bin.count("0")}')
+            
+
     col_e2.number_input("Bit Duration (s)", step=0.1, key="enc_bit_duration", help="How long each bit holds the Vg state before moving to the next bit")
     total_time = (len(final_bin) + 5) * st.session_state["enc_bit_duration"] + 16 
     st.info(f"⏱️ **Estimated Transmission Time:** ~{total_time:.1f} seconds")
