@@ -66,8 +66,8 @@ with tab_batch_generator:
 with tab_block:
     render_build_block_tab()
 
-# with tab_encoder:
-#     render_encoder_tab()
+with tab_encoder:
+    render_encoder_tab()
 
 # with tab_vg_pulse:
 #     render_vg_pulse_tab()

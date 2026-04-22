@@ -30,6 +30,47 @@ class TimeDepPulseWorker(BaseMeasurementWorker):
         hardware_mode = params.get("hardware_mode", "Dark Current")
 
         # ==========================================
+        # OPTICAL ENCODER PARSER
+        # ==========================================
+        if hardware_mode == "Optical Encoder":
+            ch_idx = int(params.get("channel", 6))
+            wavelength = int(params.get("wavelength", 660))
+            power = float(params.get("power", 100))
+            pp = self.get_pp_exact(wavelength, power)
+            
+            vg_on = float(params.get("vg_on", 1.0))
+            base_vg = float(params.get("base_vg", 0.0))
+            bit_duration = float(params.get("bit_duration", 1.0))
+            binary_string = params.get("binary_string", "0")
+            
+            # 1. Hardware Initialization Steps (Calibrates Laser in the dark)
+            sequence.append({"Vg": base_vg, "duration": 5.0, "laser_cmd1": {"channel": ch_idx, "wavelength": wavelength}})
+            sequence.append({"Vg": base_vg, "duration": 5.0, "laser_cmd1": {"channel": ch_idx, "power": pp}})
+            sequence.append({"Vg": base_vg, "duration": 3.0, "laser_cmd2": {"channel": ch_idx, "on": 1}})
+            
+            # 2. Encode the Binary String
+            for bit in binary_string:
+                # Every bit holds Vg_ON for bit_duration
+                
+                if bit == '1':
+                    step1 = {"Vg": vg_on, "duration": bit_duration / 4, "laser_cmd3": 1}
+                    step2 = {"Vg": vg_on, "duration": 2 * bit_duration / 4, "laser_cmd3": 1}
+                    step3 = {"Vg": base_vg, "duration": bit_duration / 4}
+                    step = [step1, step2, step3]
+                        
+                else: # bit == '0'
+                    step1 = {"Vg": vg_on, "duration": 3 * bit_duration / 4}
+                    step2 = {"Vg": base_vg, "duration": bit_duration / 4}
+                    step = [step1, step2]
+
+                    # step["laser_cmd2"] = {"channel": ch_idx, "on": 1} # Toggle OFF
+                        
+                sequence.extend(step)
+            
+            sequence.append({"Vg": base_vg, "duration": 3.0, "laser_cmd2": {"channel": ch_idx, "on": 1}})
+                
+            return sequence
+        # ==========================================
         # THE NEW CUSTOM BLOCK PARSER
         # ==========================================
         if hardware_mode == "Custom Blocks":
@@ -432,7 +473,7 @@ if __name__ == "__main__":
                 params = json.load(f)
                 hw_mode = params.get("hardware_mode", "Dark Current")
                 
-                if hw_mode in ["Laser Only", "Laser + Servo"]:
+                if hw_mode in ["Laser Only", "Laser + Servo", "Optical Encoder"]:
                     needs_laser = True
                 if hw_mode == "Laser + Servo":
                     needs_servo = True
