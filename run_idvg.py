@@ -97,9 +97,9 @@ class AutoIdVgWorker(BaseMeasurementWorker):
             for vg in vg_points:
                 if not self.running: break
                 
-                self.k.set_Vg(vg)
-                time.sleep(delay)
-                reading = self.k.measure()
+                # self.k.set_Vg(vg)
+                # time.sleep(delay)
+                reading = self.k.measure_vg(vg, source_to_measure_delay=delay)
                 
                 if reading and len(reading) == 2:
                     I_D, I_G = reading 

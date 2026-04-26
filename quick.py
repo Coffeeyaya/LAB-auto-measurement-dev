@@ -1,14 +1,10 @@
 import json
 from pathlib import Path
 
-def update_device_number_in_folder(folder_path, new_device_number, target_keys=None):
+def update_device_number_in_folder(folder_path, new_device_number, target_keys):
     """
     Scans a folder for JSON files and updates the device number.
     """
-    # Default to the keys used in your Streamlit queues
-    if target_keys is None:
-        target_keys = ["device_number", "idvg_device_number"]
-
     folder = Path(folder_path)
     
     # 1. Check if folder exists
@@ -20,7 +16,7 @@ def update_device_number_in_folder(folder_path, new_device_number, target_keys=N
     json_files = list(folder.glob("*.json"))
     
     if not json_files:
-        print(f"⚠️ No JSON files found in '{folder_path}'.")
+        print(f"No JSON files found in '{folder_path}'.")
         return
 
     updated_count = 0
@@ -64,4 +60,4 @@ if __name__ == "__main__":
     # Change this to your new device number
     NEW_DEVICE_NUMBER = "8-7" 
     
-    update_device_number_in_folder(TARGET_FOLDER, NEW_DEVICE_NUMBER)
+    update_device_number_in_folder(TARGET_FOLDER, NEW_DEVICE_NUMBER, target_keys='device_number')
