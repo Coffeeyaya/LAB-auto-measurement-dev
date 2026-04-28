@@ -149,13 +149,19 @@ class BaseMeasurementWorker(QThread):
                 self.status_update.emit(f"Light is ON! Stabilizing... {i}s")
                 time.sleep(1)
     
-    def clamp_data(self, I_D, I_G):
+    def clamp_data(self, I_D, I_G, vd=None):
         """Prevents +9.9e37 overflow, this will happen when measured Id > current range"""
         if self.expected_max_id is None:
             return I_D, I_G
-        I_D_record = max(-self.expected_max_id, min(self.expected_max_id, I_D))
-        I_G_record = max(-self.expected_max_ig, min(self.expected_max_ig, I_G))
-        return I_D_record, I_G_record
+            
+        I_D_clamped = max(-self.expected_max_id, min(self.expected_max_id, I_D))
+        I_G_clamped = max(-self.expected_max_ig, min(self.expected_max_ig, I_G))
+        
+        # SAFER CHECK: Only flip if Vd is negative AND it exactly hit the positive overflow limit!
+        if vd is not None and vd < 0 and I_D_clamped == self.expected_max_id: 
+            I_D_clamped = -self.expected_max_id
+            
+        return I_D_clamped, I_G_clamped
 
     def _shutdown_hardware(self):
         self.status_update.emit("Shutting down hardware safely...")

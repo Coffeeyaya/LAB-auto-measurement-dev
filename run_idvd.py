@@ -86,7 +86,7 @@ class AutoIdVdWorker(BaseMeasurementWorker):
                 if reading and len(reading) == 2:
                     I_D, I_G = reading 
                     if I_D is not None:
-                        I_D_clamped, I_G_clamped = self.clamp_data(I_D, I_G)
+                        I_D_clamped, I_G_clamped = self.clamp_data(I_D, I_G, vd)
                         writer.writerow([vd, vg_const, I_D_clamped, I_G_clamped])
                         packet = SweepData(Vd=vd, Vg=vg_const, Id=I_D_clamped, Ig=I_G_clamped)
                         self.new_data.emit(config_idx, packet) 
