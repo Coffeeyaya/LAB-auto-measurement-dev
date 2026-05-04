@@ -57,3 +57,12 @@ class LaserController:
         if self.worker.is_alive():
             self.worker.join(timeout=1.0) # Gracefully shut down the background worker
         self.conn.close()
+
+if __name__ == "__main__":
+    LASER_IP = "10.0.0.2"
+
+    laser = LaserController(LASER_IP)
+    laser.send_cmd({'wavelength':660, 'channel':6, 'power':10})
+
+    
+    

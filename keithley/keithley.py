@@ -113,6 +113,11 @@ class Keithley2636B:
         val = "1" if state else "0"
         self.keithley.write(f"{smu}.measure.autorangei = {val}")
 
+    def set_min_range(self, min_range_amps=100*1e-12):
+        # Set the Minimum Range Floor (The secret to fast OFF-state sweeps)
+        self.keithley.smu.write(f"smua.measure.lowrangei = {min_range_amps}")
+        self.keithley.smu.write(f"smub.measure.lowrangei = {min_range_amps}")
+
     def set_range(self, smu_char, range_value):
         """
         smu_char: channel a or b
@@ -155,17 +160,26 @@ class Keithley2636B:
             
     def measure_vg(self, target_vg, source_to_measure_delay=0.1):
         """
-        Applies target_vg, waits pulse_width (seconds), measures Id and Ig, 
-        and immediately returns Vg to base_vg to prevent charge trapping.
+        Applies target_vg, waits for settling, and measures Id and Ig.
+        Optimized with dummy reads to force immediate autoranging.
         """
         with self.lock:
             try:
-                # We send a 1-line TSP script to execute directly on the Keithley hardware.
-                # This guarantees the pulse is exactly 'pulse_width' long (e.g., 5ms), 
-                # completely avoiding Python/USB communication lag during the pulse.
                 cmd = (
                     f"smub.source.levelv={target_vg} "
+                    
+                    # --- THE SPEED FIX ---
+                    # Calling measure.i() immediately forces the SMU to auto-range 
+                    # NOW, rather than waiting until after the delay. We don't 
+                    # save these values; they just trigger the hardware relays.
+                    "smua.measure.i() "
+                    "smub.measure.i() "
+                    # ---------------------
+                    
                     f"delay({source_to_measure_delay}) "
+                    
+                    # Now we take the real, highly accurate measurement 
+                    # without any relay-hunting delays.
                     "id=smua.measure.i() "
                     "ig=smub.measure.i() "
                     "print(id, ig)"
