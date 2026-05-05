@@ -160,7 +160,7 @@ def render_new_time_dependent_tab():
                     st.info(f"**Step {i+1}:** {block['type']}")
                     
                 with col_dur:
-                    min_dur = 5.0 if block["type"] in ["Laser Power", "Laser Wavelength"] else (2.0 if block["type"] == "Laser Toggle" else 0.1)
+                    min_dur = 5.0 if block["type"] in ["Laser Power", "Laser Wavelength", "Laser Toggle"] else 0.1
                     block["duration"] = st.number_input("Duration (s)", value=max(float(block["duration"]), min_dur), min_value=min_dur, key=f"dur_{i}")
                     
                 with col_vg:
