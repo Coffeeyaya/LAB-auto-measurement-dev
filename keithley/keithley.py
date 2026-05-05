@@ -115,8 +115,8 @@ class Keithley2636B:
 
     def set_min_range(self, min_range_amps=100*1e-12):
         # Set the Minimum Range Floor (The secret to fast OFF-state sweeps)
-        self.keithley.smu.write(f"smua.measure.lowrangei = {min_range_amps}")
-        self.keithley.smu.write(f"smub.measure.lowrangei = {min_range_amps}")
+        self.keithley.write(f"smua.measure.lowrangei = {min_range_amps}")
+        self.keithley.write(f"smub.measure.lowrangei = {min_range_amps}")
 
     def set_range(self, smu_char, range_value):
         """
