@@ -452,6 +452,7 @@ class TimeDepPulseWorker(BaseMeasurementWorker):
 
                 # Build and Execute Sequence
                 sequence = self._build_sequence_single(params)
+                print(sequence)
                 self._execute_time_pulse_measurement(filename, params, sequence, config_idx, label)
 
                 self.k.enable_output('a', False)
