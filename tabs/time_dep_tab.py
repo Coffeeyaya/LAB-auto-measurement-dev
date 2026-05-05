@@ -1,6 +1,7 @@
 import streamlit as st
 import json
 import time
+import uuid
 from pathlib import Path
 from tabs.helper import launch_in_terminal
 
@@ -32,8 +33,8 @@ def render_new_time_dependent_tab():
         
         # Custom Blocks parameters
         "sequence_blocks": [
-            {"type": "Dark Bias", "duration": 1.0, "vg": 0.0},
-            {"type": "Dark Bias", "duration": 1.0, "vg": 1.0}
+            {"id": uuid.uuid4().hex, "type": "Dark Bias", "duration": 1.0, "vg": 0.0}, # <--- ADDED ID
+            {"id": uuid.uuid4().hex, "type": "Dark Bias", "duration": 1.0, "vg": 1.0}  # <--- ADDED ID
         ],
         "bb_def_channel": 6, "bb_def_wavelength": 660, "bb_def_power": 100.0,
         
@@ -70,7 +71,12 @@ def render_new_time_dependent_tab():
             if key in ["run_number", "device_number", "description", "time_label"]:
                 st.session_state[key] = str(value)
             elif key == "sequence_blocks":
-                st.session_state["sequence_blocks"] = value
+                # <--- ADDED BACKWARDS COMPATIBILITY PATCH
+                loaded_blocks = value
+                for b in loaded_blocks:
+                    if "id" not in b:
+                        b["id"] = uuid.uuid4().hex
+                st.session_state["sequence_blocks"] = loaded_blocks
             else:
                 st.session_state[key] = value
                 
@@ -153,6 +159,8 @@ def render_new_time_dependent_tab():
         col_wait.number_input("Initial Wait Time (s)", min_value=0, step=1, key="wait_time")
 
         for i, block in enumerate(st.session_state["sequence_blocks"]):
+            b_id = block["id"] # <--- EXTRACT UNIQUE ID
+            
             with st.container():
                 col_type, col_dur, col_vg, col_opt, col_order, col_del = st.columns([1.5, 1, 1, 3.5, 0.8, 0.5])
                 
@@ -160,24 +168,24 @@ def render_new_time_dependent_tab():
                     st.info(f"**Step {i+1}:** {block['type']}")
                     
                 with col_dur:
-                    min_dur = 5.0 if block["type"] in ["Laser Power", "Laser Wavelength", "Laser Toggle"] else 0.1
-                    block["duration"] = st.number_input("Duration (s)", value=max(float(block["duration"]), min_dur), min_value=min_dur, key=f"dur_{i}")
+                    min_dur = 5.0 if block["type"] in ["Laser Power", "Laser Wavelength"] else (2.0 if block["type"] == "Laser Toggle" else 0.1)
+                    block["duration"] = st.number_input("Duration (s)", value=max(float(block["duration"]), min_dur), min_value=min_dur, key=f"dur_{b_id}") # <--- CHANGED TO b_id
                     
                 with col_vg:
-                    block["vg"] = st.number_input("Target Vg (V)", value=float(block.get("vg", 0.0)), step=0.1, key=f"vg_{i}")
+                    block["vg"] = st.number_input("Target Vg (V)", value=float(block.get("vg", 0.0)), step=0.1, key=f"vg_{b_id}") # <--- CHANGED TO b_id
                     
                 with col_opt:
                     if block["type"] == "Laser Wavelength":
                         sub_1, sub_2 = st.columns(2)
-                        block["channel"] = sub_1.number_input("Channel", value=int(block.get("channel", def_channel)), step=1, key=f"ch_wl_{i}")
-                        block["wavelength"] = sub_2.number_input("Wavelength (nm)", value=int(block.get("wavelength", def_wavelength)), step=1, key=f"wl_{i}")
+                        block["channel"] = sub_1.number_input("Channel", value=int(block.get("channel", def_channel)), step=1, key=f"ch_wl_{b_id}") # <--- CHANGED TO b_id
+                        block["wavelength"] = sub_2.number_input("Wavelength (nm)", value=int(block.get("wavelength", def_wavelength)), step=1, key=f"wl_{b_id}") # <--- CHANGED TO b_id
                     elif block["type"] == "Laser Power":
                         sub_1, sub_2, sub_3 = st.columns(3)
-                        block["channel"] = sub_1.number_input("Ch", value=int(block.get("channel", def_channel)), step=1, key=f"ch_pw_{i}")
-                        block["wavelength"] = sub_2.number_input("WL (nm)", value=int(block.get("wavelength", def_wavelength)), step=1, key=f"wl_pw_{i}")
-                        block["power"] = sub_3.number_input("Pwr (nW)", value=float(block.get("power", def_power)), step=10.0, key=f"pw_{i}")
+                        block["channel"] = sub_1.number_input("Ch", value=int(block.get("channel", def_channel)), step=1, key=f"ch_pw_{b_id}") # <--- CHANGED TO b_id
+                        block["wavelength"] = sub_2.number_input("WL (nm)", value=int(block.get("wavelength", def_wavelength)), step=1, key=f"wl_pw_{b_id}") # <--- CHANGED TO b_id
+                        block["power"] = sub_3.number_input("Pwr (nW)", value=float(block.get("power", def_power)), step=10.0, key=f"pw_{b_id}") # <--- CHANGED TO b_id
                     elif block["type"] == "Laser Toggle":
-                        block["channel"] = st.number_input("Channel", value=int(block.get("channel", def_channel)), step=1, key=f"ch_tog_{i}")
+                        block["channel"] = st.number_input("Channel", value=int(block.get("channel", def_channel)), step=1, key=f"ch_tog_{b_id}") # <--- CHANGED TO b_id
                     elif block["type"] == "Servo Shutter":
                         st.caption("Toggles physical shutter state")
                     else:
@@ -185,16 +193,16 @@ def render_new_time_dependent_tab():
 
                 with col_order:
                     sub_u, sub_d = st.columns(2)
-                    if sub_u.button("↑", key=f"up_{i}", disabled=(i == 0)):
+                    if sub_u.button("↑", key=f"up_{b_id}", disabled=(i == 0)): # <--- CHANGED TO b_id
                         move_block(i, "up")
                         st.rerun()
-                    if sub_d.button("↓", key=f"down_{i}", disabled=(i == len(st.session_state["sequence_blocks"]) - 1)):
+                    if sub_d.button("↓", key=f"down_{b_id}", disabled=(i == len(st.session_state["sequence_blocks"]) - 1)): # <--- CHANGED TO b_id
                         move_block(i, "down")
                         st.rerun()
 
                 with col_del:
                     st.write("") 
-                    if st.button("❌", key=f"del_{i}"):
+                    if st.button("❌", key=f"del_{b_id}"): # <--- CHANGED TO b_id
                         st.session_state["sequence_blocks"].pop(i)
                         st.rerun()
 
@@ -206,7 +214,9 @@ def render_new_time_dependent_tab():
             st.write("") 
             if st.button("➕ Add Block", use_container_width=True):
                 default_dur = 5.0 if new_block_type in ["Laser Power", "Laser Wavelength", "Laser Toggle"] else 0.1
-                new_block = {"type": new_block_type, "duration": default_dur, "vg": 1.0}
+                # <--- ADDED UUID INJECTION HERE
+                new_block = {"id": uuid.uuid4().hex, "type": new_block_type, "duration": default_dur, "vg": 1.0}
+                
                 if new_block_type == "Laser Wavelength": new_block.update({"channel": def_channel, "wavelength": def_wavelength})
                 elif new_block_type == "Laser Power": new_block.update({"channel": def_channel, "wavelength": def_wavelength, "power": def_power})
                 elif new_block_type == "Laser Toggle": new_block.update({"channel": def_channel, "on": 1})
