@@ -66,6 +66,7 @@ class AutoIdVgWorker(BaseMeasurementWorker):
         
         self.k.enable_output('a', True)
         self.k.enable_output('b', True)
+        self.k.set_min_range(min_range_amps=1e-12)
         time.sleep(1) 
 
         self.status_update.emit(f"[{label}] Steady Sweeping Vd={vd_const}V...")
