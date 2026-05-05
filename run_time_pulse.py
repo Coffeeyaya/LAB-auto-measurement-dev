@@ -11,94 +11,113 @@ from servo import ServoController
 from base_worker import BaseMeasurementWorker, TimeDepData
 from base_gui import TimeDepWindow
 
-# ==========================================
-# THE UNIVERSAL WORKER THREAD (PULSED)
-# ==========================================
+
 class TimeDepPulseWorker(BaseMeasurementWorker):
     new_config = pyqtSignal(int, str)
     new_data = pyqtSignal(int, object) # Emits TimeDepData Dataclass
 
-    # ------------------------------------------
-    # SEQUENCE BUILDER
-    # ------------------------------------------
+    # ==========================================
+    # SEQUENCE BUILDER DISPATCHER
+    # ==========================================
     def _build_sequence_single(self, params):
         """
-        builds the timeline based on the requested hardware mode.
-        only handles single wavelength, single power
+        Acts as a dispatcher to route the sequence building to the correct modular function.
         """
-        sequence = []
         hardware_mode = params.get("hardware_mode", "Dark Current")
 
-        # ==========================================
-        # OPTICAL ENCODER PARSER
-        # ==========================================
-        if hardware_mode == "Optical Encoder":
-            ch_idx = int(params.get("channel", 6))
-            wavelength = int(params.get("wavelength", 660))
-            power = float(params.get("power", 100))
-            pp = self.get_pp_exact(wavelength, power)
-            
-            vg_on = float(params.get("vg_on", 1.0))
-            base_vg = float(params.get("base_vg", 0.0))
-            bit_duration = float(params.get("bit_duration", 1.0))
-            binary_string = params.get("binary_string", "0")
-            
-            # 1. Hardware Initialization Steps (Calibrates Laser in the dark)
-            sequence.append({"Vg": base_vg, "duration": 5.0, "laser_cmd1": {"channel": ch_idx, "wavelength": wavelength}})
-            sequence.append({"Vg": base_vg, "duration": 5.0, "laser_cmd1": {"channel": ch_idx, "power": pp}})
-            sequence.append({"Vg": base_vg, "duration": 3.0, "laser_cmd2": {"channel": ch_idx, "on": 1}})
-            init_step_on = {"Vg": vg_on, "duration": 3 * bit_duration / 4}
-            init_step_off = {"Vg": base_vg, "duration": bit_duration / 4}
-            for i in range(5):
-                sequence.append(init_step_on)
-                sequence.append(init_step_off)
-                
-            # 2. Encode the Binary String
-            for bit in binary_string:
-                # Every bit holds Vg_ON for bit_duration
-                
-                if bit == '1':
-                    step1 = {"Vg": vg_on, "duration": bit_duration / 4, "laser_cmd3": 1}
-                    step2 = {"Vg": vg_on, "duration": 2 * bit_duration / 4, "laser_cmd3": 1}
-                    step3 = {"Vg": base_vg, "duration": bit_duration / 4}
-                    step = [step1, step2, step3]
-                        
-                else: # bit == '0'
-                    step1 = {"Vg": vg_on, "duration": 3 * bit_duration / 4}
-                    step2 = {"Vg": base_vg, "duration": bit_duration / 4}
-                    step = [step1, step2]
-
-                    # step["laser_cmd2"] = {"channel": ch_idx, "on": 1} # Toggle OFF
-                        
-                sequence.extend(step)
-            
-            sequence.append({"Vg": base_vg, "duration": 3.0, "laser_cmd2": {"channel": ch_idx, "on": 1}})
-                
-            return sequence
-        # ==========================================
-        # THE NEW CUSTOM BLOCK PARSER
-        # ==========================================
         if hardware_mode == "Custom Blocks":
-            blocks = params.get("sequence_blocks", [])
-            cycle_number = int(params.get("cycle_number", 1)) 
-            
-            for _ in range(cycle_number):
-                for b in blocks:
-                    step = {"Vg": b["vg"], "duration": b["duration"]}
-                    
-                    # --- STRING RENAMED HERE ---
-                    if b["type"] == "Laser Settings":
-                        pp = self.get_pp_exact(b["wavelength"], b["power"])
-                        step["laser_cmd1"] = {"channel": b["channel"], "power": pp}
-                        step["laser_cmd2"] = {"channel": b["channel"], "on": 1}
-                        
-                    elif b["type"] == "Servo Shutter":
-                        step["laser_cmd3"] = 1
-                        
-                    sequence.append(step)
-                    
-            return sequence
+            return self._build_custom_blocks(params)
+        elif hardware_mode == "Optical Encoder":
+            return self._build_optical_encoder(params)
+        else:
+            # Handles standard arrays (Dark Current, Laser Only, Laser + Servo)
+            return self._build_standard_optical(params, hardware_mode)
+
+    # ==========================================
+    # MODULAR SEQUENCE BUILDERS
+    # ==========================================
+    def _build_custom_blocks(self, params):
+        """Builds a timeline based on the GUI's custom block array."""
+        sequence = []
+        blocks = params.get("sequence_blocks", [])
+        cycle_number = int(params.get("cycle_number", 1)) 
         
+        for _ in range(cycle_number):
+            for b in blocks:
+                # Every block fundamentally needs Vg and duration
+                step = {"Vg": b.get("vg", 0.0), "duration": b.get("duration", 1.0)}
+                b_type = b.get("type", "Dark Bias")
+                
+                if b_type == "Laser Wavelength":
+                    step["laser_cmd1"] = {"channel": b["channel"], "wavelength": b["wavelength"]}
+
+                elif b_type == "Laser Power":
+                    # Use .get() safeguard for wavelength in case an old config is loaded
+                    wl = b.get("wavelength", 660)
+                    pp = self.get_pp_exact(wl, b["power"])
+                    step["laser_cmd1"] = {"channel": b["channel"], "power": pp}
+
+                elif b_type == "Laser Toggle":
+                    step["laser_cmd2"] = {"channel": b["channel"], "on": 1}
+                    
+                elif b_type == "Servo Shutter":
+                    step["laser_cmd3"] = 1
+                    
+                elif b_type == "Dark Bias":
+                    # Explicitly catch Dark Bias so it doesn't trigger the unknown warning
+                    pass 
+                    
+                else:
+                    print(f"Warning: Unknown block type '{b_type}'. Defaulting to Dark Bias.")
+                    
+                sequence.append(step)
+                
+        return sequence
+
+    def _build_optical_encoder(self, params):
+        """Builds a timeline that converts a binary string into light pulses."""
+        sequence = []
+        ch_idx = int(params.get("channel", 6))
+        wavelength = int(params.get("wavelength", 660))
+        power = float(params.get("power", 100))
+        pp = self.get_pp_exact(wavelength, power)
+        
+        vg_on = float(params.get("vg_on", 1.0))
+        base_vg = float(params.get("base_vg", 0.0))
+        bit_duration = float(params.get("bit_duration", 1.0))
+        binary_string = params.get("binary_string", "0")
+        
+        # 1. Hardware Initialization Steps (Calibrates Laser in the dark)
+        sequence.append({"Vg": base_vg, "duration": 5.0, "laser_cmd1": {"channel": ch_idx, "wavelength": wavelength}})
+        sequence.append({"Vg": base_vg, "duration": 5.0, "laser_cmd1": {"channel": ch_idx, "power": pp}})
+        sequence.append({"Vg": base_vg, "duration": 3.0, "laser_cmd2": {"channel": ch_idx, "on": 1}})
+        
+        init_step_on = {"Vg": vg_on, "duration": 3 * bit_duration / 4}
+        init_step_off = {"Vg": base_vg, "duration": bit_duration / 4}
+        for _ in range(5):
+            sequence.append(init_step_on)
+            sequence.append(init_step_off)
+            
+        # 2. Encode the Binary String
+        for bit in binary_string:
+            if bit == '1':
+                sequence.extend([
+                    {"Vg": vg_on, "duration": bit_duration / 4, "laser_cmd3": 1},
+                    {"Vg": vg_on, "duration": 2 * bit_duration / 4, "laser_cmd3": 1},
+                    {"Vg": base_vg, "duration": bit_duration / 4}
+                ])
+            else: # bit == '0'
+                sequence.extend([
+                    {"Vg": vg_on, "duration": 3 * bit_duration / 4},
+                    {"Vg": base_vg, "duration": bit_duration / 4}
+                ])
+        
+        sequence.append({"Vg": base_vg, "duration": 3.0, "laser_cmd2": {"channel": ch_idx, "on": 1}})
+        return sequence
+
+    def _build_standard_optical(self, params, hardware_mode):
+        """Builds timelines for Dark Current, Laser Only, and Laser + Servo."""
+        sequence = []
         vg_off = params.get('vg_off', 0.0)
         vg_on = params.get('vg_on', 1.0)
         cycle_number = int(params.get("cycle_number", 1))
@@ -111,26 +130,24 @@ class TimeDepPulseWorker(BaseMeasurementWorker):
             sequence.append({"Vg": vg_off, "duration": 1.0})
             return sequence
 
-        # --- OPTICAL MODES SETUP ---
+        # Extract standard optical parameters
         channels = np.array(params.get("channel_arr", [0])).astype(int).astype(str)
         wavelengths = np.array(params.get("wavelength_arr", [660])).astype(int)
         powers = np.array(params.get("power_arr", [100])).astype(int).astype(str)
 
-        ###
         if len(channels) != 1 or len(wavelengths) != 1 or len(powers) != 1:
-            print('* this function can only handle single wavelength, single power')
+            print('* This function can only handle single wavelength, single power')
             return []
-        ###
 
         ch_idx = int(channels[0])
         wavelength = int(wavelengths[0])
-        pp = self.get_pp_exact(wavelengths[0], powers[0])
+        pp = self.get_pp_exact(wavelength, powers[0])
 
-        # Optical setup
-        sequence = [
+        # Pre-bias optical setup
+        sequence.extend([
             {"Vg": vg_off, "duration": 5.0, "laser_cmd1": {"channel": ch_idx, "wavelength": wavelength}},
             {"Vg": vg_off, "duration": 5.0, "laser_cmd1": {"channel": ch_idx, "power": pp}}
-        ]
+        ])
 
         # --- MODE 2: LASER ONLY ---
         if hardware_mode == "Laser Only":
@@ -152,11 +169,9 @@ class TimeDepPulseWorker(BaseMeasurementWorker):
                     sequence.append({"Vg": vg_on, "duration": params.get("servo_time_on", 1.0), "laser_cmd3": 1})
                     sequence.append({"Vg": vg_on, "duration": params.get("servo_time_off", 1.0), "laser_cmd3": 1})
             sequence.append({"Vg": vg_off, "duration": 1.0, "laser_cmd2": {"channel": ch_idx, "on": 1}})
+            
         return sequence
 
-    # ------------------------------------------
-    # EXECUTION
-    # ------------------------------------------
     def _switch_source(self, laser_cmd1=None, laser_cmd2=None, laser_cmd3=None):
         if laser_cmd1 and self.laser: 
             self.status_update.emit("Configuring laser...")
