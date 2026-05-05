@@ -55,9 +55,9 @@ if __name__ == "__main__":
     # ==========================================
     
     # Change this to the folder containing your queue (e.g., "config/idvg_queue")
-    TARGET_FOLDER = "config/time_queue" 
+    TARGET_FOLDER = "config/time_pulse_queue" 
     
     # Change this to your new device number
     NEW_DEVICE_NUMBER = "8-7" 
     
-    update_device_number_in_folder(TARGET_FOLDER, NEW_DEVICE_NUMBER, target_keys='device_number')
+    update_device_number_in_folder(TARGET_FOLDER, NEW_DEVICE_NUMBER, target_keys=['device_number'])

@@ -10,7 +10,7 @@ from tabs.encoder import render_encoder_tab
 from tabs.pulse_tab import render_vg_pulse_tab
 from tabs.build_block_tab import render_build_block_tab
 from tabs.time_dep_tab import render_new_time_dependent_tab
-
+from tabs.rename_tab import render_rename_tab
 
 import atexit
 import shutil
@@ -31,7 +31,7 @@ st.set_page_config(page_title="Lab Auto", layout="wide")
 st.title("Lab Automation")
 
 # tab_servo, tab_time_dep, tab_idvg, tab_idvd, tab_power, tab_plot, tab_batch_generator, tab_block, tab_encoder, tab_new_time, tab_vg_pulse  = st.tabs([
-tab_servo, tab_idvg, tab_idvd, tab_power, tab_plot, tab_batch_generator, tab_encoder, tab_new_time, tab_vg_pulse  = st.tabs([
+tab_servo, tab_idvg, tab_idvd, tab_power, tab_plot, tab_batch_generator, tab_encoder, tab_new_time, tab_rename  = st.tabs([
     "Servo motor control", 
     # "⚡ Time-Dependent", 
     "📈 Id-Vg Sweep",
@@ -42,7 +42,7 @@ tab_servo, tab_idvg, tab_idvd, tab_power, tab_plot, tab_batch_generator, tab_enc
     # "Build block",
     "📡 Optical Encoder",
     "time dependent all in one",
-    "VG pulse"
+    "Rename",
 ])
 
 with tab_servo:
@@ -53,7 +53,7 @@ with tab_servo:
 
 with tab_new_time:
     render_new_time_dependent_tab()
-    
+
 with tab_idvg:
     render_idvg_tab()
 
@@ -75,7 +75,8 @@ with tab_batch_generator:
 with tab_encoder:
     render_encoder_tab()
 
-
+with tab_rename:
+    render_rename_tab()
 
 # with tab_vg_pulse:
 #     render_vg_pulse_tab()
