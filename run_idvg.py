@@ -48,7 +48,9 @@ class AutoIdVgWorker(BaseMeasurementWorker):
                     self.current_channel = None
 
         except Exception as e:
+            print(e)
             self.status_update.emit(f"Hardware Error: {e}")
+
             
         finally:
             self._shutdown_hardware()
