@@ -216,7 +216,7 @@ def render_new_time_dependent_tab():
                 default_dur = 5.0 if new_block_type in ["Laser Power", "Laser Wavelength", "Laser Toggle"] else 0.1
                 # <--- ADDED UUID INJECTION HERE
                 new_block = {"id": uuid.uuid4().hex, "type": new_block_type, "duration": default_dur, "vg": 1.0}
-                
+
                 if new_block_type == "Laser Wavelength": new_block.update({"channel": def_channel, "wavelength": def_wavelength})
                 elif new_block_type == "Laser Power": new_block.update({"channel": def_channel, "wavelength": def_wavelength, "power": def_power})
                 elif new_block_type == "Laser Toggle": new_block.update({"channel": def_channel, "on": 1})
@@ -261,9 +261,9 @@ def render_new_time_dependent_tab():
             if hardware in ["Laser Only", "Laser + Servo"]:
                 st.subheader("🔦 Optics & Arrays (Comma-separated)")
                 col1, col2, col3 = st.columns(3)
-                col1.text_input("Wavelength Array (nm)", key="wavelength_str")
-                col2.text_input("Channel Array", key="channel_str")
-                col3.text_input("Power Array (nW)", key="power_str")
+                col1.text_input("Wavelength Array (nm)", value=st.session_state.get("wavelength_str", 660), key="wavelength_str")
+                col2.text_input("Channel Array", value=st.session_state.get("channel_str", 6), key="channel_str")
+                col3.text_input("Power Array (nW)", value=st.session_state.get("power_str", 100), key="power_str")
                 st.divider()
 
             st.subheader("⏱️ Timing & Sequence Durations")
@@ -301,8 +301,13 @@ def render_new_time_dependent_tab():
                 
                 col5, col6, col7 = st.columns(3)
                 col5.number_input("Cycle Number", min_value=1, step=1, key="cycle_number")
-                col6.number_input("Servo On/Off #", min_value=1, step=1, key="on_off_number")
-                col7.number_input("Servo open/close Time (s)", step=0.5, key="servo_time_on")
+                col6.number_input("Servo On/Off #", 
+                                value=st.session_state.get("on_off_number", 3), min_value=1, step=1, key="on_off_number")
+                col7.number_input("Servo open Time (s)", 
+                                value=st.session_state.get("servo_time_on", 1), step=0.5, key="servo_time_on")
+                col7.number_input("Servo close Time (s)", 
+                                value=st.session_state.get("servo_time_off", 1), step=0.5, key="servo_time_off")
+
 
     st.divider()
 
