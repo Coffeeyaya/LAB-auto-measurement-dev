@@ -106,7 +106,7 @@ class BaseMeasurementWorker(QThread):
         if autorange:
             self.k.set_autorange('a', 1)
             self.k.set_autorange('b', 1)
-            self.k.set_min_range(min_range_amps= 1e-9)
+            self.k.set_min_range(min_range_amps= 1e-8)
         else:
             self.k.set_autorange('a', 0)
             self.k.set_autorange('b', 0)
