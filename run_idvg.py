@@ -68,7 +68,7 @@ class AutoIdVgWorker(BaseMeasurementWorker):
         
         self.k.enable_output('a', True)
         self.k.enable_output('b', True)
-        self.k.set_min_range(min_range_amps=1e-7)
+        
         time.sleep(1) 
 
         self.status_update.emit(f"[{label}] Steady Sweeping Vd={vd_const}V...")
@@ -100,9 +100,9 @@ class AutoIdVgWorker(BaseMeasurementWorker):
             for vg in vg_points:
                 if not self.running: break
                 
-                # self.k.set_Vg(vg)
-                # time.sleep(delay)
-                reading = self.k.measure_vg(vg, source_to_measure_delay=delay)
+                self.k.set_Vg(vg)
+                time.sleep(delay)
+                reading = self.k.measure()
                 
                 if reading and len(reading) == 2:
                     I_D, I_G = reading 
