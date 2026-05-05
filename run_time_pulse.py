@@ -494,9 +494,9 @@ if __name__ == "__main__":
                 params = json.load(f)
                 hw_mode = params.get("hardware_mode", "Dark Current")
                 
-                if hw_mode in ["Laser Only", "Laser + Servo", "Optical Encoder"]:
+                if hw_mode in ["Laser Only", "Laser + Servo", "Optical Encoder", "Custom Blocks"]:
                     needs_laser = True
-                if hw_mode in ["Laser + Servo", "Optical Encoder"]:
+                if hw_mode in ["Laser + Servo", "Optical Encoder", "Custom Blocks"]:
                     needs_servo = True
         except Exception as e:
             pass
