@@ -1,7 +1,7 @@
 import json
 import os
 
-def generate_configs(laser_template_path, reset_template_path, output_dir, experiment_matrix):
+def generate_configs(laser_template_path, reset_template_path, output_dir, experiment_matrix, target_baseline):
     """
     Generates customized JSON config files for Laser Servo and Baseline Reset.
     Modifies servo_time_on and auto-calculates servo_time_off.
@@ -38,6 +38,7 @@ def generate_configs(laser_template_path, reset_template_path, output_dir, exper
         # --- Generate Baseline Reset Config (Comes First) ---
         reset_data = reset_template.copy()
         reset_data["run_number"] = run_str
+        reset_data['target_baseline'] = target_baseline
         
         reset_filename = f"{reset_prefix:02d}_BaselineReset_run{run_str}.json"
         reset_filepath = os.path.join(output_dir, reset_filename)
@@ -86,5 +87,6 @@ if __name__ == "__main__":
         laser_template_path=LASER_TEMPLATE, 
         reset_template_path=RESET_TEMPLATE, 
         output_dir=OUTPUT_FOLDER, 
-        experiment_matrix=my_experiment_matrix
+        experiment_matrix=my_experiment_matrix,
+        target_baseline='1e-10'
     )
