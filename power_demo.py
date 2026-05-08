@@ -129,7 +129,7 @@ if __name__ == "__main__":
         # Experiment Parameters
         CHANNEL = 6
         WAVELENGTH = 660
-        PP_LIST = [10, 20, 30, 40, 50]
+        PP_LIST = [5, 10, 15, 20, 25]
         
         # 1. Run Measurement
         transient_data = measure_transient_power(
