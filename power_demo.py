@@ -3,6 +3,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 from pm.power import PowerMeter
 from LabAuto.laser_remote import LaserController
+import os
+import pandas as pd
+from pathlib import Path
 
 def measure_transient_power(laser, pm, channel, wavelength, power_percentages, duration=5.0, interval=0.5):
     """
@@ -87,6 +90,34 @@ def plot_hardware_characteristics(results):
     plt.show()
 
 
+
+def save_transient_results_to_csv(results, folder_name="power_demo", filename="transient_data.csv"):
+    """
+    Converts the transient results dictionary into a Pandas DataFrame 
+    and saves it to a specified folder.
+    """
+    # Create the directory if it doesn't exist
+    os.makedirs(folder_name, exist_ok=True)
+    
+    # Extract the time array from the first entry to use as our shared Time column
+    first_pp = list(results.keys())[0]
+    data_dict = {
+        "Time (s)": results[first_pp]['time']
+    }
+    
+    # Add each power percentage as its own column
+    for pp, data in results.items():
+        data_dict[f"Power_PP_{pp}_nW"] = data['power_nw']
+        
+    # Create DataFrame and save
+    df = pd.DataFrame(data_dict)
+    save_path = Path(folder_name) / filename
+    
+    df.to_csv(save_path, index=False)
+    print(f"Data successfully saved to: {save_path}")
+    
+    return df
+
 if __name__ == "__main__":
     LIGHT_IP = "10.0.0.2" 
     
@@ -100,18 +131,25 @@ if __name__ == "__main__":
         WAVELENGTH = 660
         PP_LIST = [10, 20, 30, 40, 50]
         
-        # Run Measurement
+        # 1. Run Measurement
         transient_data = measure_transient_power(
             laser=laser, 
             pm=pm, 
             channel=CHANNEL, 
             wavelength=WAVELENGTH, 
             power_percentages=PP_LIST,
-            duration=5.0,     # Measure for 5 seconds
-            interval=0.5      # Time resolution of 0.5s
+            duration=3.0,     
+            interval=0.2      
         )
         
-        # Visualize
+        # 2. Save Data to CSV in "power_demo" folder
+        save_transient_results_to_csv(
+            results=transient_data, 
+            folder_name="power_demo", 
+            filename="laser_transient_response.csv"
+        )
+        
+        # 3. Visualize
         plot_hardware_characteristics(transient_data)
         
     finally:
