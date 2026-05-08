@@ -31,9 +31,9 @@ st.set_page_config(page_title="Lab Auto", layout="wide")
 st.title("Lab Automation")
 
 # tab_servo, tab_time_dep, tab_idvg, tab_idvd, tab_power, tab_plot, tab_batch_generator, tab_block, tab_encoder, tab_new_time, tab_vg_pulse  = st.tabs([
-tab_servo, tab_idvg, tab_idvd, tab_power, tab_plot, tab_batch_generator, tab_encoder, tab_new_time, tab_rename  = st.tabs([
+tab_servo, tab_new_time,  tab_idvg, tab_idvd, tab_power, tab_plot, tab_batch_generator, tab_encoder, tab_rename  = st.tabs([
     "Servo motor control", 
-    # "⚡ Time-Dependent", 
+    "Time-dependent", 
     "📈 Id-Vg Sweep",
     "📈 Id-Vd Sweep",
     "🔦 Power Calibration", 
@@ -41,15 +41,11 @@ tab_servo, tab_idvg, tab_idvd, tab_power, tab_plot, tab_batch_generator, tab_enc
     "Batch Generator",
     # "Build block",
     "📡 Optical Encoder",
-    "time dependent all in one",
     "Rename",
 ])
 
 with tab_servo:
     render_servo_tab()
-
-# with tab_time_dep:
-#     render_time_dependent_tab()
 
 with tab_new_time:
     render_new_time_dependent_tab()

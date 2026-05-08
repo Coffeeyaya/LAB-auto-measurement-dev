@@ -75,7 +75,7 @@ class AutoIdVgPulseWorker(BaseMeasurementWorker):
         self.k.enable_output('b', True)
         time.sleep(1) 
 
-        self.status_update.emit(f"[{label}] Steady Sweeping Vd={vd_const}V...")
+        self.status_update.emit(f"[{label}] Pulsed Sweeping Vd={vd_const}V...")
         # 1. Generate the forward sweep
         vg_start = float(params["vg_start"])
         vg_stop = float(params["vg_stop"])

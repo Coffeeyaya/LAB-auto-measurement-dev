@@ -16,9 +16,6 @@ class TimeDepPulseWorker(BaseMeasurementWorker):
     new_config = pyqtSignal(int, str)
     new_data = pyqtSignal(int, object) # Emits TimeDepData Dataclass
 
-    # ==========================================
-    # SEQUENCE BUILDER DISPATCHER
-    # ==========================================
     def _build_sequence_single(self, params):
         """
         Acts as a dispatcher to route the sequence building to the correct modular function.
@@ -33,9 +30,6 @@ class TimeDepPulseWorker(BaseMeasurementWorker):
             # Handles standard arrays (Dark Current, Laser Only, Laser + Servo)
             return self._build_standard_optical(params, hardware_mode)
 
-    # ==========================================
-    # MODULAR SEQUENCE BUILDERS
-    # ==========================================
     def _build_custom_blocks(self, params):
         """Builds a timeline based on the GUI's custom block array."""
         sequence = []
@@ -46,15 +40,15 @@ class TimeDepPulseWorker(BaseMeasurementWorker):
             for b in blocks:
                 # Every block fundamentally needs Vg and duration
                 step = {"Vg": b.get("vg", 0.0), "duration": b.get("duration", 1.0)}
-                b_type = b.get("type", "Dark Bias")
+                b_type = b.get("type", "Dark Bias") # block type
                 
                 if b_type == "Laser Wavelength":
                     step["laser_cmd1"] = {"channel": b["channel"], "wavelength": b["wavelength"]}
 
                 elif b_type == "Laser Power":
-                    # Use .get() safeguard for wavelength in case an old config is loaded
                     wl = b.get("wavelength", 660)
-                    pp = self.get_pp_exact(wl, b["power"])
+                    power = b["power"]
+                    pp = self.get_pp_exact(wl, power)
                     step["laser_cmd1"] = {"channel": b["channel"], "power": pp}
 
                 elif b_type == "Laser Toggle":
@@ -77,9 +71,9 @@ class TimeDepPulseWorker(BaseMeasurementWorker):
     def _build_optical_encoder(self, params):
         """Builds a timeline that converts a binary string into light pulses."""
         sequence = []
-        ch_idx = int(params.get("channel", 6))
-        wavelength = int(params.get("wavelength", 660))
-        power = float(params.get("power", 100))
+        ch_idx = int(params.get("channel_arr", 6))
+        wavelength = int(params.get("wavelength_arr", 660))
+        power = float(params.get("power_arr", 100))
         pp = self.get_pp_exact(wavelength, power)
         
         vg_on = float(params.get("vg_on", 1.0))
@@ -90,7 +84,7 @@ class TimeDepPulseWorker(BaseMeasurementWorker):
         # 1. Hardware Initialization Steps (Calibrates Laser in the dark)
         sequence.append({"Vg": base_vg, "duration": 5.0, "laser_cmd1": {"channel": ch_idx, "wavelength": wavelength}})
         sequence.append({"Vg": base_vg, "duration": 5.0, "laser_cmd1": {"channel": ch_idx, "power": pp}})
-        sequence.append({"Vg": base_vg, "duration": 3.0, "laser_cmd2": {"channel": ch_idx, "on": 1}})
+        sequence.append({"Vg": base_vg, "duration": 5.0, "laser_cmd2": {"channel": ch_idx, "on": 1}})
         
         init_step_on = {"Vg": vg_on, "duration": 3 * bit_duration / 4}
         init_step_off = {"Vg": base_vg, "duration": bit_duration / 4}

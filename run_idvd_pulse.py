@@ -77,7 +77,7 @@ class AutoIdVdPulseWorker(BaseMeasurementWorker):
         self.k.enable_output('b', True)
         time.sleep(1) 
 
-        self.status_update.emit(f"[{label}] Pulsed Sweeping Vd={vg_const}V...")
+        self.status_update.emit(f"[{label}] Pulsed Sweeping Vg={vg_const}V...")
         vd_points = np.linspace(params["vd_start"], params["vd_stop"], int(params["num_points"]))
         # delay = params.get("source_to_measure_delay", 0.01)
 
