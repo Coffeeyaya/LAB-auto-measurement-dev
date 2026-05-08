@@ -32,7 +32,7 @@ def generate_configs(laser_template_path, reset_template_path, output_dir, exper
         power = run_config['power']
         
         # Calculate servo_time_off dynamically (always 2x servo_time_on)
-        servo_off = servo_on * 2.0
+        servo_off = 100 - servo_on 
         
         # FIX 3: Dynamic Prefix Calculation to prevent numbering gaps
         if reset:

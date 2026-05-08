@@ -31,5 +31,5 @@
     ],
     "on_off_number": 1,
     "servo_time_on": 5,
-    "servo_time_off": 10.0
+    "servo_time_off": 95
 }
