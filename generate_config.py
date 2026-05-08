@@ -97,5 +97,5 @@ if __name__ == "__main__":
         output_dir=OUTPUT_FOLDER, 
         experiment_matrix=my_experiment_matrix,
         target_baseline='5e-11',
-        reset=False # It will now neatly generate files 01 to 25 without any gaps!
+        reset=True
     )

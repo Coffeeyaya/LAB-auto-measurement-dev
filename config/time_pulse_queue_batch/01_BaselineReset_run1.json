@@ -12,6 +12,6 @@
     "nplc_a": 1.0,
     "nplc_b": 1.0,
     "vd_const": 1.0,
-    "target_baseline": 5e-11,
+    "target_baseline": "5e-11",
     "timeout": 300
 }

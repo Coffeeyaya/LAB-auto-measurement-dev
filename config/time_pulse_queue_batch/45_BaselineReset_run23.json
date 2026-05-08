@@ -3,7 +3,7 @@
     "electrical_mode": "Pulsed Vg Train",
     "description": "Time-Dep",
     "device_number": "9-6",
-    "run_number": "1",
+    "run_number": "23",
     "wait_time": 0,
     "current_limit_a": 0.001,
     "current_limit_b": 0.001,
@@ -12,6 +12,6 @@
     "nplc_a": 1.0,
     "nplc_b": 1.0,
     "vd_const": 1.0,
-    "target_baseline": 5e-11,
+    "target_baseline": "5e-11",
     "timeout": 300
 }
