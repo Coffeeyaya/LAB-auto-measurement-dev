@@ -1,0 +1,17 @@
+{
+    "hardware_mode": "Baseline Reset",
+    "electrical_mode": "Pulsed Vg Train",
+    "description": "Time-Dep",
+    "device_number": "8-5",
+    "run_number": "9",
+    "wait_time": 0,
+    "current_limit_a": 0.001,
+    "current_limit_b": 0.001,
+    "current_range_a": 1e-06,
+    "current_range_b": 1e-06,
+    "nplc_a": 1.0,
+    "nplc_b": 1.0,
+    "vd_const": 1.0,
+    "target_baseline": 1e-11,
+    "timeout": 600
+}

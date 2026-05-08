@@ -1,137 +1,90 @@
 import json
 import os
-import copy
 
-def generate_from_base(base_dict, output_dir="config/time_pulse_queue", **kwargs):
+def generate_configs(laser_template_path, reset_template_path, output_dir, experiment_matrix):
     """
-    Safely clones a base dictionary, updates parameters (including nested ones), 
-    and saves it sequentially.
+    Generates customized JSON config files for Laser Servo and Baseline Reset.
+    Modifies servo_time_on and auto-calculates servo_time_off.
     """
-    config = copy.deepcopy(base_dict)
-    os.makedirs(output_dir, exist_ok=True)
-    
-    # --- THE MAGIC NESTED INTERCEPTOR ---
-    for key, value in kwargs.items():
-        # If the user wants to change the laser power...
-        if key == "laser_power":
-            # Ensure laser_settings exists in the base config first
-            if "laser_settings" in config and config["laser_settings"] is not None:
-                config["laser_settings"]["power"] = value
-            else:
-                print("Warning: Tried to update laser power, but no laser_settings found in base config!")
-        
-        # If the user wants to change the laser wavelength...
-        elif key == "laser_wavelength":
-            if "laser_settings" in config and config["laser_settings"] is not None:
-                config["laser_settings"]["wavelength"] = value
-                
-        # Normal top-level variables (vd_const, vg_on, wait_time, etc.)
-        else:
-            config[key] = value
-    # ------------------------------------
-    
-    # Count existing files to increment prefix
-    existing_files = [f for f in os.listdir(output_dir) if f.endswith('.json')]
-    next_idx = len(existing_files) + 1
-    
-    # Build a dynamic filename
-    # hw_prefix = config.get("hardware_mode", "Device").replace(" ", "").replace("+", "")
-    # elec_prefix = config.get("electrical_mode", "Mode").replace(" ", "")
-    # device = config.get("device_number", "X")
-    
-    changed_params_str = "_".join([f"{k}-{str(v).replace('.', 'p')}" for k, v in kwargs.items()])
-    if not changed_params_str: changed_params_str = "base_copy"
-        
-    filename = f"{next_idx:02d}.json"
-    full_path = os.path.join(output_dir, filename)
-    
-    with open(full_path, 'w') as f:
-        json.dump(config, f, indent=4)
-        
-    print(f"✅ Generated: {filename}")
-    return full_path
-
-# ==========================================
-# HOW TO USE IT
-# ==========================================
-if __name__ == "__main__":
-    # idvg
-    # BASE_TEMPLATE_PATH = ""
-    # try:
-    #     with open(BASE_TEMPLATE_PATH, 'r') as f:
-    #         base_config = json.load(f)
-    # except FileNotFoundError:
-    #     print(f"❌ Could not find {BASE_TEMPLATE_PATH}.")
-    #     exit()
-
-    # power_test_points = [25, 50, 100, 200, 400]
-    
-    # for i,pwr in enumerate(power_test_points):
-    #     generate_from_base(
-    #         base_dict=base_config, 
-    #         output_dir="",
-    #         run_number=i + 2,
-    #         # Use our custom keyword to trigger the interceptor!
-    #         laser_power=pwr, 
-    #     )
-
-    # # idvd
-    # BASE_TEMPLATE_PATH = ""
-    # try:
-    #     with open(BASE_TEMPLATE_PATH, 'r') as f:
-    #         base_config = json.load(f)
-    # except FileNotFoundError:
-    #     print(f"❌ Could not find {BASE_TEMPLATE_PATH}.")
-    #     exit()
-    # power_test_points = [25, 50, 100, 200, 400]
-    
-    # for i,pwr in enumerate(power_test_points):
-    #     generate_from_base(
-    #         base_dict=base_config, 
-    #         output_dir="config/idvd_pulse_queue",
-    #         run_number=i + 2,
-    #         # Use our custom keyword to trigger the interceptor!
-    #         laser_power=pwr, 
-    #     )
-
-    
-    # time dark
-    # BASE_TEMPLATE_PATH = "/Users/tsaiyunchen/Desktop/lab/master/measurement_dev/measure/config/base_file/01_DarkCurrent_PulsedVgTrain_.json"
-    # try:
-    #     with open(BASE_TEMPLATE_PATH, 'r') as f:
-    #         base_config = json.load(f)
-    # except FileNotFoundError:
-    #     print(f"❌ Could not find {BASE_TEMPLATE_PATH}.")
-    #     exit()  
-    # vg_points = [0.2, 0.4, 0.6, 0.8, 1.0]
-    
-    # for i,vg in enumerate(vg_points):
-    #     generate_from_base(
-    #         base_dict=base_config, 
-    #         output_dir="config/time_pulse_queue",
-    #         run_number=i + 2,
-    #         # Use our custom keyword to trigger the interceptor!
-    #         vg_on=vg, 
-    #     )
-    # time  
-    BASE_TEMPLATE_PATH = "/Users/tsaiyunchen/Desktop/lab/master/measurement_dev/measure/config/time_pulse_queue/12_LaserServo_PulsedVgTrain_.json"
+    # 1. Load the base templates
     try:
-        with open(BASE_TEMPLATE_PATH, 'r') as f:
-            base_config = json.load(f)
-    except FileNotFoundError:
-        print(f"❌ Could not find {BASE_TEMPLATE_PATH}.")
-        exit()  
-    power_test_points = [25, 50, 100, 200, 400]
-    vg_test_points = [0.2, 0.4, 0.6, 0.8, 1.0]
-    count = 12
-    for i, vg in enumerate(vg_test_points):
-        for j,pwr in enumerate(power_test_points):
-            generate_from_base(
-                base_dict=base_config, 
-                output_dir="config/time_pulse_queue",
-                run_number=count,
-                # Use our custom keyword to trigger the interceptor!
-                power_arr=[pwr], 
-                vg_on=vg
-            )
-            count += 1
+        with open(laser_template_path, 'r') as f:
+            laser_template = json.load(f)
+            
+        with open(reset_template_path, 'r') as f:
+            reset_template = json.load(f)
+    except FileNotFoundError as e:
+        print(f"Error loading templates: {e}")
+        return
+
+    # Create output directory if it doesn't exist
+    os.makedirs(output_dir, exist_ok=True)
+
+    # 2. Iterate through the array of inputs and generate files
+    for i, run_config in enumerate(experiment_matrix):
+        run_str = str(run_config["run_number"])
+        servo_on = run_config["servo_time_on"]
+        power = run_config['power']
+        
+        # Calculate servo_time_off dynamically (always 2x servo_time_on)
+        servo_off = servo_on * 2.0
+        
+        # Calculate alternating prefixes to ensure correct queue order
+        # i=0 -> reset=01, laser=02
+        # i=1 -> reset=03, laser=04
+        reset_prefix = (2 * i) + 1
+        laser_prefix = (2 * i) + 2
+        
+        # --- Generate Baseline Reset Config (Comes First) ---
+        reset_data = reset_template.copy()
+        reset_data["run_number"] = run_str
+        
+        reset_filename = f"{reset_prefix:02d}_BaselineReset_run{run_str}.json"
+        reset_filepath = os.path.join(output_dir, reset_filename)
+        
+        with open(reset_filepath, 'w') as f:
+            json.dump(reset_data, f, indent=4)
+
+        # --- Generate Laser Measurement Config (Comes Second) ---
+        laser_data = laser_template.copy()
+        laser_data["run_number"] = run_str
+        laser_data["servo_time_on"] = servo_on
+        laser_data["servo_time_off"] = servo_off
+        laser_data['power_arr'] = [power]
+        
+        laser_filename = f"{laser_prefix:02d}_LaserServo_run{run_str}_servoOn_{servo_on}s.json"
+        laser_filepath = os.path.join(output_dir, laser_filename)
+        
+        with open(laser_filepath, 'w') as f:
+            json.dump(laser_data, f, indent=4)
+            
+    print(f"Success: Generated {len(experiment_matrix) * 2} config files in '{output_dir}'.")
+
+
+if __name__ == "__main__":
+    # Define your specific servo pulse times here
+    def build_matrix(run_number_start, servo_on_list, pwr_list):
+        run_number = run_number_start
+        matrix = []
+        for pwr in pwr_list:
+            for servo_on in servo_on_list:
+                matrix.append({"run_number": str(run_number), "servo_time_on": servo_on, 'power': pwr})
+                run_number += 1
+            
+        return matrix
+    my_experiment_matrix = build_matrix(run_number_start=1, servo_on_list=[0.3, 3, 30], pwr_list=[25, 50, 100, 200, 400])
+    
+    # Paths to the template files
+    # Make sure to save the JSON you provided as the "01_LaserServo..." template!
+    RESET_TEMPLATE = 'config/time_pulse_queue/01_BaselineReset_PulsedVgTrain_.json'
+    LASER_TEMPLATE = 'config/time_pulse_queue/02_LaserServo_PulsedVgTrain_.json'
+    
+    
+    OUTPUT_FOLDER = 'config/time_pulse_queue_batch'
+    
+    generate_configs(
+        laser_template_path=LASER_TEMPLATE, 
+        reset_template_path=RESET_TEMPLATE, 
+        output_dir=OUTPUT_FOLDER, 
+        experiment_matrix=my_experiment_matrix
+    )
