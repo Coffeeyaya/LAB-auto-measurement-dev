@@ -86,8 +86,8 @@ if __name__ == "__main__":
     ]
     
     # Paths to the template files you uploaded
-    LASER_TEMPLATE = 'config/time_pulse_queue/01_LaserServo_PulsedVgTrain_.json'
-    RESET_TEMPLATE = 'config/time_pulse_queue/02_BaselineReset_PulsedVgTrain_.json'
+    LASER_TEMPLATE = 'config/time_pulse_queue/02_LaserServo_PulsedVgTrain_.json'
+    RESET_TEMPLATE = 'config/time_pulse_queue/01_BaselineReset_PulsedVgTrain_.json'
     OUTPUT_FOLDER = 'config/generated_configs'
     
     generate_configs(

@@ -1,9 +1,0 @@
-{
-    "hardware_mode": "Baseline Reset",
-    "device_number": "9-6",
-    "run_number": "3",
-    "target_baseline": 1e-11,
-    "timeout": 600,
-    "vd_const": 1.0,
-    "label": "Reset before Run 3 (servo_time_on=30)"
-}

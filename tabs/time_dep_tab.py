@@ -347,7 +347,21 @@ def render_new_time_dependent_tab():
 
     with col_btn1:
         st.markdown("**1. Add to Queue**")
-        custom_name = st.text_input("Config Name (Optional)", value="", label_visibility="collapsed", key="td_custom_name")
+        
+        # Smart default: Find the highest existing prefix in the folder
+        highest_idx = 0
+        for f in queued_files:
+            try:
+                prefix = int(f.name.split('_')[0])
+                highest_idx = max(highest_idx, prefix)
+            except ValueError:
+                pass
+        smart_next_idx = highest_idx + 1
+
+        # Place the prefix number and the text box side-by-side
+        col_pfx, col_name = st.columns([1, 2])
+        manual_prefix = col_pfx.number_input("Prefix", value=smart_next_idx, min_value=1, step=1, label_visibility="collapsed", key="td_manual_prefix", help="Starting file number")
+        custom_name = col_name.text_input("Config Name", value="", placeholder="Name (Opt)", label_visibility="collapsed", key="td_custom_name")
         
         if st.button("➕ Add Configuration", type="primary", use_container_width=True, key="td_save_btn"):
             if hardware == "Custom Blocks" and not st.session_state["sequence_blocks"]:
@@ -415,7 +429,7 @@ def render_new_time_dependent_tab():
                             config_dict["servo_time_on"] = st.session_state.get("servo_time_on", 1.0)
                             config_dict["servo_time_off"] = st.session_state.get("servo_time_off", 1.0)
 
-                    next_idx = len(queued_files) + 1
+                    next_idx = int(manual_prefix) # <-- Now uses your UI value instead of list length!
                     safe_name = custom_name.replace(" ", "_")
                     mode_prefix = electric.replace(" ", "")
                     hw_prefix = hardware.replace(" ", "").replace("+", "")
