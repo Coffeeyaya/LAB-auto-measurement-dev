@@ -8,6 +8,7 @@ from pathlib import Path
 # 1. CORE GENERATOR FUNCTION
 # ==========================================
 def generate_batch_files(base_dict, target_dir, param_key, param_values, run_number_start, 
+                         file_prefix_start=1, # <-- NEW PARAMETER
                          baseline_mode="None", target_baseline=1e-11, timeout=600,
                          baseline_vg_on=1.0, baseline_base_vg=0.0, 
                          baseline_pulse_width=0.001, baseline_rest_time=0.3):
@@ -16,9 +17,8 @@ def generate_batch_files(base_dict, target_dir, param_key, param_values, run_num
     # Ensure the target directory exists
     Path(target_dir).mkdir(parents=True, exist_ok=True)
     
-    # Count existing files in the target directory to continue the numbering sequence
-    existing_files = [f for f in os.listdir(target_dir) if f.endswith('.json')]
-    file_idx = len(existing_files) + 1
+    # Use the manual starting index from the UI
+    file_idx = int(file_prefix_start)
     
     device = base_dict.get("device_number", "Dev")
     
@@ -175,8 +175,15 @@ def render_batch_generator_tab():
 
         with col4:
             val_str = st.text_input("Enter Sweep Values (comma-separated):", placeholder="e.g., 1.0, 2.0, 3.0")
-            run_number_start = st.number_input("Enter starting run_number: ", min_value=1, value=1, step=1)
-        
+            
+            # Put them side-by-side
+            col_rn, col_prefix = st.columns(2)
+            run_number_start = col_rn.number_input("Starting run_number:", min_value=1, value=1, step=1)
+            
+            # Smart default: auto-count existing files so you don't have to guess
+            existing_count = len(list(output_dir.glob("*.json")))
+            file_prefix_start = col_prefix.number_input("Starting File Prefix:", min_value=1, value=existing_count + 1, step=1)
+            
         st.divider()
         
         # --- NEW: Baseline Reset Interleaving Logic ---
@@ -230,6 +237,7 @@ def render_batch_generator_tab():
                         param_key=param_to_sweep, 
                         param_values=parsed_values,
                         run_number_start=run_number_start,
+                        file_prefix_start=file_prefix_start, # <-- ADD THIS LINE
                         baseline_mode=baseline_mode,
                         target_baseline=target_baseline,
                         timeout=timeout,

@@ -1,0 +1,77 @@
+{
+    "hardware_mode": "Custom Blocks",
+    "electrical_mode": "Pulsed Vg Train",
+    "description": "Time-Dep",
+    "device_number": "1-1",
+    "run_number": "1",
+    "wait_time": 0,
+    "current_limit_a": 0.001,
+    "current_limit_b": 0.001,
+    "current_range_a": 1e-06,
+    "current_range_b": 1e-06,
+    "nplc_a": 1.0,
+    "nplc_b": 1.0,
+    "vd_const": 1.0,
+    "cycle_number": 1,
+    "sequence_blocks": [
+        {
+            "id": "daf3c853ae6c4166b604c0b1dfa2723d",
+            "type": "Dark Bias",
+            "duration": 1.0,
+            "vg": 0.0
+        },
+        {
+            "id": "564c7e94df20404a8715e8367304a4b7",
+            "type": "Dark Bias",
+            "duration": 1.0,
+            "vg": 1.0
+        },
+        {
+            "id": "390bcc18381d44038278b933c8340da3",
+            "type": "Laser Wavelength",
+            "duration": 5.0,
+            "vg": 1.0,
+            "channel": 6,
+            "wavelength": 660
+        },
+        {
+            "id": "e536cb3b4919433db1d430a4b7f445d8",
+            "type": "Laser Power",
+            "duration": 5.0,
+            "vg": 1.0,
+            "channel": 6,
+            "wavelength": 660,
+            "power": 100.0
+        },
+        {
+            "id": "17ca78e2a1c34042b6ae98b0c29133ac",
+            "type": "Laser Toggle",
+            "duration": 5.0,
+            "vg": 1.0,
+            "channel": 6,
+            "on": 1
+        },
+        {
+            "id": "d49e66e2c49e4ff0aeaece19b7f266f8",
+            "type": "Servo Shutter",
+            "duration": 0.1,
+            "vg": 1.0
+        },
+        {
+            "id": "48ff7c1bccf841f8ace70b739c8a1026",
+            "type": "Servo Shutter",
+            "duration": 0.1,
+            "vg": 1.0
+        },
+        {
+            "id": "eeecd64c3372440682d936f1315f6755",
+            "type": "Laser Toggle",
+            "duration": 5.0,
+            "vg": 1.0,
+            "channel": 6,
+            "on": 1
+        }
+    ],
+    "pulse_width": 0.0,
+    "rest_time": 0.0
+}
