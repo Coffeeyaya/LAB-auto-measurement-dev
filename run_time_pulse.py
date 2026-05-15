@@ -136,11 +136,12 @@ class TimeDepPulseWorker(BaseMeasurementWorker):
         ch_idx = int(channels[0])
         wavelength = int(wavelengths[0])
         pp = self.get_pp_exact(wavelength, powers[0])
+        base_vg = float(params.get("base_vg", 0.0))
 
         # Pre-bias optical setup
         sequence.extend([
-            {"Vg": vg_off, "duration": 5.0, "laser_cmd1": {"channel": ch_idx, "wavelength": wavelength}},
-            {"Vg": vg_off, "duration": 5.0, "laser_cmd1": {"channel": ch_idx, "power": pp}}
+            {"Vg": base_vg, "duration": 5.0, "laser_cmd1": {"channel": ch_idx, "wavelength": wavelength}},
+            {"Vg": base_vg, "duration": 5.0, "laser_cmd1": {"channel": ch_idx, "power": pp}}
         ])
 
         # --- MODE 2: LASER ONLY ---
