@@ -156,7 +156,7 @@ class TimeDepPulseWorker(BaseMeasurementWorker):
         
         # --- MODE 3: LASER + SERVO ---
         elif hardware_mode == "Laser + Servo":
-            sequence.append({"Vg": vg_off, "duration": 3.0, "laser_cmd2": {"channel": ch_idx, "on": 1}})
+            sequence.append({"Vg": base_vg, "duration": 3.0, "laser_cmd2": {"channel": ch_idx, "on": 1}})
             for _ in range(cycle_number):
                 sequence.append({"Vg": vg_off, "duration": params.get("duration_1", 1.0)})
                 sequence.append({"Vg": vg_on,  "duration": params.get("duration_2", 1.0)})
