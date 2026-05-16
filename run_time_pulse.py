@@ -111,8 +111,9 @@ class TimeDepPulseWorker(BaseMeasurementWorker):
 
     def _build_standard_optical(self, params, hardware_mode):
         """Builds timelines for Dark Current, Laser Only, and Laser + Servo."""
-        sequence = [{'Vg': 2, "duration":0.1},
-                    {'Vg': 0, "duration": 5}]
+        # sequence = [{'Vg': 2, "duration":0.1},
+        #             {'Vg': 0, "duration": 5}]
+        sequence = []
         vg_off = params.get('vg_off', 0.0)
         vg_on = params.get('vg_on', 1.0)
         cycle_number = int(params.get("cycle_number", 1))
