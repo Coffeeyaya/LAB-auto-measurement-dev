@@ -5,20 +5,27 @@ import pyautogui
 import time
 
 def init_AOTF():
-
+    win = None
     while True:
         try:
-            win = gw.getWindowsWithTitle("AOTF Controller")
-            win = win[0]
+            win_list = gw.getWindowsWithTitle("AOTF Controller")
+            if not win_list:
+                print("Waiting for AOTF Controller window...")
+                time.sleep(1)
+                continue
+            
+            win = win_list[0]
             win.restore()
             win.moveTo(0, 0)
             win.activate()
             break
-        except gw.PyGetWindowException:
-            pyautogui.click(win.left, win.top)
+        except (gw.PyGetWindowException, IndexError):
+            if win:
+                pyautogui.click(win.left + 10, win.top + 10)
+            time.sleep(0.5)
     
-    pyautogui.moveTo(200, 500)
     time.sleep(1)
+    # Click in the middle of the window to ensure focus
     pyautogui.click(200, 500)
     time.sleep(1)
 
@@ -35,16 +42,24 @@ def init_AOTF():
     return grid
 
 def grab_and_click_AOTF():
+    win = None
     while True:
         try:
-            win = gw.getWindowsWithTitle("AOTF Controller")
-            win = win[0]
+            win_list = gw.getWindowsWithTitle("AOTF Controller")
+            if not win_list:
+                return # Give up if not found to avoid hanging
+            
+            win = win_list[0]
             win.restore()
             win.moveTo(0, 0)
             win.activate()
+            # Click title bar or somewhere safe to force focus
+            pyautogui.click(win.left + 100, win.top + 10)
             break
-        except gw.PyGetWindowException:
-            pyautogui.click(win.left, win.top)
+        except (gw.PyGetWindowException, IndexError):
+            if win:
+                pyautogui.click(win.left + 10, win.top + 10)
+            time.sleep(0.5)
     
     # pyautogui.moveTo(200, 500)
     # time.sleep(1)
