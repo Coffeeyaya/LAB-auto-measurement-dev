@@ -21,14 +21,31 @@ def render_functionalities_tab():
         
     st.divider()
     
-    # --- SECTION 2: LASER STATUS ---
-    st.subheader("📸 Laser PC Status")
-    st.markdown("Take a snapshot of the AOTF Controller GUI running on the Laser PC.")
+    # --- SECTION 2: LASER CONTROL ---
+    st.subheader("🔦 Remote Laser Control")
+    st.markdown("Quickly toggle laser channels or take a status snapshot.")
     
-    l_col1, l_col2 = st.columns([1, 3])
+    l_col1, l_col2, l_col3 = st.columns([1, 1, 2])
     laser_ip = l_col1.text_input("Laser PC IP", value="10.0.0.2", key="func_laser_ip")
+    selected_ch = l_col2.selectbox("Select Channel", options=list(range(8)), index=6, key="func_laser_ch")
     
-    if l_col2.button("Take AOTF Snapshot", use_container_width=True, key="func_snapshot_btn"):
+    if l_col3.button("Toggle Channel ON/OFF", type="secondary", use_container_width=True, key="func_toggle_btn"):
+        try:
+            with st.spinner(f"Toggling Channel {selected_ch}..."):
+                laser = LaserController(laser_ip, 5001)
+                # 'on': 1 triggers the press_on_button in the backend
+                response = laser.send_cmd({"channel": selected_ch, "on": 1}, wait_for_reply=True)
+                laser.close()
+            
+            if response and response.get("response") == "ACK":
+                st.success(f"✅ Channel {selected_ch} toggled.")
+            else:
+                st.error(f"Failed to toggle: {response}")
+        except Exception as e:
+            st.error(f"Connection Error: {e}")
+
+    st.write("")
+    if st.button("Take AOTF Snapshot", use_container_width=True, key="func_snapshot_btn"):
         try:
             with st.spinner("Connecting to Laser PC..."):
                 laser = LaserController(laser_ip, 5001)
