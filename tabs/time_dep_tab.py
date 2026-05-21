@@ -13,6 +13,14 @@ def move_block(index, direction):
     elif direction == "down" and index < len(blocks) - 1:
         blocks.insert(index + 1, blocks.pop(index))
 
+def move_rule(index, direction):
+    """Helper function to interchange repeat rules in the session state."""
+    rules = st.session_state["repeat_rules"]
+    if direction == "up" and index > 0:
+        rules.insert(index - 1, rules.pop(index))
+    elif direction == "down" and index < len(rules) - 1:
+        rules.insert(index + 1, rules.pop(index))
+
 def render_new_time_dependent_tab():
 
     ### Initialize default values in session state (streamlit memory)
@@ -26,16 +34,17 @@ def render_new_time_dependent_tab():
         "cycle_number": 3, "on_off_number": 1, "servo_time_on": 1.0, "servo_time_off": 1.0,
         
         # Pulse-specific parameters
-        "base_vg": 0.0, "pulse_width": 0.001, "rest_time": 0.3,
+        "base_vg": 0.0, "pulse_width": 0.001, "rest_time": 0.3, "reset_vg": 0.0, "reset_duration": 0.1,
 
         # Baseline Reset parameters
         "target_baseline": 1e-11, "timeout": 600,
         
         # Custom Blocks parameters
         "sequence_blocks": [
-            {"id": uuid.uuid4().hex, "type": "Dark Bias", "duration": 1.0, "vg": 0.0}, # <--- ADDED ID
-            {"id": uuid.uuid4().hex, "type": "Dark Bias", "duration": 1.0, "vg": 1.0}  # <--- ADDED ID
+            {"id": uuid.uuid4().hex, "type": "Dark Bias", "duration": 1.0, "vg": 0.0}, 
+            {"id": uuid.uuid4().hex, "type": "Dark Bias", "duration": 1.0, "vg": 1.0}  
         ],
+        "repeat_rules": [],
         "bb_def_channel": 6, "bb_def_wavelength": 660, "bb_def_power": 100.0,
         
         # The Two-Tiered UI states
@@ -133,6 +142,9 @@ def render_new_time_dependent_tab():
     with col3:
         st.number_input("NPLC A", step=0.1, key="nplc_a")
         st.number_input("NPLC B", step=0.1, key="nplc_b")
+    with col4:
+        st.number_input("Reset Vg (V)", value=0.0, step=1.0, key="reset_vg")
+        st.number_input("Reset Duration (s)", value=5.0, step=1.0, key="reset_duration")
         
     st.divider()
 
@@ -154,12 +166,11 @@ def render_new_time_dependent_tab():
         def_power = col_opt3.number_input("Default Power (nW)", value=st.session_state["bb_def_power"], step=10.0, key="bb_def_power")
 
         st.subheader("🧱 Build Custom Sequence")
-        col_cyc, col_wait = st.columns(2)
-        col_cyc.number_input("Sequence Cycle Number", min_value=1, step=1, key="cycle_number")
+        col_wait = st.columns(1)[0]
         col_wait.number_input("Initial Wait Time (s)", min_value=0, step=1, key="wait_time")
 
         for i, block in enumerate(st.session_state["sequence_blocks"]):
-            b_id = block["id"] # <--- EXTRACT UNIQUE ID
+            b_id = block["id"] 
             
             with st.container():
                 col_type, col_dur, col_vg, col_opt, col_order, col_del = st.columns([1.5, 1, 1, 3.5, 0.8, 0.5])
@@ -169,23 +180,23 @@ def render_new_time_dependent_tab():
                     
                 with col_dur:
                     min_dur = 5.0 if block["type"] in ["Laser Power", "Laser Wavelength"] else (2.0 if block["type"] == "Laser Toggle" else 0.1)
-                    block["duration"] = st.number_input("Duration (s)", value=max(float(block["duration"]), min_dur), min_value=min_dur, key=f"dur_{b_id}") # <--- CHANGED TO b_id
+                    block["duration"] = st.number_input("Duration (s)", value=max(float(block["duration"]), min_dur), min_value=min_dur, key=f"dur_{b_id}") 
                     
                 with col_vg:
-                    block["vg"] = st.number_input("Target Vg (V)", value=float(block.get("vg", 0.0)), step=0.1, key=f"vg_{b_id}") # <--- CHANGED TO b_id
+                    block["vg"] = st.number_input("Target Vg (V)", value=float(block.get("vg", 0.0)), step=0.1, key=f"vg_{b_id}") 
                     
                 with col_opt:
                     if block["type"] == "Laser Wavelength":
                         sub_1, sub_2 = st.columns(2)
-                        block["channel"] = sub_1.number_input("Channel", value=int(block.get("channel", def_channel)), step=1, key=f"ch_wl_{b_id}") # <--- CHANGED TO b_id
-                        block["wavelength"] = sub_2.number_input("Wavelength (nm)", value=int(block.get("wavelength", def_wavelength)), step=1, key=f"wl_{b_id}") # <--- CHANGED TO b_id
+                        block["channel"] = sub_1.number_input("Channel", value=int(block.get("channel", def_channel)), step=1, key=f"ch_wl_{b_id}") 
+                        block["wavelength"] = sub_2.number_input("Wavelength (nm)", value=int(block.get("wavelength", def_wavelength)), step=1, key=f"wl_{b_id}") 
                     elif block["type"] == "Laser Power":
                         sub_1, sub_2, sub_3 = st.columns(3)
-                        block["channel"] = sub_1.number_input("Ch", value=int(block.get("channel", def_channel)), step=1, key=f"ch_pw_{b_id}") # <--- CHANGED TO b_id
-                        block["wavelength"] = sub_2.number_input("WL (nm)", value=int(block.get("wavelength", def_wavelength)), step=1, key=f"wl_pw_{b_id}") # <--- CHANGED TO b_id
-                        block["power"] = sub_3.number_input("Pwr (nW)", value=float(block.get("power", def_power)), step=10.0, key=f"pw_{b_id}") # <--- CHANGED TO b_id
+                        block["channel"] = sub_1.number_input("Ch", value=int(block.get("channel", def_channel)), step=1, key=f"ch_pw_{b_id}") 
+                        block["wavelength"] = sub_2.number_input("WL (nm)", value=int(block.get("wavelength", def_wavelength)), step=1, key=f"wl_pw_{b_id}") 
+                        block["power"] = sub_3.number_input("Pwr (nW)", value=float(block.get("power", def_power)), step=10.0, key=f"pw_{b_id}") 
                     elif block["type"] == "Laser Toggle":
-                        block["channel"] = st.number_input("Channel", value=int(block.get("channel", def_channel)), step=1, key=f"ch_tog_{b_id}") # <--- CHANGED TO b_id
+                        block["channel"] = st.number_input("Channel", value=int(block.get("channel", def_channel)), step=1, key=f"ch_tog_{b_id}") 
                     elif block["type"] == "Servo Shutter":
                         st.caption("Toggles physical shutter state")
                     else:
@@ -193,16 +204,16 @@ def render_new_time_dependent_tab():
 
                 with col_order:
                     sub_u, sub_d = st.columns(2)
-                    if sub_u.button("↑", key=f"up_{b_id}", disabled=(i == 0)): # <--- CHANGED TO b_id
+                    if sub_u.button("↑", key=f"up_{b_id}", disabled=(i == 0)): 
                         move_block(i, "up")
                         st.rerun()
-                    if sub_d.button("↓", key=f"down_{b_id}", disabled=(i == len(st.session_state["sequence_blocks"]) - 1)): # <--- CHANGED TO b_id
+                    if sub_d.button("↓", key=f"down_{b_id}", disabled=(i == len(st.session_state["sequence_blocks"]) - 1)): 
                         move_block(i, "down")
                         st.rerun()
 
                 with col_del:
                     st.write("") 
-                    if st.button("❌", key=f"del_{b_id}"): # <--- CHANGED TO b_id
+                    if st.button("❌", key=f"del_{b_id}"): 
                         st.session_state["sequence_blocks"].pop(i)
                         st.rerun()
 
@@ -214,7 +225,6 @@ def render_new_time_dependent_tab():
             st.write("") 
             if st.button("➕ Add Block", use_container_width=True):
                 default_dur = 5.0 if new_block_type in ["Laser Power", "Laser Wavelength", "Laser Toggle"] else 0.1
-                # <--- ADDED UUID INJECTION HERE
                 new_block = {"id": uuid.uuid4().hex, "type": new_block_type, "duration": default_dur, "vg": 1.0}
 
                 if new_block_type == "Laser Wavelength": new_block.update({"channel": def_channel, "wavelength": def_wavelength})
@@ -227,6 +237,39 @@ def render_new_time_dependent_tab():
             if st.button("🗑️ Clear All", use_container_width=True):
                 st.session_state["sequence_blocks"] = []
                 st.rerun()
+
+        st.subheader("🔁 Sub-cycle Repeat Rules")
+        num_blocks = len(st.session_state["sequence_blocks"])
+        
+        for i, rule in enumerate(st.session_state["repeat_rules"]):
+            r_id = rule["id"]
+            with st.container():
+                col_s, col_e, col_c, col_order, col_del = st.columns([1, 1, 1, 0.8, 0.5])
+                with col_s:
+                    rule["start"] = st.number_input("Start Block #", min_value=1, max_value=max(1, num_blocks), value=int(rule["start"]), key=f"rule_s_{r_id}")
+                with col_e:
+                    rule["end"] = st.number_input("End Block #", min_value=1, max_value=max(1, num_blocks), value=int(rule["end"]), key=f"rule_e_{r_id}")
+                with col_c:
+                    rule["cycles"] = st.number_input("Cycles", min_value=1, value=int(rule["cycles"]), key=f"rule_c_{r_id}")
+                
+                with col_order:
+                    sub_u, sub_d = st.columns(2)
+                    if sub_u.button("↑", key=f"rule_up_{r_id}", disabled=(i == 0)):
+                        move_rule(i, "up")
+                        st.rerun()
+                    if sub_d.button("↓", key=f"rule_down_{r_id}", disabled=(i == len(st.session_state["repeat_rules"]) - 1)):
+                        move_rule(i, "down")
+                        st.rerun()
+                
+                with col_del:
+                    st.write("")
+                    if st.button("❌", key=f"rule_del_{r_id}"):
+                        st.session_state["repeat_rules"].pop(i)
+                        st.rerun()
+        
+        if st.button("➕ Add Repeat Rule", use_container_width=True):
+            st.session_state["repeat_rules"].append({"id": uuid.uuid4().hex, "start": 1, "end": max(1, num_blocks), "cycles": 2})
+            st.rerun()
 
     else:
         # --- Standard Rendering for Array-Based & Simple Modes ---
@@ -383,12 +426,40 @@ def render_new_time_dependent_tab():
                         "nplc_a": st.session_state["nplc_a"],
                         "nplc_b": st.session_state["nplc_b"],
                         "vd_const": st.session_state["vd_const"],
+                        "reset_vg": st.session_state["reset_vg"],
+                        "reset_duration": st.session_state["reset_duration"],
                     }
 
                     # Mode Routing
                     if hardware == "Custom Blocks":
-                        config_dict["cycle_number"] = st.session_state["cycle_number"]
+                        # --- VALIDATE REPEAT RULES ---
+                        rules = st.session_state["repeat_rules"]
+                        valid = True
+                        for i in range(len(rules)):
+                            for j in range(i + 1, len(rules)):
+                                r1 = rules[i]
+                                r2 = rules[j]
+                                
+                                # Sort by start to simplify logic
+                                a, b = (r1, r2) if r1["start"] <= r2["start"] else (r2, r1)
+                                
+                                # Valid cases:
+                                # 1. Disjoint: a.end < b.start
+                                # 2. Nested: a.start <= b.start AND a.end >= b.end
+                                is_disjoint = a["end"] < b["start"]
+                                is_nested = a["start"] <= b["start"] and a["end"] >= b["end"]
+                                
+                                if not (is_disjoint or is_nested):
+                                    st.error(f"❌ Overlap Error: Rule {i+1} and Rule {j+1} partially overlap. Rules must be either fully nested or fully separate.")
+                                    valid = False
+                                    break
+                            if not valid: break
+                        
+                        if not valid:
+                            st.stop()
+
                         config_dict["sequence_blocks"] = st.session_state["sequence_blocks"]
+                        config_dict["repeat_rules"] = st.session_state["repeat_rules"]
                         if electric == "Pulsed Vg Train":
                             config_dict["pulse_width"] = st.session_state["pulse_width"]
                             config_dict["rest_time"] = st.session_state["rest_time"]

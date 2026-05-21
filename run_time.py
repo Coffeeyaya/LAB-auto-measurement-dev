@@ -24,11 +24,12 @@ class TimeDepWorker(BaseMeasurementWorker):
     def _build_sequence_single(self, params):
         """
         builds the timeline based on the requested hardware mode.
-        only handles single wavelength, single power
         """
-        sequence = []
         hardware_mode = params.get("hardware_mode", "Dark Current")
         
+        if hardware_mode == "Custom Blocks":
+            return self._build_custom_blocks(params)
+
         vg_off = params.get('vg_off', 0.0)
         vg_on = params.get('vg_on', 1.0)
         cycle_number = int(params.get("cycle_number", 1))
@@ -83,6 +84,75 @@ class TimeDepWorker(BaseMeasurementWorker):
                     sequence.append({"Vg": vg_on, "duration": params.get("servo_time_off", 1.0), "laser_cmd3": 1})
             sequence.append({"Vg": vg_off, "duration": 1.0, "laser_cmd2": {"channel": ch_idx, "on": 1}})
         return sequence
+
+    def _build_custom_blocks(self, params):
+        """Builds a timeline based on the GUI's custom block array and repeat rules."""
+        blocks = params.get("sequence_blocks", [])
+        rules = params.get("repeat_rules", [])
+
+        # 1. Format blocks into standard measurement steps
+        formatted_steps = []
+        for b in blocks:
+            step = {"Vg": b.get("vg", 0.0), "duration": b.get("duration", 1.0)}
+            b_type = b.get("type", "Dark Bias")
+            
+            if b_type == "Laser Wavelength":
+                step["laser_cmd1"] = {"channel": b["channel"], "wavelength": b["wavelength"]}
+            elif b_type == "Laser Power":
+                wl = b.get("wavelength", 660)
+                pp = self.get_pp_exact(wl, b["power"])
+                step["laser_cmd1"] = {"channel": b["channel"], "power": pp}
+            elif b_type == "Laser Toggle":
+                step["laser_cmd2"] = {"channel": b["channel"], "on": 1}
+            elif b_type == "Servo Shutter":
+                step["laser_cmd3"] = 1
+            formatted_steps.append(step)
+
+        # 2. Clean and sort rules (1-based UI to 0-based code)
+        clean_rules = []
+        for r in rules:
+            s = max(0, int(r["start"]) - 1)
+            e = min(len(blocks) - 1, int(r["end"]) - 1)
+            c = max(1, int(r["cycles"]))
+            if s <= e:
+                clean_rules.append({"start": s, "end": e, "cycles": c})
+        
+        # Sort rules: Longest ranges first to build the tree from top-down
+        clean_rules.sort(key=lambda x: (x["end"] - x["start"], -x["start"]), reverse=True)
+
+        # 3. Recursive Expansion Function
+        def expand_range(start_idx, end_idx, active_rules):
+            result = []
+            i = start_idx
+            while i <= end_idx:
+                # Find the rule that starts exactly at index i
+                applicable_rule = next((r for r in active_rules if r["start"] == i and r["end"] <= end_idx), None)
+
+                if applicable_rule:
+                    # Find all rules strictly inside this one
+                    sub_rules = [r for r in active_rules if r != applicable_rule and 
+                                 r["start"] >= applicable_rule["start"] and r["end"] <= applicable_rule["end"]]
+                    
+                    # Recursively expand the inner content once
+                    sub_sequence = expand_range(applicable_rule["start"], applicable_rule["end"], sub_rules)
+                    
+                    # Repeat it the requested number of times
+                    for _ in range(applicable_rule["cycles"]):
+                        result.extend(sub_sequence)
+                    
+                    # Jump index past this rule
+                    i = applicable_rule["end"] + 1
+                else:
+                    # No rule starts here, just add the individual step
+                    result.append(formatted_steps[i])
+                    i += 1
+            return result
+
+        # Initial call: expand everything from 0 to len-1
+        if not formatted_steps:
+            return []
+            
+        return expand_range(0, len(formatted_steps) - 1, clean_rules)
 
     # ------------------------------------------
     # EXECUTION
@@ -247,6 +317,14 @@ class TimeDepWorker(BaseMeasurementWorker):
                 
                 # Build and Execute Sequence
                 sequence = self._build_sequence_single(params)
+                
+                # Append Post-Measurement Reset Sequence
+                if "reset_vg" in params:
+                    # 1. Apply Reset Pulse
+                    sequence.append({"Vg": float(params["reset_vg"]), "duration": float(params.get("reset_duration", 5.0))})
+                    # 2. Relax at 0V for 3s
+                    sequence.append({"Vg": 0.0, "duration": 3.0})
+                
                 self._execute_time_measurement(filename, params, sequence, config_idx, label)
 
                 self.k.enable_output('a', False)
@@ -288,9 +366,9 @@ if __name__ == "__main__":
                 params = json.load(f)
                 hw_mode = params.get("hardware_mode", "Dark Current")
                 
-                if hw_mode in ["Laser Only", "Laser + Servo"]:
+                if hw_mode in ["Laser Only", "Laser + Servo", "Custom Blocks"]:
                     needs_laser = True
-                if hw_mode == "Laser + Servo":
+                if hw_mode in ["Laser + Servo", "Custom Blocks"]:
                     needs_servo = True
         except Exception as e:
             pass

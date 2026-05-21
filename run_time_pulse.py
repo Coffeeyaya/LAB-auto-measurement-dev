@@ -31,42 +31,73 @@ class TimeDepPulseWorker(BaseMeasurementWorker):
             return self._build_standard_optical(params, hardware_mode)
 
     def _build_custom_blocks(self, params):
-        """Builds a timeline based on the GUI's custom block array."""
-        sequence = []
+        """Builds a timeline based on the GUI's custom block array and repeat rules."""
         blocks = params.get("sequence_blocks", [])
-        cycle_number = int(params.get("cycle_number", 1)) 
+        rules = params.get("repeat_rules", [])
+
+        # 1. Format blocks into standard measurement steps
+        formatted_steps = []
+        for b in blocks:
+            step = {"Vg": b.get("vg", 0.0), "duration": b.get("duration", 1.0)}
+            b_type = b.get("type", "Dark Bias")
+            
+            if b_type == "Laser Wavelength":
+                step["laser_cmd1"] = {"channel": b["channel"], "wavelength": b["wavelength"]}
+            elif b_type == "Laser Power":
+                wl = b.get("wavelength", 660)
+                pp = self.get_pp_exact(wl, b["power"])
+                step["laser_cmd1"] = {"channel": b["channel"], "power": pp}
+            elif b_type == "Laser Toggle":
+                step["laser_cmd2"] = {"channel": b["channel"], "on": 1}
+            elif b_type == "Servo Shutter":
+                step["laser_cmd3"] = 1
+            formatted_steps.append(step)
+
+        # 2. Clean and sort rules (1-based UI to 0-based code)
+        clean_rules = []
+        for r in rules:
+            s = max(0, int(r["start"]) - 1)
+            e = min(len(blocks) - 1, int(r["end"]) - 1)
+            c = max(1, int(r["cycles"]))
+            if s <= e:
+                clean_rules.append({"start": s, "end": e, "cycles": c})
         
-        for _ in range(cycle_number):
-            for b in blocks:
-                # Every block fundamentally needs Vg and duration
-                step = {"Vg": b.get("vg", 0.0), "duration": b.get("duration", 1.0)}
-                b_type = b.get("type", "Dark Bias") # block type
-                
-                if b_type == "Laser Wavelength":
-                    step["laser_cmd1"] = {"channel": b["channel"], "wavelength": b["wavelength"]}
+        # Sort rules: Longest ranges first to build the tree from top-down
+        clean_rules.sort(key=lambda x: (x["end"] - x["start"], -x["start"]), reverse=True)
 
-                elif b_type == "Laser Power":
-                    wl = b.get("wavelength", 660)
-                    power = b["power"]
-                    pp = self.get_pp_exact(wl, power)
-                    step["laser_cmd1"] = {"channel": b["channel"], "power": pp}
+        # 3. Recursive Expansion Function
+        def expand_range(start_idx, end_idx, active_rules):
+            result = []
+            i = start_idx
+            while i <= end_idx:
+                # Find the rule that starts exactly at index i
+                applicable_rule = next((r for r in active_rules if r["start"] == i and r["end"] <= end_idx), None)
 
-                elif b_type == "Laser Toggle":
-                    step["laser_cmd2"] = {"channel": b["channel"], "on": 1}
+                if applicable_rule:
+                    # Find all rules strictly inside this one
+                    sub_rules = [r for r in active_rules if r != applicable_rule and 
+                                 r["start"] >= applicable_rule["start"] and r["end"] <= applicable_rule["end"]]
                     
-                elif b_type == "Servo Shutter":
-                    step["laser_cmd3"] = 1
+                    # Recursively expand the inner content once
+                    sub_sequence = expand_range(applicable_rule["start"], applicable_rule["end"], sub_rules)
                     
-                elif b_type == "Dark Bias":
-                    # Explicitly catch Dark Bias so it doesn't trigger the unknown warning
-                    pass 
+                    # Repeat it the requested number of times
+                    for _ in range(applicable_rule["cycles"]):
+                        result.extend(sub_sequence)
                     
+                    # Jump index past this rule
+                    i = applicable_rule["end"] + 1
                 else:
-                    print(f"Warning: Unknown block type '{b_type}'. Defaulting to Dark Bias.")
-                    
-                sequence.append(step)
-                
-        return sequence
+                    # No rule starts here, just add the individual step
+                    result.append(formatted_steps[i])
+                    i += 1
+            return result
+
+        # Initial call: expand everything from 0 to len-1
+        if not formatted_steps:
+            return []
+            
+        return expand_range(0, len(formatted_steps) - 1, clean_rules)
 
     def _build_optical_encoder(self, params):
         """Builds a timeline that converts a binary string into light pulses."""
@@ -449,6 +480,14 @@ class TimeDepPulseWorker(BaseMeasurementWorker):
 
                 # Build and Execute Sequence
                 sequence = self._build_sequence_single(params)
+                
+                # Append Post-Measurement Reset Sequence
+                if "reset_vg" in params:
+                    # 1. Apply Reset Pulse
+                    sequence.append({"Vg": float(params["reset_vg"]), "duration": float(params.get("reset_duration", 5.0))})
+                    # 2. Relax at 0V for 3s
+                    sequence.append({"Vg": 0.0, "duration": 3.0})
+                
                 print(sequence)
                 self._execute_time_pulse_measurement(filename, params, sequence, config_idx, label)
 
