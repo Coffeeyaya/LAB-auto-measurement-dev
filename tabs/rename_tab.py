@@ -61,7 +61,7 @@ def render_rename_tab():
     st.subheader("1. Select Target Folder")
     
     # Dropdown for common folders, plus manual entry
-    common_folders = ["config/time_pulse_queue", "config/time_queue", "config/idvg_queue", "Custom..."]
+    common_folders = ["config/time_pulse_queue", "config/idvd_pulse_queue", "config/idvg_pulse_queue"]
     selected_preset = st.selectbox("Target Queue", common_folders, key="rn_folder_preset")
     
     if selected_preset == "Custom...":
