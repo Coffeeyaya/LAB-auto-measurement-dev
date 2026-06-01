@@ -142,9 +142,6 @@ class AutoIdVdWindow(BaseMeasurementWindow):
 
     def toggle_scale(self):
         super().toggle_scale()
-        scale = 'log' if self.is_log else 'linear'
-        self.ax1.set_yscale(scale)
-        self.ax1.set_ylabel("Drain Current Id (A)", color='blue')
         
         for step_idx, mem in self.data_memory.items():
             ids_plot = mem["ids"]
@@ -152,6 +149,10 @@ class AutoIdVdWindow(BaseMeasurementWindow):
                 ids_plot = [max(1e-13, x) for x in ids_plot]
             self.lines_dict[step_idx].set_data(mem["vds"], ids_plot)
             
+        scale = 'log' if self.is_log else 'linear'
+        self.ax1.set_yscale(scale)
+        self.ax1.set_ylabel("Drain Current Id (A)", color='blue')
+        
         self.ax1.relim()
         self.ax1.autoscale_view()
         self.canvas.draw()

@@ -150,24 +150,25 @@ class TimeDepWindow(BaseMeasurementWindow):
         """Overrides parent to handle Id and Ig axes."""
         super().toggle_scale()
         
-        # 1. Update Axis Scales
+        # 1. Transform data based on new scale
+        for config_idx, mem in self.data_memory.items():
+            id_plot = mem["id"]
+            ig_plot = mem["ig"]
+            if self.is_log:
+                # Explicitly cap values <= 0 at 1e-13 for log scale
+                id_plot = [max(1e-13, x) for x in id_plot]
+                ig_plot = [max(1e-13, x) for x in ig_plot]
+            
+            self.lines_id[config_idx].set_data(mem["t"], id_plot)
+            self.lines_ig[config_idx].set_data(mem["t"], ig_plot)
+
+        # 2. Update Axis Scales and Labels
         scale = 'log' if self.is_log else 'linear'
         self.ax1.set_yscale(scale)
         self.ax2.set_yscale(scale)
         
         self.ax1.set_ylabel(f"Id ({'log ' if self.is_log else ''}A)", color='blue')
         self.ax2.set_ylabel(f"Ig ({'log ' if self.is_log else ''}A)", color='red')
-
-        # 2. Re-plot all existing data with correct transformation
-        for config_idx, mem in self.data_memory.items():
-            id_plot = mem["id"]
-            ig_plot = mem["ig"]
-            if self.is_log:
-                id_plot = [max(1e-13, x) for x in id_plot]
-                ig_plot = [max(1e-13, x) for x in ig_plot]
-            
-            self.lines_id[config_idx].set_data(mem["t"], id_plot)
-            self.lines_ig[config_idx].set_data(mem["t"], ig_plot)
 
         # 3. Rescale and Redraw
         for ax in [self.ax1, self.ax2]:
