@@ -23,7 +23,8 @@ def render_encoder_tab():
         
         "enc_binary_string": "01001000", "enc_bit_duration": 2.0,
         "enc_raw_message": "Hi",
-        "enc_wavelength": 660, "enc_channel": 6, "enc_power": 100.0
+        "enc_wavelength": 660, "enc_channel": 6, "enc_power": 100.0,
+        "enc_init_laser": True
     }
 
     for k, v in default_cfg.items():
@@ -208,10 +209,13 @@ def render_encoder_tab():
     col_rv3.number_input("Relaxation Time (s)", value=st.session_state.get("enc_relax_time", 0.0), step=0.1, key="enc_relax_time", help="Time at Vg=0 after reset")
 
     st.subheader("🔦 Laser Configuration (For Binary '1' State)")
-    col_o1, col_o2, col_o3 = st.columns(3)
+    col_o1, col_o2, col_o3, col_o4 = st.columns([1, 1, 1, 1])
     col_o1.number_input("Wavelength (nm)", step=1, key="enc_wavelength")
     col_o2.number_input("Channel", step=1, key="enc_channel")
     col_o3.number_input("Power (nW)", step=10.0, key="enc_power")
+    with col_o4:
+        st.write("") # padding
+        st.checkbox("Init Laser Settings", key="enc_init_laser", help="If enabled, it will send wavelength/power commands before measurement starts.")
 
     st.divider()
 
@@ -286,7 +290,8 @@ def render_encoder_tab():
                     "wait_time": st.session_state["enc_wait_time"],
                     "reset_vg": st.session_state["enc_reset_vg"],
                     "reset_duration": st.session_state["enc_reset_duration"],
-                    "relax_time": st.session_state["enc_relax_time"]
+                    "relax_time": st.session_state["enc_relax_time"],
+                    "init_laser": st.session_state["enc_init_laser"]
                 }
                 
                 # FIX: Safely find the highest existing index prefix in the folder
@@ -313,10 +318,17 @@ def render_encoder_tab():
                 st.rerun()
 
     with col_btn2:
-        if st.button("▶ Run Script in Terminal (run_time_pulse)", type="secondary", use_container_width=True, key="enc_run_btn"):
+        st.markdown("**2. Run Queue**")
+        if st.button("▶ Run Script in Terminal (run_time_pulse)", type="primary", use_container_width=True, key="enc_run_btn"):
             if not queued_files:
                 st.error("The queue is empty! Add a configuration first.")
             else:
                 success, msg = launch_in_terminal("run_time_pulse.py")
                 if success: st.success(msg)
                 else: st.error(msg)
+
+        st.write("") # padding
+        if st.button("⚙️ Open Servo GUI", type="secondary", use_container_width=True, key="enc_servo_btn"):
+            success, msg = launch_in_terminal("servo_GUI.py")
+            if success: st.success(msg)
+            else: st.error(msg)
