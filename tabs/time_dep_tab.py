@@ -2,8 +2,54 @@ import streamlit as st
 import json
 import time
 import uuid
+import matplotlib.pyplot as plt
+import numpy as np
 from pathlib import Path
 from tabs.helper import launch_in_terminal
+
+def expand_custom_blocks(blocks, rules):
+    """Replicates the recursive expansion logic from run_time.py for UI preview."""
+    # 1. Format blocks into standard measurement steps
+    formatted_steps = []
+    for b in blocks:
+        step = {"Vg": b.get("vg", 0.0), "duration": b.get("duration", 1.0), "type": b.get("type", "Dark Bias")}
+        if step["type"] == "Laser Toggle":
+            step["laser_toggle"] = True
+        elif step["type"] == "Servo Shutter":
+            step["servo_toggle"] = True
+        formatted_steps.append(step)
+
+    # 2. Clean and sort rules
+    clean_rules = []
+    for r in rules:
+        s = max(0, int(r["start"]) - 1)
+        e = min(len(blocks) - 1, int(r["end"]) - 1)
+        c = max(1, int(r["cycles"]))
+        if s <= e:
+            clean_rules.append({"start": s, "end": e, "cycles": c})
+    
+    clean_rules.sort(key=lambda x: (x["end"] - x["start"], -x["start"]), reverse=True)
+
+    # 3. Recursive Expansion
+    def expand_range(start_idx, end_idx, active_rules):
+        result = []
+        i = start_idx
+        while i <= end_idx:
+            applicable_rule = next((r for r in active_rules if r["start"] == i and r["end"] <= end_idx), None)
+            if applicable_rule:
+                sub_rules = [r for r in active_rules if r != applicable_rule and 
+                             r["start"] >= applicable_rule["start"] and r["end"] <= applicable_rule["end"]]
+                sub_sequence = expand_range(applicable_rule["start"], applicable_rule["end"], sub_rules)
+                for _ in range(applicable_rule["cycles"]):
+                    result.extend(sub_sequence)
+                i = applicable_rule["end"] + 1
+            else:
+                result.append(formatted_steps[i])
+                i += 1
+        return result
+
+    if not formatted_steps: return []
+    return expand_range(0, len(formatted_steps) - 1, clean_rules)
 
 def move_block(index, direction):
     """Helper function to interchange custom sequence blocks in the session state."""
@@ -270,6 +316,84 @@ def render_new_time_dependent_tab():
         if st.button("➕ Add Repeat Rule", use_container_width=True):
             st.session_state["repeat_rules"].append({"id": uuid.uuid4().hex, "start": 1, "end": max(1, num_blocks), "cycles": 2})
             st.rerun()
+
+        # --- SEQUENCE VISUALIZATION ---
+        st.write("---")
+        with st.expander("📊 Preview Measurement Timeline", expanded=True):
+            if not st.session_state["sequence_blocks"]:
+                st.warning("Add blocks to see the timeline preview.")
+            else:
+                seq = expand_custom_blocks(st.session_state["sequence_blocks"], st.session_state["repeat_rules"])
+                
+                # Append Post-Measurement Reset Sequence (replicating run_time.py logic)
+                if st.session_state.get("reset_duration", 0) > 0:
+                    seq.append({"Vg": float(st.session_state.get("reset_vg", 0.0)), "duration": float(st.session_state["reset_duration"])})
+                    seq.append({"Vg": 0.0, "duration": 3.0})
+
+                # Plotting logic
+                times = [0]
+                vgs = [0]
+                lasers = [0]
+                servos = [0]
+                
+                cur_t = st.session_state.get("wait_time", 0)
+                cur_l = 0
+                cur_s = 0
+                
+                # Initial point (at end of wait_time)
+                times.append(cur_t)
+                vgs.append(0)
+                lasers.append(0)
+                servos.append(0)
+                
+                for step in seq:
+                    vg = step["Vg"]
+                    dur = step["duration"]
+                    
+                    # Start of step (current time, new Vg/State)
+                    # We handle toggles at the BEGINNING of the step
+                    if step.get("laser_toggle"): cur_l = 1 - cur_l
+                    if step.get("servo_toggle"): cur_s = 1 - cur_s
+                    
+                    times.append(cur_t)
+                    vgs.append(vg)
+                    lasers.append(cur_l)
+                    servos.append(cur_s)
+                    
+                    cur_t += dur
+                    
+                    # End of step
+                    times.append(cur_t)
+                    vgs.append(vg)
+                    lasers.append(cur_l)
+                    servos.append(cur_s)
+
+                fig, (ax1, ax2, ax3) = plt.subplots(3, 1, figsize=(10, 8), sharex=True)
+                plt.subplots_adjust(hspace=0.4)
+                
+                # Plotting with step-like behavior
+                ax1.plot(times, vgs, color='blue', linewidth=2)
+                ax1.set_ylabel("Vg (V)")
+                ax1.grid(True, alpha=0.3)
+                ax1.set_title(f"Sequence Preview ({len(seq)} steps, total {cur_t:.1f}s)")
+                
+                ax2.plot(times, lasers, color='red', linewidth=2)
+                ax2.set_ylabel("Laser")
+                ax2.set_ylim(-0.2, 1.2)
+                ax2.set_yticks([0, 1])
+                ax2.set_yticklabels(["OFF", "ON"])
+                ax2.grid(True, alpha=0.3)
+                
+                ax3.plot(times, servos, color='green', linewidth=2)
+                ax3.set_ylabel("Servo")
+                ax3.set_ylim(-0.2, 1.2)
+                ax3.set_yticks([0, 1])
+                ax3.set_yticklabels(["CLOSE", "OPEN"])
+                ax3.set_xlabel("Time (s)")
+                ax3.grid(True, alpha=0.3)
+                
+                st.pyplot(fig)
+                plt.close(fig) # Cleanup to avoid memory leaks
 
     else:
         # --- Standard Rendering for Array-Based & Simple Modes ---

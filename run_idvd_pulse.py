@@ -109,7 +109,7 @@ class AutoIdVdPulseWorker(BaseMeasurementWorker):
 
 class AutoIdVdPulseWindow(BaseMeasurementWindow):
     def __init__(self, worker):
-        super().__init__(worker, window_title="Pulsed Id-Vd")
+        super().__init__(worker, window_title="Pulsed Id-Vd", initial_log=True)
         
         self.worker.new_sweep.connect(self.add_sweep_line)
         self.worker.new_data.connect(self.update_plot)
@@ -118,8 +118,11 @@ class AutoIdVdPulseWindow(BaseMeasurementWindow):
         self.ax1 = self.figure.add_subplot(111)
         self.ax1.set_title("Automated Pulsed Id-Vd")
         self.ax1.set_xlabel("Drain Voltage (V)")
-        self.ax1.set_ylabel("Drain Current |Id| (A)", color='blue')
-        self.ax1.set_yscale('log')
+        
+        scale = 'log' if self.is_log else 'linear'
+        self.ax1.set_yscale(scale)
+        self.ax1.set_ylabel(f"Drain Current {'|Id|' if self.is_log else 'Id'} (A)", color='blue')
+        
         self.ax1.grid(True, which="both", ls="--", alpha=0.5)
 
     def add_sweep_line(self, step_idx, label):
@@ -131,11 +134,15 @@ class AutoIdVdPulseWindow(BaseMeasurementWindow):
     def update_plot(self, step_idx, data: SweepData):
         # Extract the data cleanly using dot-notation
         self.data_memory[step_idx]["vds"].append(data.Vd)
-        self.data_memory[step_idx]["ids"].append(abs(data.Id))
+        self.data_memory[step_idx]["ids"].append(data.Id)
         
+        ids_plot = self.data_memory[step_idx]["ids"]
+        if self.is_log:
+            ids_plot = [max(1e-13, abs(x)) for x in ids_plot]
+
         self.lines_dict[step_idx].set_data(
             self.data_memory[step_idx]["vds"], 
-            self.data_memory[step_idx]["ids"]
+            ids_plot
         )
         
         current_time = time.time()
@@ -145,6 +152,22 @@ class AutoIdVdPulseWindow(BaseMeasurementWindow):
                 self.ax1.autoscale_view()
             self.canvas.draw()
             self.last_draw_time = current_time
+
+    def toggle_scale(self):
+        super().toggle_scale()
+        scale = 'log' if self.is_log else 'linear'
+        self.ax1.set_yscale(scale)
+        self.ax1.set_ylabel(f"Drain Current {'|Id|' if self.is_log else 'Id'} (A)", color='blue')
+        
+        for step_idx, mem in self.data_memory.items():
+            ids_plot = mem["ids"]
+            if self.is_log:
+                ids_plot = [max(1e-13, abs(x)) for x in ids_plot]
+            self.lines_dict[step_idx].set_data(mem["vds"], ids_plot)
+            
+        self.ax1.relim()
+        self.ax1.autoscale_view()
+        self.canvas.draw()
 
 
 if __name__ == "__main__":

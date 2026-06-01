@@ -1,10 +1,10 @@
 import time
-from PyQt5.QtWidgets import QWidget, QVBoxLayout, QLabel
+from PyQt5.QtWidgets import QWidget, QVBoxLayout, QLabel, QPushButton, QHBoxLayout
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
 
 class BaseMeasurementWindow(QWidget):
-    def __init__(self, worker, window_title="Measurement Dashboard"):
+    def __init__(self, worker, window_title="Measurement Dashboard", initial_log=False):
         super().__init__()
         self.setWindowTitle(window_title)
         self.worker = worker
@@ -12,6 +12,7 @@ class BaseMeasurementWindow(QWidget):
         self.data_memory = {}
         self.lines_dict = {} 
         self.last_draw_time = time.time()
+        self.is_log = initial_log
 
         self._setup_base_ui()
         self._setup_custom_axes() 
@@ -25,13 +26,31 @@ class BaseMeasurementWindow(QWidget):
         layout = QVBoxLayout()
         self.setLayout(layout)
 
+        # Top Bar for Status and Controls
+        top_bar = QHBoxLayout()
+        
         self.status_label = QLabel("Status: Starting up...")
         self.status_label.setStyleSheet("color: blue; font-size: 16px; font-weight: bold;")
-        layout.addWidget(self.status_label)
+        top_bar.addWidget(self.status_label)
+        
+        top_bar.addStretch()
+        
+        self.log_btn = QPushButton(f"Log Scale: {'ON' if self.is_log else 'OFF'}")
+        self.log_btn.setCheckable(True)
+        self.log_btn.setChecked(self.is_log)
+        self.log_btn.clicked.connect(self.toggle_scale)
+        top_bar.addWidget(self.log_btn)
+        
+        layout.addLayout(top_bar)
 
         self.figure = Figure(figsize=(10, 8))
         self.canvas = FigureCanvas(self.figure)
         layout.addWidget(self.canvas)
+
+    def toggle_scale(self):
+        """To be implemented by children to handle specific axes."""
+        self.is_log = not self.is_log
+        self.log_btn.setText(f"Log Scale: {'ON' if self.is_log else 'OFF'}")
 
     def update_status(self, text):
         self.status_label.setText(text)
@@ -72,8 +91,12 @@ class TimeDepWindow(BaseMeasurementWindow):
         self.ax1 = self.figure.add_subplot(211)
         self.ax2 = self.figure.add_subplot(212, sharex=self.ax1)
         
-        self.ax1.set_ylabel("Id (A)", color='blue')
-        self.ax2.set_ylabel("Ig (A)", color='red')
+        scale = 'log' if self.is_log else 'linear'
+        self.ax1.set_yscale(scale)
+        self.ax2.set_yscale(scale)
+
+        self.ax1.set_ylabel(f"Id ({'log ' if self.is_log else ''}A)", color='blue')
+        self.ax2.set_ylabel(f"Ig ({'log ' if self.is_log else ''}A)", color='red')
         self.ax2.set_xlabel("Time (s)")
         
         self.ax1_v = self.ax1.twinx()
@@ -102,8 +125,15 @@ class TimeDepWindow(BaseMeasurementWindow):
         mem["id"].append(data.Id)
         mem["ig"].append(data.Ig)
         
-        self.lines_id[config_idx].set_data(mem["t"], mem["id"])
-        self.lines_ig[config_idx].set_data(mem["t"], mem["ig"])
+        # Apply transformation if log scale is enabled
+        id_plot = mem["id"]
+        ig_plot = mem["ig"]
+        if self.is_log:
+            id_plot = [max(1e-13, abs(x)) for x in id_plot]
+            ig_plot = [max(1e-13, abs(x)) for x in ig_plot]
+
+        self.lines_id[config_idx].set_data(mem["t"], id_plot)
+        self.lines_ig[config_idx].set_data(mem["t"], ig_plot)
         self.lines_vd[config_idx].set_data(mem["t"], mem["vd"])
         self.lines_vg[config_idx].set_data(mem["t"], mem["vg"])
         
@@ -115,6 +145,35 @@ class TimeDepWindow(BaseMeasurementWindow):
                     ax.autoscale_view()
             self.canvas.draw()
             self.last_draw_time = current_time
+
+    def toggle_scale(self):
+        """Overrides parent to handle Id and Ig axes."""
+        super().toggle_scale()
+        
+        # 1. Update Axis Scales
+        scale = 'log' if self.is_log else 'linear'
+        self.ax1.set_yscale(scale)
+        self.ax2.set_yscale(scale)
+        
+        self.ax1.set_ylabel(f"Id ({'log ' if self.is_log else ''}A)", color='blue')
+        self.ax2.set_ylabel(f"Ig ({'log ' if self.is_log else ''}A)", color='red')
+
+        # 2. Re-plot all existing data with correct transformation
+        for config_idx, mem in self.data_memory.items():
+            id_plot = mem["id"]
+            ig_plot = mem["ig"]
+            if self.is_log:
+                id_plot = [max(1e-13, abs(x)) for x in id_plot]
+                ig_plot = [max(1e-13, abs(x)) for x in ig_plot]
+            
+            self.lines_id[config_idx].set_data(mem["t"], id_plot)
+            self.lines_ig[config_idx].set_data(mem["t"], ig_plot)
+
+        # 3. Rescale and Redraw
+        for ax in [self.ax1, self.ax2]:
+            ax.relim()
+            ax.autoscale_view()
+        self.canvas.draw()
 
     def on_finished(self):
         """Override the parent to ensure all 4 axes are rescaled at the end."""
