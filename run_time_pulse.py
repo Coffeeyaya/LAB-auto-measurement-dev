@@ -122,6 +122,10 @@ class TimeDepPulseWorker(BaseMeasurementWorker):
         sequence.append({"Vg": base_vg, "duration": 5.0, "laser_cmd1": {"channel": ch_idx, "power": pp}})
         sequence.append({"Vg": base_vg, "duration": 5.0, "laser_cmd2": {"channel": ch_idx, "on": 1}})
         
+        # Append Relaxation (Vg=0) if configured
+        if relax_time > 0:
+            sequence.append({"Vg": 0.0, "duration": relax_time})
+            
         # Append Reset Pulse if configured
         if reset_duration > 0:
             sequence.append({"Vg": reset_vg, "duration": reset_duration})
