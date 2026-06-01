@@ -129,8 +129,8 @@ class TimeDepWindow(BaseMeasurementWindow):
         id_plot = mem["id"]
         ig_plot = mem["ig"]
         if self.is_log:
-            id_plot = [max(1e-13, abs(x)) for x in id_plot]
-            ig_plot = [max(1e-13, abs(x)) for x in ig_plot]
+            id_plot = [max(1e-13, x) for x in id_plot]
+            ig_plot = [max(1e-13, x) for x in ig_plot]
 
         self.lines_id[config_idx].set_data(mem["t"], id_plot)
         self.lines_ig[config_idx].set_data(mem["t"], ig_plot)
@@ -163,8 +163,8 @@ class TimeDepWindow(BaseMeasurementWindow):
             id_plot = mem["id"]
             ig_plot = mem["ig"]
             if self.is_log:
-                id_plot = [max(1e-13, abs(x)) for x in id_plot]
-                ig_plot = [max(1e-13, abs(x)) for x in ig_plot]
+                id_plot = [max(1e-13, x) for x in id_plot]
+                ig_plot = [max(1e-13, x) for x in ig_plot]
             
             self.lines_id[config_idx].set_data(mem["t"], id_plot)
             self.lines_ig[config_idx].set_data(mem["t"], ig_plot)

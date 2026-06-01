@@ -202,9 +202,10 @@ def render_encoder_tab():
     col_v4.number_input("Pulse Width (s)", step=0.001, format="%f", key="enc_pulse_width")
     col_v5.number_input("Rest Time (s)", step=0.01, format="%f", key="enc_rest_time")
 
-    col_rv1, col_rv2 = st.columns(2)
+    col_rv1, col_rv2, col_rv3 = st.columns(3)
     col_rv1.number_input("Reset Vg (V)", value=st.session_state.get("enc_reset_vg", 0.0), step=0.1, key="enc_reset_vg", help="Applied after each bit")
     col_rv2.number_input("Reset Duration (s)", value=st.session_state.get("enc_reset_duration", 0.0), step=0.1, key="enc_reset_duration")
+    col_rv3.number_input("Relaxation Time (s)", value=st.session_state.get("enc_relax_time", 0.0), step=0.1, key="enc_relax_time", help="Time at Vg=0 after reset")
 
     st.subheader("🔦 Laser Configuration (For Binary '1' State)")
     col_o1, col_o2, col_o3 = st.columns(3)
@@ -284,7 +285,8 @@ def render_encoder_tab():
                     "bit_duration": st.session_state["enc_bit_duration"], 
                     "wait_time": st.session_state["enc_wait_time"],
                     "reset_vg": st.session_state["enc_reset_vg"],
-                    "reset_duration": st.session_state["enc_reset_duration"]
+                    "reset_duration": st.session_state["enc_reset_duration"],
+                    "relax_time": st.session_state["enc_relax_time"]
                 }
                 
                 # FIX: Safely find the highest existing index prefix in the folder

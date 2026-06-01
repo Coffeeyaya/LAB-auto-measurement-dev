@@ -129,7 +129,7 @@ class AutoIdVgWindow(BaseMeasurementWindow):
         
         scale = 'log' if self.is_log else 'linear'
         self.ax1.set_yscale(scale)
-        self.ax1.set_ylabel(f"Drain Current {'|Id|' if self.is_log else 'Id'} (A)", color='blue')
+        self.ax1.set_ylabel("Drain Current Id (A)", color='blue')
         
         self.ax1.grid(True, which="both", ls="--", alpha=0.5)
 
@@ -146,7 +146,7 @@ class AutoIdVgWindow(BaseMeasurementWindow):
         
         ids_plot = self.data_memory[step_idx]["ids"]
         if self.is_log:
-            ids_plot = [max(1e-13, abs(x)) for x in ids_plot]
+            ids_plot = [max(1e-13, x) for x in ids_plot]
         
         self.lines_dict[step_idx].set_data(
             self.data_memory[step_idx]["vgs"], 
@@ -165,12 +165,12 @@ class AutoIdVgWindow(BaseMeasurementWindow):
         super().toggle_scale()
         scale = 'log' if self.is_log else 'linear'
         self.ax1.set_yscale(scale)
-        self.ax1.set_ylabel(f"Drain Current {'|Id|' if self.is_log else 'Id'} (A)", color='blue')
+        self.ax1.set_ylabel("Drain Current Id (A)", color='blue')
         
         for step_idx, mem in self.data_memory.items():
             ids_plot = mem["ids"]
             if self.is_log:
-                ids_plot = [max(1e-13, abs(x)) for x in ids_plot]
+                ids_plot = [max(1e-13, x) for x in ids_plot]
             self.lines_dict[step_idx].set_data(mem["vgs"], ids_plot)
             
         self.ax1.relim()

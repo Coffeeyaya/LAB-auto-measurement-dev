@@ -115,6 +115,7 @@ class TimeDepPulseWorker(BaseMeasurementWorker):
         # Optional reset pulse after each bit
         reset_vg = float(params.get("reset_vg", 0.0))
         reset_duration = float(params.get("reset_duration", 0.0))
+        relax_time = float(params.get("relax_time", 0.0))
         
         # 1. Hardware Initialization Steps (Calibrates Laser in the dark)
         sequence.append({"Vg": base_vg, "duration": 5.0, "laser_cmd1": {"channel": ch_idx, "wavelength": wavelength}})
@@ -144,6 +145,10 @@ class TimeDepPulseWorker(BaseMeasurementWorker):
             # Append Reset Pulse if configured
             if reset_duration > 0:
                 sequence.append({"Vg": reset_vg, "duration": reset_duration})
+            
+            # Append Relaxation (Vg=0) if configured
+            if relax_time > 0:
+                sequence.append({"Vg": 0.0, "duration": relax_time})
         
         sequence.append({"Vg": base_vg, "duration": 3.0, "laser_cmd2": {"channel": ch_idx, "on": 1}})
         return sequence
