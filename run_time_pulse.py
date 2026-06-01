@@ -127,9 +127,10 @@ class TimeDepPulseWorker(BaseMeasurementWorker):
         # 5-cycle initial calibration pulses
         init_step_on = {"Vg": vg_on, "duration": 3 * bit_duration / 4}
         init_step_off = {"Vg": base_vg, "duration": bit_duration / 4}
-        for _ in range(5):
-            sequence.append(init_step_on)
-            sequence.append(init_step_off)
+
+        # for _ in range(5):
+        #     sequence.append(init_step_on)
+        #     sequence.append(init_step_off)
             
         # 2. Encode the Binary String
         for bit in binary_string:
@@ -145,6 +146,9 @@ class TimeDepPulseWorker(BaseMeasurementWorker):
                     {"Vg": base_vg, "duration": bit_duration / 4}
                 ])
             
+            if relax_time > 0:
+                sequence.append({"Vg": 0.0, "duration": relax_time})
+                
             # Append Reset Pulse if configured
             if reset_duration > 0:
                 sequence.append({"Vg": reset_vg, "duration": reset_duration})
