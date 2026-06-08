@@ -7,6 +7,7 @@ from tabs.power_tab import render_power_tab
 from tabs.plotter_tab import render_plotter_tab
 from tabs.batch_tab import render_batch_generator_tab
 from tabs.encoder import render_encoder_tab
+from tabs.qwp_encoder import render_qwp_encoder_tab
 from tabs.pulse_tab import render_vg_pulse_tab
 from tabs.build_block_tab import render_build_block_tab
 from tabs.time_dep_tab import render_new_time_dependent_tab
@@ -22,7 +23,7 @@ def cleanup_temp_files():
         shutil.rmtree("temp_data")
     if os.path.exists("plot_config.json"):
         os.remove("plot_config.json")
-    print("🧹 Server shutting down. Temporary files deleted.")
+    print("Sweep Server shutting down. Temporary files deleted.")
 
 # Register the cleanup function to run when the script exits
 atexit.register(cleanup_temp_files)
@@ -31,7 +32,7 @@ st.set_page_config(page_title="Lab Auto", layout="wide")
 st.title("Lab Automation")
 
 # tab_servo, tab_time_dep, tab_idvg, tab_idvd, tab_power, tab_plot, tab_batch_generator, tab_block, tab_encoder, tab_new_time, tab_vg_pulse  = st.tabs([
-tab_func, tab_new_time,  tab_idvg, tab_idvd, tab_power, tab_plot, tab_batch_generator, tab_encoder, tab_rename  = st.tabs([
+tab_func, tab_new_time,  tab_idvg, tab_idvd, tab_power, tab_plot, tab_batch_generator, tab_encoder, tab_qwp, tab_rename  = st.tabs([
     "🛠️ Functionalities", 
     "Time-dependent", 
     "📈 Id-Vg Sweep",
@@ -41,6 +42,7 @@ tab_func, tab_new_time,  tab_idvg, tab_idvd, tab_power, tab_plot, tab_batch_gene
     "Batch Generator",
     # "Build block",
     "📡 Optical Encoder",
+    "🎡 QWP Encoder",
     "Rename",
 ])
 
@@ -70,6 +72,9 @@ with tab_batch_generator:
 
 with tab_encoder:
     render_encoder_tab()
+
+with tab_qwp:
+    render_qwp_encoder_tab()
 
 with tab_rename:
     render_rename_tab()

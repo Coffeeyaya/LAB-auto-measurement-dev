@@ -8,6 +8,7 @@ from PyQt5.QtWidgets import QApplication
 from PyQt5.QtCore import pyqtSignal
 from LabAuto.laser_remote import LaserController
 from servo import ServoController
+from kCube import WaveplateController
 from base_worker import BaseMeasurementWorker, TimeDepData
 from base_gui import TimeDepWindow
 
@@ -15,6 +16,12 @@ from base_gui import TimeDepWindow
 class TimeDepPulseWorker(BaseMeasurementWorker):
     new_config = pyqtSignal(int, str)
     new_data = pyqtSignal(int, object) # Emits TimeDepData Dataclass
+
+    def __init__(self, resource_id, config_files, laser=None, servo=None, qwp=None):
+        super().__init__(resource_id, config_files)
+        self.laser = laser
+        self.servo = servo
+        self.qwp = qwp
 
     def _build_sequence_single(self, params):
         """
@@ -26,6 +33,8 @@ class TimeDepPulseWorker(BaseMeasurementWorker):
             return self._build_custom_blocks(params)
         elif hardware_mode == "Optical Encoder":
             return self._build_optical_encoder(params)
+        elif hardware_mode == "QWP Encoder":
+            return self._build_qwp_encoder(params)
         else:
             # Handles standard arrays (Dark Current, Laser Only, Laser + Servo)
             return self._build_standard_optical(params, hardware_mode)
@@ -160,6 +169,42 @@ class TimeDepPulseWorker(BaseMeasurementWorker):
         sequence.append({"Vg": base_vg, "duration": 3.0, "laser_cmd2": {"channel": ch_idx, "on": 1}})
         return sequence
 
+    def _build_qwp_encoder(self, params):
+        """Builds a timeline that rotates a QWP (RCP/LCP) and toggles the shutter."""
+        sequence = []
+        ch_idx = int(params.get("channel_arr", 6))
+        wavelength = int(params.get("wavelength_arr", 660))
+        power = float(params.get("power_arr", 100))
+        pp = self.get_pp_exact(wavelength, power)
+        
+        rest_time = float(params.get("rest_time", 10.0))
+        on_time = float(params.get("on_time", 2.0))
+        off_time = float(params.get("off_time", 1.0))
+        binary_string = params.get("binary_string", "0")
+
+        # 1. Hardware Initialization Steps
+        if params.get("init_laser", True):
+            sequence.append({"Vg": 0.0, "duration": 5.0, "laser_cmd1": {"channel": ch_idx, "wavelength": wavelength}})
+            sequence.append({"Vg": 0.0, "duration": 5.0, "laser_cmd1": {"channel": ch_idx, "power": pp}})
+        
+        # Turn laser source ON (shutter remains closed)
+        sequence.append({"Vg": 0.0, "duration": 2.0, "laser_cmd2": {"channel": ch_idx, "on": 1}})
+        
+        # 2. Encode the Binary String
+        for bit in binary_string:
+            angle = 45 if bit == '1' else 135
+            
+            # --- PHASE 1: Rest/Rotation (Shutter CLOSED) ---
+            sequence.append({"Vg": 0.0, "duration": rest_time, "qwp_cmd": angle})
+            
+            # --- PHASE 2: ON/Signal (Shutter OPEN) ---
+            sequence.append({"Vg": 0.0, "duration": on_time, "laser_cmd3": 1})
+            
+            # --- PHASE 3: OFF/Post-bit (Shutter CLOSED) ---
+            sequence.append({"Vg": 0.0, "duration": off_time, "laser_cmd3": 1})
+            
+        return sequence
+
     def _build_standard_optical(self, params, hardware_mode):
         """Builds timelines for Dark Current, Laser Only, and Laser + Servo."""
         # sequence = [{'Vg': 2, "duration":0.1},
@@ -220,7 +265,7 @@ class TimeDepPulseWorker(BaseMeasurementWorker):
         sequence.append({'Vg':0, 'duration':5})
         return sequence
 
-    def _switch_source(self, laser_cmd1=None, laser_cmd2=None, laser_cmd3=None):
+    def _switch_source(self, laser_cmd1=None, laser_cmd2=None, laser_cmd3=None, qwp_cmd=None):
         if laser_cmd1 and self.laser: 
             self.status_update.emit("Configuring laser...")
             self.laser.send_cmd(laser_cmd1, wait_for_reply=False) 
@@ -233,7 +278,9 @@ class TimeDepPulseWorker(BaseMeasurementWorker):
             self.status_update.emit("Toggling Physical Shutter...")
             self.servo.toggle_light()
             self.servo_state = 1 - self.servo_state 
-
+        if qwp_cmd is not None and self.qwp:
+            self.status_update.emit(f"Rotating QWP to {qwp_cmd} degrees...")
+            self.qwp.move_to_degree(qwp_cmd, wait=False)
     def _execute_time_pulse_measurement(self, filename, params, sequence, config_idx, label):
         vd_const = float(params["vd_const"])
         base_vg = float(params.get("base_vg", 0.0))
@@ -254,7 +301,7 @@ class TimeDepPulseWorker(BaseMeasurementWorker):
             for step_idx, step in enumerate(sequence):
                 if not self.running: break
 
-                self._switch_source(step.get("laser_cmd1"), step.get("laser_cmd2"), step.get("laser_cmd3"))
+                self._switch_source(step.get("laser_cmd1"), step.get("laser_cmd2"), step.get("laser_cmd3"), step.get("qwp_cmd"))
                 
                 target_vg = step["Vg"]
                 step_end = time.time() + step["duration"]
@@ -543,6 +590,7 @@ if __name__ == "__main__":
     # 2. PRE-SCAN CONFIGS FOR HARDWARE NEEDS
     needs_laser = False
     needs_servo = False
+    needs_qwp = False
     
     for config_path in config_queue:
         try:
@@ -550,16 +598,19 @@ if __name__ == "__main__":
                 params = json.load(f)
                 hw_mode = params.get("hardware_mode", "Dark Current")
                 
-                if hw_mode in ["Laser Only", "Laser + Servo", "Optical Encoder", "Custom Blocks"]:
+                if hw_mode in ["Laser Only", "Laser + Servo", "Optical Encoder", "Custom Blocks", "QWP Encoder"]:
                     needs_laser = True
-                if hw_mode in ["Laser + Servo", "Optical Encoder", "Custom Blocks"]:
+                if hw_mode in ["Laser + Servo", "Optical Encoder", "Custom Blocks", "QWP Encoder"]:
                     needs_servo = True
+                if hw_mode == "QWP Encoder":
+                    needs_qwp = True
         except Exception as e:
             pass
 
     # 3. CONNECT TO HARDWARE
     laser = None
     servo = None
+    qwp = None
     
     if needs_laser:
         print("Laser required by config. Connecting to Laser PC...")
@@ -574,10 +625,18 @@ if __name__ == "__main__":
             servo = ServoController() 
         except Exception as e:
             print(f"Servo Connection failed ({e}). Running without physical shutter.")
+            
+    if needs_qwp:
+        print("QWP required by config. Connecting to Thorlabs Motor...")
+        try:
+            qwp = WaveplateController()
+            qwp.home() # Mandatory homing for accurate encoding
+        except Exception as e:
+            print(f"QWP Connection failed ({e}). Running without waveplate control.")
 
     # 4. LAUNCH APP
     app = QApplication(sys.argv)
-    worker = TimeDepPulseWorker(RESOURCE_ID, config_queue, laser=laser, servo=servo)
+    worker = TimeDepPulseWorker(RESOURCE_ID, config_queue, laser=laser, servo=servo, qwp=qwp)
     window = TimeDepWindow(worker)
     window.show()
     sys.exit(app.exec_())

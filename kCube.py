@@ -1,60 +1,64 @@
 from pylablib.devices import Thorlabs
 import time
 
-def test_waveplate_motor():
-    # 1. SCAN FOR DEVICES
-    # This will print out a list of all Thorlabs serial numbers plugged into USB
-    connected_devices = Thorlabs.list_kinesis_devices()
-    print(f"🔍 Found Thorlabs devices: {connected_devices}")
+class WaveplateController:
+    """
+    A wrapper class for Thorlabs Kinesis Rotation Mounts (e.g., PRM1Z8 / K10CR1).
+    """
     
-    if not connected_devices:
-        print("❌ No devices found. Check your USB cable and power supply!")
-        return
+    def __init__(self, serial_number=None, scale_type="PRM1Z8"):
+        """
+        Initializes the connection. If no serial number is provided, 
+        it auto-connects to the first available Thorlabs device.
+        """
+        if serial_number is None:
+            devices = Thorlabs.list_kinesis_devices()
+            if not devices:
+                raise ConnectionError("No Thorlabs devices found plugged into the PC.")
+            self.serial_number = devices[0][0]
+        else:
+            self.serial_number = serial_number
 
-    # Grab the first device in the list (Usually starts with '27' for K-Cubes)
-    # If you have multiple devices, you will hardcode your serial number here instead
-    serial_number = connected_devices[0][0] 
-    print(f"🔌 Connecting to K-Cube (SN: {serial_number})...")
-
-    # 2. CONNECT TO THE MOTOR
-    # Note: Kinesis motors use internal 'device units' (raw encoder steps). 
-    # To use degrees, you pass a scaling factor. For PRM1Z8, the scale is usually 1919.64 steps/degree.
-    # If it acts weird, simply remove the `scale` argument and use raw steps.
-    waveplate = Thorlabs.KinesisMotor(serial_number, scale="PRM1Z8")
-
-    try:
-        # 3. HOMING (Crucial!)
-        # The motor must find its physical zero point before it knows where 45 degrees is.
-        print("🏠 Homing the rotation mount (this may take 10-20 seconds)...")
-        waveplate.home()
-        waveplate.wait_move() # Pauses Python until the motor stops moving
-        print("✅ Homing complete.")
-
-        # 4. ROTATE THE WAVEPLATE
-        target_angle = 45.0
-        print(f"🔄 Rotating to {target_angle} degrees...")
-        waveplate.move_to(target_angle)
-        waveplate.wait_move()
+        print(f"[Waveplate] Connecting to motor SN: {self.serial_number}...")
         
-        current_pos = waveplate.get_position()
-        print(f"🎯 Arrived at: {current_pos:.2f} degrees")
+        # Connect to the motor using the appropriate step-to-degree scale
+        self.motor = Thorlabs.KinesisMotor(self.serial_number, scale=scale_type)
+        self.is_homed = False
+
+    def home(self, wait=True):
+        """Forces the rotation mount to find its physical zero point."""
+        print("[Waveplate] Homing... Please wait.")
+        self.motor.home()
+        if wait:
+            self.motor.wait_move()
+        self.is_homed = True
+        print("[Waveplate] Homing complete.")
+
+    def move_to_degree(self, angle, wait=True):
+        """Rotates the waveplate to an absolute angle in degrees."""
+        if not self.is_homed:
+            print("[Waveplate] Warning: Moving before homing can cause inaccurate angles!")
+            
+        print(f"[Waveplate] Rotating to {angle}°...")
+        self.motor.move_to(angle)
         
-        # Hold there for a moment
-        time.sleep(2)
+        if wait:
+            self.motor.wait_move()
+            print(f"[Waveplate] Arrived at {self.get_current_angle():.2f}°")
 
-        # Move back to 0
-        print("⏪ Returning to 0 degrees...")
-        waveplate.move_to(0)
-        waveplate.wait_move()
+    def get_current_angle(self):
+        """Returns the current angle of the waveplate."""
+        return self.motor.get_position()
 
-    except Exception as e:
-        print(f"⚠️ An error occurred: {e}")
-        
-    finally:
-        # 5. SAFELY DISCONNECT
-        # If you don't close the connection, Python holds the USB port hostage!
-        waveplate.close()
-        print("🔒 Connection closed.")
+    def close(self):
+        """Safely closes the USB connection."""
+        if self.motor:
+            self.motor.close()
+            print("[Waveplate] Connection safely closed.")
 
-if __name__ == "__main__":
-    test_waveplate_motor()
+    # --- Context Manager Support (Allows using 'with' statements) ---
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        self.close()
