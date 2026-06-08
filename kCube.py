@@ -25,13 +25,14 @@ class WaveplateController:
         self.motor = Thorlabs.KinesisMotor(self.serial_number)
         self.steps_per_degree = 1919.641
         
-        # Set velocity parameters: (min_vel, acceleration, max_vel)
+        # Set velocity parameters: (acceleration, max_vel)
         # Converting user-specified deg/s and deg/s^2 to raw steps
         max_vel_steps = int(25 * self.steps_per_degree)
         accel_steps = int(10 * self.steps_per_degree)
-        self.motor.set_velocity(0, accel_steps, max_vel_steps)
-        
+        self.motor.setup_velocity(acceleration=accel_steps, max_velocity=max_vel_steps)
+
         self.is_homed = False
+
 
     def home(self, wait=True):
         """Forces the rotation mount to find its physical zero point."""
