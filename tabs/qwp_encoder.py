@@ -284,3 +284,9 @@ def render_qwp_encoder_tab():
                 success, msg = launch_in_terminal("run_time_pulse.py")
                 if success: st.success(msg)
                 else: st.error(msg)
+
+        st.write("") # padding
+        if st.button("⚙️ Open QWP Manual Control", type="secondary", use_container_width=True, key="qwp_manual_btn"):
+            success, msg = launch_in_terminal("qwp_GUI.py")
+            if success: st.success(msg)
+            else: st.error(msg)
