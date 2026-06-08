@@ -285,7 +285,15 @@ class TimeDepPulseWorker(BaseMeasurementWorker):
         vd_const = float(params["vd_const"])
         base_vg = float(params.get("base_vg", 0.0))
         pulse_width = float(params.get("pulse_width", 0.005))
-        rest_time = float(params.get("rest_time", 0.1))
+        
+        # FIX: Use a dedicated sampling interval name to avoid conflict with QWP 'rest_time'
+        # For Optical Encoder mode, 'rest_time' in the config is the sampling interval.
+        # For QWP Encoder mode, it's a phase duration, so we default to 0.1s.
+        hw_mode = params.get("hardware_mode", "")
+        if hw_mode == "Optical Encoder":
+            sampling_interval = float(params.get("rest_time", 0.1))
+        else:
+            sampling_interval = 0.1 # High-speed sampling (10 Hz) for QWP/Custom modes
 
         start_time = time.time()
         last_emit_time = start_time
@@ -338,7 +346,7 @@ class TimeDepPulseWorker(BaseMeasurementWorker):
                                 self.new_data.emit(config_idx, packet)
                                 last_emit_time = current_t
 
-                    time.sleep(rest_time)
+                    time.sleep(sampling_interval)
 
     def _execute_baseline_reset(self, filename, params, config_idx, label):
         """
