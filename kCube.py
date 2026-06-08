@@ -6,7 +6,7 @@ class WaveplateController:
     A wrapper class for Thorlabs Kinesis Rotation Mounts (e.g., PRM1Z8 / K10CR1).
     """
     
-    def __init__(self, serial_number=None, scale_type="PRM1Z8"):
+    def __init__(self, serial_number=None):
         """
         Initializes the connection. If no serial number is provided, 
         it auto-connects to the first available Thorlabs device.
@@ -21,8 +21,9 @@ class WaveplateController:
 
         print(f"[Waveplate] Connecting to motor SN: {self.serial_number}...")
         
-        # Connect to the motor using the appropriate step-to-degree scale
-        self.motor = Thorlabs.KinesisMotor(self.serial_number, scale=scale_type)
+        # Operates in raw hardware steps to ensure accuracy
+        self.motor = Thorlabs.KinesisMotor(self.serial_number)
+        self.steps_per_degree = 1919.641
         self.is_homed = False
 
     def home(self, wait=True):
@@ -39,8 +40,9 @@ class WaveplateController:
         if not self.is_homed:
             print("[Waveplate] Warning: Moving before homing can cause inaccurate angles!")
             
-        print(f"[Waveplate] Rotating to {angle}°...")
-        self.motor.move_to(angle)
+        target_steps = int(angle * self.steps_per_degree)
+        print(f"[Waveplate] Rotating to {angle}° ({target_steps} steps)...")
+        self.motor.move_to(target_steps)
         
         if wait:
             self.motor.wait_move()
@@ -48,7 +50,8 @@ class WaveplateController:
 
     def get_current_angle(self):
         """Returns the current angle of the waveplate."""
-        return self.motor.get_position()
+        raw_steps = self.motor.get_position()
+        return raw_steps / self.steps_per_degree
 
     def close(self):
         """Safely closes the USB connection."""
