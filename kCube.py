@@ -29,7 +29,7 @@ class WaveplateController:
         # Converting user-specified deg/s and deg/s^2 to raw steps
         max_vel_steps = int(25 * self.steps_per_degree)
         accel_steps = int(10 * self.steps_per_degree)
-        self.motor.set_velocity_parameters(0, accel_steps, max_vel_steps)
+        self.motor.set_velocity(0, accel_steps, max_vel_steps)
         
         self.is_homed = False
 
