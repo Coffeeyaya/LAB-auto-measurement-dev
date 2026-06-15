@@ -8,15 +8,22 @@ from PyQt5.QtWidgets import QApplication
 from PyQt5.QtCore import pyqtSignal
 from LabAuto.laser_remote import LaserController
 from servo import ServoController
+from kCube import WaveplateController
 from base_worker import BaseMeasurementWorker, TimeDepData
 from base_gui import TimeDepWindow
 
 # ==========================================
-# THE UNIVERSAL WORKER THREAD (PULSED)
+# THE UNIVERSAL WORKER THREAD (CONTINUOUS)
 # ==========================================
 class TimeDepWorker(BaseMeasurementWorker):
     new_config = pyqtSignal(int, str)
     new_data = pyqtSignal(int, object) # Emits TimeDepData Dataclass
+
+    def __init__(self, resource_id, config_files, laser=None, servo=None, qwp=None):
+        super().__init__(resource_id, config_files)
+        self.laser = laser
+        self.servo = servo
+        self.qwp = qwp
 
     # ------------------------------------------
     # SEQUENCE BUILDER
@@ -106,6 +113,8 @@ class TimeDepWorker(BaseMeasurementWorker):
                 step["laser_cmd2"] = {"channel": b["channel"], "on": 1}
             elif b_type == "Servo Shutter":
                 step["laser_cmd3"] = 1
+            elif b_type == "QWP Rotation":
+                step["qwp_cmd"] = b.get("qwp_angle", 45.0)
             formatted_steps.append(step)
 
         # 2. Clean and sort rules (1-based UI to 0-based code)
@@ -157,7 +166,7 @@ class TimeDepWorker(BaseMeasurementWorker):
     # ------------------------------------------
     # EXECUTION
     # ------------------------------------------
-    def _switch_source(self, target_vg, laser_cmd1=None, laser_cmd2=None, laser_cmd3=None):
+    def _switch_source(self, target_vg, laser_cmd1=None, laser_cmd2=None, laser_cmd3=None, qwp_cmd=None):
         """
         this function can be used only for continuous Vg, not pulsed
         """
@@ -179,6 +188,9 @@ class TimeDepWorker(BaseMeasurementWorker):
             self.status_update.emit("Toggling Physical Shutter...")
             self.servo.toggle_light()
             self.servo_state = 1 - self.servo_state 
+        if qwp_cmd is not None and self.qwp:
+            self.status_update.emit(f"Rotating QWP to {qwp_cmd} degrees...")
+            self.qwp.move_to_degree(qwp_cmd, wait=False)
 
     def _execute_time_measurement(self, filename, params, sequence, config_idx, label):
         vd_const = float(params["vd_const"])
@@ -197,7 +209,7 @@ class TimeDepWorker(BaseMeasurementWorker):
                 target_vg = step["Vg"]
                 
                 # Update hardware states (Keithley + Optics)
-                self._switch_source(target_vg, step.get("laser_cmd1"), step.get("laser_cmd2"), step.get("laser_cmd3"))
+                self._switch_source(target_vg, step.get("laser_cmd1"), step.get("laser_cmd2"), step.get("laser_cmd3"), step.get("qwp_cmd"))
                 
                 step_end = time.time() + step["duration"]
                 self.status_update.emit(f"[{label}] Step {step_idx+1}/{len(sequence)}: Continuous Read at {target_vg}V...")
@@ -359,6 +371,7 @@ if __name__ == "__main__":
     # 2. PRE-SCAN CONFIGS FOR HARDWARE NEEDS
     needs_laser = False
     needs_servo = False
+    needs_qwp = False
     
     for config_path in config_queue:
         try:
@@ -370,12 +383,20 @@ if __name__ == "__main__":
                     needs_laser = True
                 if hw_mode in ["Laser + Servo", "Custom Blocks"]:
                     needs_servo = True
+                
+                if hw_mode == "Custom Blocks":
+                    blocks = params.get("sequence_blocks", [])
+                    for b in blocks:
+                        if b.get("type") == "QWP Rotation":
+                            needs_qwp = True
+                            break
         except Exception as e:
             pass
 
     # 3. CONNECT TO HARDWARE
     laser = None
     servo = None
+    qwp = None
     
     if needs_laser:
         print("Laser required by config. Connecting to Laser PC...")
@@ -391,9 +412,17 @@ if __name__ == "__main__":
         except Exception as e:
             print(f"Servo Connection failed ({e}). Running without physical shutter.")
 
+    if needs_qwp:
+        print("QWP required by config. Connecting to Thorlabs Motor...")
+        try:
+            qwp = WaveplateController()
+            qwp.home() 
+        except Exception as e:
+            print(f"QWP Connection failed ({e}). Running without waveplate control.")
+
     # 4. LAUNCH APP
     app = QApplication(sys.argv)
-    worker = TimeDepWorker(RESOURCE_ID, config_queue, laser=laser, servo=servo)
+    worker = TimeDepWorker(RESOURCE_ID, config_queue, laser=laser, servo=servo, qwp=qwp)
     window = TimeDepWindow(worker)
     window.show()
     sys.exit(app.exec_())

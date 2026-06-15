@@ -59,3 +59,13 @@ def render_functionalities_tab():
                 st.error(f"Failed to get snapshot: {response.get('message', 'Unknown error')}")
         except Exception as e:
             st.error(f"Connection Error: {e}")
+
+    st.divider()
+
+    # --- SECTION 3: QWP CONTROL ---
+    st.subheader("🎡 QWP Motor Control")
+    st.write("Launch the standalone GUI to manually rotate the Quarter-Wave Plate.")
+    if st.button("Open QWP Manual Control", type="primary", use_container_width=True, key="func_qwp_btn"):
+        success, msg = launch_in_terminal("qwp_GUI.py")
+        if success: st.success(msg)
+        else: st.error(msg)

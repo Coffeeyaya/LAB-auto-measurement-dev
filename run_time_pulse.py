@@ -60,6 +60,8 @@ class TimeDepPulseWorker(BaseMeasurementWorker):
                 step["laser_cmd2"] = {"channel": b["channel"], "on": 1}
             elif b_type == "Servo Shutter":
                 step["laser_cmd3"] = 1
+            elif b_type == "QWP Rotation":
+                step["qwp_cmd"] = b.get("qwp_angle", 45.0)
             formatted_steps.append(step)
 
         # 2. Clean and sort rules (1-based UI to 0-based code)
@@ -180,6 +182,9 @@ class TimeDepPulseWorker(BaseMeasurementWorker):
         rest_time = float(params.get("rest_time", 10.0))
         on_time = float(params.get("on_time", 2.0))
         off_time = float(params.get("off_time", 1.0))
+        reset_vg = float(params.get("reset_vg", 0.0))
+        reset_duration = float(params.get("reset_duration", 0.0))
+        relax_time = float(params.get("relax_time", 0.0))
         binary_string = params.get("binary_string", "0")
 
         # 1. Hardware Initialization Steps
@@ -202,6 +207,14 @@ class TimeDepPulseWorker(BaseMeasurementWorker):
             
             # --- PHASE 3: OFF/Post-bit (Shutter CLOSED) ---
             sequence.append({"Vg": 0.0, "duration": off_time, "laser_cmd3": 1})
+
+            # --- PHASE 4: Stabilization (Optional Reset & Relax) ---
+            if relax_time > 0:
+                sequence.append({"Vg": 0.0, "duration": relax_time})
+            if reset_duration > 0:
+                sequence.append({"Vg": reset_vg, "duration": reset_duration})
+            if relax_time > 0:
+                sequence.append({"Vg": 0.0, "duration": relax_time})
             
         return sequence
 
@@ -612,6 +625,13 @@ if __name__ == "__main__":
                     needs_servo = True
                 if hw_mode == "QWP Encoder":
                     needs_qwp = True
+                
+                if hw_mode == "Custom Blocks":
+                    blocks = params.get("sequence_blocks", [])
+                    for b in blocks:
+                        if b.get("type") == "QWP Rotation":
+                            needs_qwp = True
+                            break
         except Exception as e:
             pass
 

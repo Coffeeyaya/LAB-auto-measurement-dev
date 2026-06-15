@@ -17,6 +17,8 @@ def expand_custom_blocks(blocks, rules):
             step["laser_toggle"] = True
         elif step["type"] == "Servo Shutter":
             step["servo_toggle"] = True
+        elif step["type"] == "QWP Rotation":
+            step["qwp_cmd"] = b.get("qwp_angle", 45.0)
         formatted_steps.append(step)
 
     # 2. Clean and sort rules
@@ -225,7 +227,7 @@ def render_new_time_dependent_tab():
                     st.info(f"**Step {i+1}:** {block['type']}")
                     
                 with col_dur:
-                    min_dur = 5.0 if block["type"] in ["Laser Power", "Laser Wavelength"] else (2.0 if block["type"] == "Laser Toggle" else 0.1)
+                    min_dur = 10.0 if block["type"] == "QWP Rotation" else (5.0 if block["type"] in ["Laser Power", "Laser Wavelength"] else (2.0 if block["type"] == "Laser Toggle" else 0.1))
                     block["duration"] = st.number_input("Duration (s)", value=max(float(block["duration"]), min_dur), min_value=min_dur, key=f"dur_{b_id}") 
                     
                 with col_vg:
@@ -245,6 +247,8 @@ def render_new_time_dependent_tab():
                         block["channel"] = st.number_input("Channel", value=int(block.get("channel", def_channel)), step=1, key=f"ch_tog_{b_id}") 
                     elif block["type"] == "Servo Shutter":
                         st.caption("Toggles physical shutter state")
+                    elif block["type"] == "QWP Rotation":
+                        block["qwp_angle"] = st.number_input("Angle (0-360°)", value=float(block.get("qwp_angle", 45.0)), step=1.0, key=f"qwp_ang_{b_id}")
                     else:
                         st.caption("Standard Dark Measurement")
 
@@ -266,16 +270,21 @@ def render_new_time_dependent_tab():
         st.write("---")
         col_sel, col_add, col_clr = st.columns([2, 1, 1])
         with col_sel:
-            new_block_type = st.selectbox("Select Block to Add:", ["Dark Bias", "Laser Wavelength", "Laser Power", "Laser Toggle", "Servo Shutter"])
+            new_block_type = st.selectbox("Select Block to Add:", ["Dark Bias", "Laser Wavelength", "Laser Power", "Laser Toggle", "Servo Shutter", "QWP Rotation"])
         with col_add:
             st.write("") 
             if st.button("➕ Add Block", use_container_width=True):
-                default_dur = 5.0 if new_block_type in ["Laser Power", "Laser Wavelength", "Laser Toggle"] else 0.1
+                if new_block_type == "QWP Rotation":
+                    default_dur = 10.0
+                else:
+                    default_dur = 5.0 if new_block_type in ["Laser Power", "Laser Wavelength", "Laser Toggle"] else 0.1
+                
                 new_block = {"id": uuid.uuid4().hex, "type": new_block_type, "duration": default_dur, "vg": 1.0}
 
                 if new_block_type == "Laser Wavelength": new_block.update({"channel": def_channel, "wavelength": def_wavelength})
                 elif new_block_type == "Laser Power": new_block.update({"channel": def_channel, "wavelength": def_wavelength, "power": def_power})
                 elif new_block_type == "Laser Toggle": new_block.update({"channel": def_channel, "on": 1})
+                elif new_block_type == "QWP Rotation": new_block.update({"qwp_angle": 45.0})
                 st.session_state["sequence_blocks"].append(new_block)
                 st.rerun()
         with col_clr:
@@ -335,30 +344,37 @@ def render_new_time_dependent_tab():
                 vgs = [0]
                 lasers = [0]
                 servos = [0]
+                qwps = [0]
                 
                 cur_t = st.session_state.get("wait_time", 0)
                 cur_l = 0
                 cur_s = 0
+                cur_q = 0
                 
                 # Initial point (at end of wait_time)
                 times.append(cur_t)
                 vgs.append(0)
                 lasers.append(0)
                 servos.append(0)
+                qwps.append(0)
                 
+                spans = [] # To store (t_start, t_end, angle) for coloring
+
                 for step in seq:
                     vg = step["Vg"]
                     dur = step["duration"]
-                    
+                    t_start = cur_t
+
                     # Start of step (current time, new Vg/State)
-                    # We handle toggles at the BEGINNING of the step
                     if step.get("laser_toggle"): cur_l = 1 - cur_l
                     if step.get("servo_toggle"): cur_s = 1 - cur_s
+                    if "qwp_cmd" in step: cur_q = step["qwp_cmd"]
                     
                     times.append(cur_t)
                     vgs.append(vg)
                     lasers.append(cur_l)
                     servos.append(cur_s)
+                    qwps.append(cur_q)
                     
                     cur_t += dur
                     
@@ -367,10 +383,24 @@ def render_new_time_dependent_tab():
                     vgs.append(vg)
                     lasers.append(cur_l)
                     servos.append(cur_s)
+                    qwps.append(cur_q)
+                    
+                    spans.append((t_start, cur_t, cur_q))
 
-                fig, (ax1, ax2, ax3) = plt.subplots(3, 1, figsize=(10, 8), sharex=True)
-                plt.subplots_adjust(hspace=0.4)
+                fig, (ax1, ax2, ax3, ax4) = plt.subplots(4, 1, figsize=(10, 10), sharex=True)
+                plt.subplots_adjust(hspace=0.5)
                 
+                # Color mapping for QWP
+                unique_angles = sorted(list(set([s[2] for s in spans])))
+                cmap = plt.get_cmap("tab10")
+                angle_to_color = {angle: cmap(i % 10) for i, angle in enumerate(unique_angles)}
+
+                for t_s, t_e, ang in spans:
+                    if ang != 0:
+                        color = angle_to_color[ang]
+                        for ax in [ax1, ax2, ax3, ax4]:
+                            ax.axvspan(t_s, t_e, color=color, alpha=0.1)
+
                 # Plotting with step-like behavior
                 ax1.plot(times, vgs, color='blue', linewidth=2)
                 ax1.set_ylabel("Vg (V)")
@@ -389,8 +419,12 @@ def render_new_time_dependent_tab():
                 ax3.set_ylim(-0.2, 1.2)
                 ax3.set_yticks([0, 1])
                 ax3.set_yticklabels(["CLOSE", "OPEN"])
-                ax3.set_xlabel("Time (s)")
                 ax3.grid(True, alpha=0.3)
+
+                ax4.plot(times, qwps, color='purple', linewidth=2)
+                ax4.set_ylabel("QWP Angle (°)")
+                ax4.set_xlabel("Time (s)")
+                ax4.grid(True, alpha=0.3)
                 
                 st.pyplot(fig)
                 plt.close(fig) # Cleanup to avoid memory leaks

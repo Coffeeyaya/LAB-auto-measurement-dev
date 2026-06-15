@@ -18,6 +18,7 @@ def render_qwp_encoder_tab():
         "qwp_nplc_a": 1.0, "qwp_nplc_b": 1.0, "qwp_vd_const": 1.0, 
         
         "qwp_binary_string": "01001000", "qwp_on_time": 2.0, "qwp_off_time": 1.0, "qwp_rest_time": 10.0,
+        "qwp_reset_vg": 0.0, "qwp_reset_duration": 0.0, "qwp_relax_time": 0.0,
         "qwp_raw_message": "Hi",
         "qwp_wavelength": 660, "qwp_channel": 6, "qwp_power": 100.0,
         "qwp_init_laser": True
@@ -156,7 +157,15 @@ def render_qwp_encoder_tab():
     bt_col2.number_input("ON Time (s)", step=0.1, key="qwp_on_time", help="Shutter open, measuring bit signal.")
     bt_col3.number_input("OFF Time (s)", step=0.1, key="qwp_off_time", help="Shutter closed, measuring post-bit baseline.")
 
-    total_bit_time = st.session_state["qwp_rest_time"] + st.session_state["qwp_on_time"] + st.session_state["qwp_off_time"]
+    st.subheader("⚡ Reset Pulse Settings (Per Bit)")
+    col_rv1, col_rv2, col_rv3 = st.columns(3)
+    col_rv1.number_input("Reset Vg (V)", value=st.session_state.get("qwp_reset_vg", 0.0), step=0.1, key="qwp_reset_vg", help="Applied after each bit")
+    col_rv2.number_input("Reset Duration (s)", value=st.session_state.get("qwp_reset_duration", 0.0), step=0.1, key="qwp_reset_duration")
+    col_rv3.number_input("Relaxation Time (s)", value=st.session_state.get("qwp_relax_time", 0.0), step=0.1, key="qwp_relax_time", help="Time at Vg=0 after reset")
+
+    total_bit_time = (st.session_state["qwp_rest_time"] + st.session_state["qwp_on_time"] + 
+                      st.session_state["qwp_off_time"] + st.session_state["qwp_reset_duration"] + 
+                      st.session_state["qwp_relax_time"] * 2) 
     total_time = (len(final_bin) + 5) * total_bit_time + 16 
     st.info(f"⏱️ **Total Bit Cycle:** {total_bit_time:.1f}s | **Estimated Total Time:** ~{total_time:.1f} seconds")
 
@@ -249,6 +258,9 @@ def render_qwp_encoder_tab():
                     "on_time": st.session_state["qwp_on_time"],
                     "off_time": st.session_state["qwp_off_time"],
                     "rest_time": st.session_state["qwp_rest_time"],
+                    "reset_vg": st.session_state["qwp_reset_vg"],
+                    "reset_duration": st.session_state["qwp_reset_duration"],
+                    "relax_time": st.session_state["qwp_relax_time"],
                     "wavelength_arr": st.session_state["qwp_wavelength"], 
                     "channel_arr": st.session_state["qwp_channel"], 
                     "power_arr": st.session_state["qwp_power"],
@@ -288,5 +300,11 @@ def render_qwp_encoder_tab():
         st.write("") # padding
         if st.button("⚙️ Open QWP Manual Control", type="secondary", use_container_width=True, key="qwp_manual_btn"):
             success, msg = launch_in_terminal("qwp_GUI.py")
+            if success: st.success(msg)
+            else: st.error(msg)
+
+        st.write("") # padding
+        if st.button("⚙️ Open Servo GUI", type="secondary", use_container_width=True, key="qwp_servo_btn"):
+            success, msg = launch_in_terminal("servo_GUI.py")
             if success: st.success(msg)
             else: st.error(msg)
