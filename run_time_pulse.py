@@ -274,7 +274,7 @@ class TimeDepPulseWorker(BaseMeasurementWorker):
                 for _ in range(int(params.get("on_off_number", 1))):
                     sequence.append({"Vg": vg_on, "duration": params.get("servo_time_on", 1.0), "laser_cmd3": 1})
                     sequence.append({"Vg": vg_on, "duration": params.get("servo_time_off", 1.0), "laser_cmd3": 1})
-            sequence.append({"Vg": vg_off, "duration": 1.0, "laser_cmd2": {"channel": ch_idx, "on": 1}})
+            sequence.append({"Vg": vg_off, "duration": params.get("servo_time_off", 1.0), "laser_cmd2": {"channel": ch_idx, "on": 1}})
         sequence.append({'Vg':0, 'duration':5})
         return sequence
 
